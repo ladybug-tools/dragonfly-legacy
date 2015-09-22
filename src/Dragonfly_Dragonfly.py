@@ -1,6 +1,6 @@
 # This is the heart of Dragonfly
 #
-# Dragonfly: A Plugin for Environmental Analysis (GPL) started by Chris Mackey
+# Dragonfly: A Plugin for Climate Data Generation (GPL) started by Chris Mackey
 # 
 # This file is part of Dragonfly.
 # 
@@ -46,7 +46,7 @@ Provided by Dragonfly 0.0.01
 
 ghenv.Component.Name = "Dragonfly_Dragonfly"
 ghenv.Component.NickName = 'Dragonfly'
-ghenv.Component.Message = 'VER 0.0.01\nSEP_19_2015'
+ghenv.Component.Message = 'VER 0.0.01\nSEP_21_2015'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "0 | Dragonfly"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -327,20 +327,34 @@ if checkIn.letItFly:
                 folders.UWGPath = "c:\\Program Files (x86)\\UWG"
             else:
                 msg1 = "Dragonfly cannot find the Urban Weather Generator (UWG) folder on your system.\n" + \
-                     "Make sure you have both the Urban Weather Generator (UWG) and the Matlab Runtime Compiler v 8.5 (MRC 8.5) installed on your system.\n" + \
-                     "You won't be able to warp EPW files to account for urban heat island effects without these two applications installed.\n" + \
-                     "You can download the UWG application from here:"
+                     "Make sure you have the Urban Weather Generator (UWG) installed on your system.\n" + \
+                     "You won't be able to morph EPW files to account for urban heat island effects without this application.\n" + \
+                     "You can download the UWG from the MIT microclimate website here:"
                 msg2 = "http://urbanmicroclimate.scripts.mit.edu/uwg.php"
-                msg3 = "And you can download the Matlab Runtime Compiler v 8.5 (MRC 8.5) from here:"
-                msg4 = "http://www.mathworks.com/products/compiler/mcr/index.html"
+                
                 
                 ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg1)
                 ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg2)
-                ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg3)
-                ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg4)
                 
                 folders.UWGPath = ""
         
+        if os.path.isdir("c:\\Program Files (x86)\\MATLAB\\MATLAB Runtime\\v85"):
+            folders.matlabPath = "c:\\Program Files (x86)\\MATLAB\\MATLAB Runtime\\v85"
+        else:
+            
+            msg3 = "Dragonfly cannot find the 32-bits version of the Matlab Runtime Compiler v8.5 (MRC 8.5) in your system. \n" + \
+            "You won't be able to morph EPW files to account for urban heat island effects without this application. \n" + \
+            "Make sure that you have the 32-bits version installed and not the 64-bits version." + \
+            "You can download the Matlab Runtime Compiler v 8.5 (MRC 8.5) from here:"
+            msg4 = "http://www.mathworks.com/products/compiler/mcr/index.html"
+            
+            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg3)
+            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg4)
+            
+            folders.matlabPath = ""
+        
+        sc.sticky["dragonfly_folders"]["UWGPath"] = folders.UWGPath
+        sc.sticky["dragonfly_folders"]["matlabPath"] = folders.matlabPath
         
         print "Hi " + os.getenv("USERNAME")+ "!\n" + \
               "Dragonfly is Flying! Vviiiiiiizzz...\n\n" + \
