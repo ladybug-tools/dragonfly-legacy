@@ -36,6 +36,8 @@ Provided by Dragonfly 0.0.01
         _nightIntGains: A number representing the total building nighttime internal heat gains in W/m2.  This includes all heat gains from people, lights, and equipment.  Typical values can range from 4 W/m2 to 7 W/m2.
         _infiltration: A number representing the building infiltration in air changed per hour (ACH).  Typical values range from 0.25 ACH to 1 ACH.
         _ventilation: A number representing the building required minimum ventilation through the HVAC system in air changed per hour (ACH).  Typical values range from 0.0 ACH to 1 ACH.
+        roofVegFraction_: A number between 0 and 1 that represents the fraction of the building's roof that is covered in vegetation, such as green roof, grassy lawn, etc.  If no value is input here, it will be assumed that the roof has no vegetation.
+        wallVegFraction_: A number between 0 and 1 that represents the fraction of the building's walls that is covered in vegetation, such as green wall, vine-covered wall, etc. If no value is input here, it will be assumed that the wall has no vegetation.
         coolingSetPt_: A number representing the building's daytime thermostat cooling setpoint in degrees Celcius.  If no value is input here, it will be assumed that the building has a cooling setpoint of 24 C.
         coolingSetBack_: A number representing the building's nighttime thermostat cooling setback in degrees Celcius.  If no value is input here, it will be assumed that the building has a cooling setback of 27 C.
         heatingSetPt_: A number representing the building's daytime thermostat heating setpoint in degrees Celcius.  If no value is input here, it will be assumed that the building has a heating setpoint of 21 C.
@@ -50,7 +52,7 @@ Provided by Dragonfly 0.0.01
 
 ghenv.Component.Name = "Dragonfly_Building Typology from Parameters"
 ghenv.Component.NickName = 'BldgTypologyFromParams'
-ghenv.Component.Message = 'VER 0.0.01\nSEP_21_2015'
+ghenv.Component.Message = 'VER 0.0.01\nSEP_29_2015'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "2 | GenerateUrbanClimate"
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015

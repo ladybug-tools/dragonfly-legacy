@@ -33,11 +33,11 @@ Provided by Dragonfly 0.0.01
         pavementPar: A list of pavement parameters that can be plugged into either the "Dragonfly_UWG Parameters from Typologies" or the "Dragonfly_UWG Parameters from HBZones" component.
 """
 
-ghenv.Component.Name = "Dragonfly_PAvement Parameters"
+ghenv.Component.Name = "Dragonfly_Pavement Parameters"
 ghenv.Component.NickName = 'pavementPar'
-ghenv.Component.Message = 'VER 0.0.01\nSEP_21_2015'
+ghenv.Component.Message = 'VER 0.0.01\nSEP_29_2015'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "2 | GenerateUrbanClimate"
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
-try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
+try: ghenv.Component.AdditionalHelpFromDocStrings = "4"
 except: pass
