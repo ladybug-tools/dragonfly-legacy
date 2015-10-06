@@ -37,7 +37,7 @@ Provided by Dragonfly 0.0.01
         analysisPeriod_: An optional analysis period from the 'Ladybug_Analysis Period' component.  If no Analysis period is given, the Urban Weather Generator will be run for the enitre year.
         --------------------: ...
         epwSitePar_: An optional list of Reference EPW Site Parameters from the "Dragonfly_Reference EPW Site Par" component.
-        boundaryLayerPar_: Optional Boundary Layer Parameters from the "Dragonfly_Boundary Layer Par" component.
+        boundLayerPar_: Optional Boundary Layer Parameters from the "Dragonfly_Boundary Layer Par" component.
         --------------------: ...
         _writeXML: Set to "True" to have the component take your connected UWGParemeters and write them into an XML file.  The file path of the resulting XML file will appear in the xmlFileAddress output of this component.  Note that only setting this to "True" and not setting the output below to "True" will not automatically run the XML through the Urban Weather Generator for you.
         runUWG_: Set to "True" to have the component run your XML and EPW files through the Urban Weather Generator (UWG).  This will ensure that a morphed EPW file path appears in the epwFileAddress output. Set to 2 if you want the analysis to run in background. This option is useful for parametric runs when you don't want to see command shells.
@@ -52,7 +52,7 @@ Provided by Dragonfly 0.0.01
 
 ghenv.Component.Name = "Dragonfly_Run Urban Weather Generator"
 ghenv.Component.NickName = 'RunUWG'
-ghenv.Component.Message = 'VER 0.0.01\nSEP_21_2015'
+ghenv.Component.Message = 'VER 0.0.01\nSEP_29_2015'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "2 | GenerateUrbanClimate"
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
