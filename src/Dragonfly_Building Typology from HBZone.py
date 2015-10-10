@@ -39,7 +39,7 @@ Provided by Dragonfly 0.0.01
 
 ghenv.Component.Name = "Dragonfly_Building Typology from HBZone"
 ghenv.Component.NickName = 'BldgTypologyFromZone'
-ghenv.Component.Message = 'VER 0.0.01\nOCT_05_2015'
+ghenv.Component.Message = 'VER 0.0.01\nOCT_10_2015'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "2 | GenerateUrbanClimate"
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
@@ -314,6 +314,17 @@ def createXMLFromEPConstr(epConstr, type, vegCoverage, startSetPt):
             if count == 0:
                 albedo = values[7]
                 emissivity = values[6]
+        elif values[0] == 'Material:NoMass':
+            #Typical NoMass EP Opaque Material.
+            print "You have connected a zone with a NoMass material but the UWG requires that all constructions have a mass.  As such, a very low heat cpacity of 1 J/m3-K will be used."
+            conductivities.append(1/float(values[2]))
+            heatCapacities.append(1)
+            thicknesses.append(0.1)
+            
+            #If it's the outer-most construction, grab it's albedo and emissivity.
+            if count == 0:
+                albedo = values[4]
+                emissivity = values[3]
     
     ### Build the construction string from the properties.
     #Start by building the header
