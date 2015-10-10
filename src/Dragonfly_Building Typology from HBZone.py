@@ -291,204 +291,8 @@ def computeHourlySchedVals(load, schName, lb_preparation):
     return hourlyVals
 
 
-def createXMLFromEPConstr(epConstr, type, vegCoverage, startSetPt):
-    #Call the materials in the EP Construction.
-    hb_EPMaterialAUX = sc.sticky["honeybee_EPMaterialAUX"]()
-    materials, comments, UValue_SI, UValue_IP = hb_EPMaterialAUX.decomposeEPCnstr(epConstr.upper())
-    
-    ### Get all of the properties of the EP Materials.
-    conductivities = []
-    heatCapacities = []
-    thicknesses = []
-    albedo = 0
-    emissivity = 0
-    for count, matName in enumerate(materials):
-        values, comments, UValue_SI, UValue_IP = hb_EPMaterialAUX.decomposeMaterial(matName.upper(), ghenv.Component)
-        if values[0] == 'Material':
-            #Typical EP Opaque Material.
-            conductivities.append(values[3])
-            heatCapacities.append(float(values[4]) * float(values[5]))
-            thicknesses.append(float(values[2]))
-            
-            #If it's the outer-most construction, grab it's albedo and emissivity.
-            if count == 0:
-                albedo = values[7]
-                emissivity = values[6]
-        elif values[0] == 'Material:NoMass':
-            #Typical NoMass EP Opaque Material.
-            print "You have connected a zone with a NoMass material but the UWG requires that all constructions have a mass.  As such, a very low heat cpacity of 1 J/m3-K will be used."
-            conductivities.append(1/float(values[2]))
-            heatCapacities.append(1)
-            thicknesses.append(0.1)
-            
-            #If it's the outer-most construction, grab it's albedo and emissivity.
-            if count == 0:
-                albedo = values[4]
-                emissivity = values[3]
-    
-    ### Build the construction string from the properties.
-    #Start by building the header
-    constrStr = '      <' + type + '>\n'
-    constrStr = constrStr + '        <albedo>' + str(albedo) + '</albedo>\n'
-    constrStr = constrStr + '        <emissivity>' + str(emissivity) + '</emissivity>\n'
-    constrStr = constrStr + '        <materials name="' + epConstr + '">\n'
-    
-    # Next, write in the material names.
-    constrStr = constrStr + '          <names>\n'
-    for mat in materials:
-        constrStr = constrStr + '            <item>' + mat + '</item>\n'
-    constrStr = constrStr + '          </names>\n'
-    
-    # Next, write in the thermal conductivities.
-    constrStr = constrStr + '          <thermalConductivity>\n'
-    for cond in conductivities:
-        constrStr = constrStr + '            <item>' + str(cond) + '</item>\n'
-    constrStr = constrStr + '          </thermalConductivity>\n'
-    
-    # Next, write in the heat capacities.
-    constrStr = constrStr + '          <volumetricHeatCapacity>\n'
-    for cap in heatCapacities:
-        constrStr = constrStr + '            <item>' + str(cap) + '</item>\n'
-    constrStr = constrStr + '          </volumetricHeatCapacity>\n'
-    
-    # Finally, write in the thicknesses and close out the material properties.
-    constrStr = constrStr + '          <thickness>' +  str(thicknesses) + '</thickness>\n'
-    constrStr = constrStr + '        </materials>\n'
-    
-    
-    ### Write in other surface properties.
-    constrStr = constrStr + '        <vegetationCoverage>' + str(vegCoverage) + '</vegetationCoverage>\n'
-    if type == 'wall': constrStr = constrStr + '        <inclination>0</inclination>\n'
-    else: constrStr = constrStr + '        <inclination>1</inclination>\n'
-    constrStr = constrStr + '        <initialTemperature>' + str(startSetPt) + '</initialTemperature>\n'
-    constrStr = constrStr + '      </' + type + '>\n'
-    
-    
-    return constrStr
 
-def createXMLFromEPWindow(glzRatio, glzConstrs, glzAreas):
-    #Get a name of the construction from the construction that has the most area.
-    glzAreasSort, glzConstrsSort = zip(*sorted(zip(glzAreas, glzConstrs)))
-    glzName = glzConstrsSort[-1]
-    
-    #Get a weighted average U-value and SHGC.
-    uValues = []
-    SHGCs = []
-    avgUVal = 0
-    avgSHGC = 0
-    #Call the materials in the EP Construction.
-    hb_EPMaterialAUX = sc.sticky["honeybee_EPMaterialAUX"]()
-    for winConstr in glzConstrs:
-        materials, comments, UValue_SI, UValue_IP = hb_EPMaterialAUX.decomposeEPCnstr(winConstr.upper())
-        uValues.append(UValue_SI)
-        shgc = 1
-        for glzMat in materials:
-            values, comments, UValue_SI, UValue_IP = hb_EPMaterialAUX.decomposeMaterial(glzMat.upper(), ghenv.Component)
-            if values[0] == 'WindowMaterial:Glazing':
-                #Full EP Glass material.
-                shgc = shgc * float(values[4])
-            elif values[0] == 'WindowMaterial:SimpleGlazingSystem':
-                #Simple window material.
-                shgc = shgc * float(values[2])
-        SHGCs.append(shgc)
-    
-    for count, val in enumerate(uValues):
-        avgUVal = avgUVal + (val * (glzAreas[count]/sum(glzAreas)))
-    for count, val in enumerate(SHGCs):
-        avgSHGC = avgSHGC + (val * (glzAreas[count]/sum(glzAreas)))
-    
-    
-    #Build the string.
-    glzStr = '      <glazing name="' + glzName + '">\n'
-    glzStr = glzStr + '        <glazingRatio>' + str(glzRatio) + '</glazingRatio>\n'
-    glzStr = glzStr + '        <windowUvalue>' + str(avgUVal) + '</windowUvalue>\n'
-    glzStr = glzStr + '        <windowSHGC>' + str(avgSHGC) + '</windowSHGC>\n'
-    glzStr = glzStr + '      </glazing>\n'
-    
-    return glzStr
-
-#Have a function that separate day and night variables from the list.
-def separateDayAndNight(schedule):
-    nightVals = []
-    dayVals = []
-    daycount = 0
-    startHour = 1
-    for val in schedule:
-        if startHour < 8:
-            nightVals.append(val)
-            startHour += 1
-        elif startHour < 19:
-            dayVals.append(val)
-            startHour += 1
-        else:
-            daycount+=1
-            dayVals.append(val)
-            startHour = startHour - 23
-    
-    return nightVals, dayVals
-
-def constructIntGainString(equipSched, lightSched, pplSched):
-    #Define defalut heat fractions for different types of loads.
-    #These numbers were copied from the rcommended values on the online UWG documentation:
-    #http://urbanmicroclimate.scripts.mit.edu/uwg_parameters.php
-    equipRadFrac = 0.5
-    lightRadFrac = 0.7
-    pplRadFrac = 0.3
-    equipLatFrac = 0
-    lightLatFrac = 0
-    pplLatFrac = 0.3
-    
-    
-    #Get the day and night values of each type of heat gain.
-    equipNightVals, equipDayVals = separateDayAndNight(equipSched)
-    equipNightVal = sum(equipNightVals)/len(equipNightVals)
-    equipDayVal = sum(equipDayVals)/len(equipDayVals)
-    
-    lightNightVals, lightDayVals = separateDayAndNight(lightSched)
-    lightNightVal = sum(lightNightVals)/len(lightNightVals)
-    lightDayVal = sum(lightDayVals)/len(lightDayVals)
-    
-    pplNightVals, pplDayVals = separateDayAndNight(pplSched)
-    pplNightVal = sum(pplNightVals)/len(pplNightVals)
-    pplDayVal = sum(pplDayVals)/len(pplDayVals)
-    
-    #Calculate the total heat gain and weighted-average radiant + latent fractions.
-    dayInternalGain = equipDayVal + lightDayVal + pplDayVal
-    nightInternalGain = equipNightVal + lightNightVal + pplNightVal
-    totalGain = (dayInternalGain + nightInternalGain) / 2
-    radiantFraction = ((((equipNightVal+equipDayVal)/2)/totalGain)*equipRadFrac) + ((((lightNightVal+lightDayVal)/2)/totalGain)*lightRadFrac) + ((((pplNightVal+pplDayVal)/2)/totalGain)*pplRadFrac)
-    latentFraction = ((((equipNightVal+equipDayVal)/2)/totalGain)*equipLatFrac) + ((((lightNightVal+lightDayVal)/2)/totalGain)*lightLatFrac) + ((((pplNightVal+pplDayVal)/2)/totalGain)*pplLatFrac)
-    
-    #Write the resulting intGains into a string.
-    intGainString = '      <dayInternalGains>' + str(dayInternalGain) + '</dayInternalGains>\n'
-    intGainString = intGainString + '      <nightInternalGains>' + str(nightInternalGain) + '</nightInternalGains>\n'
-    intGainString = intGainString + '      <radiantFraction>' + str(radiantFraction) + '</radiantFraction>\n'
-    intGainString = intGainString + '      <latentFraction>' + str(latentFraction) + '</latentFraction>\n'
-    
-    return intGainString
-
-
-def constructSetPtString(coolSched, heatSched):
-    #Get the day and night values of each type of heat gain.
-    coolNightVals, coolDayVals = separateDayAndNight(coolSched)
-    coolNightVal = sum(coolNightVals)/len(coolNightVals)
-    coolDayVal = sum(coolDayVals)/len(coolDayVals)
-    
-    #Get the day and night values of each type of heat gain.
-    heatNightVals, heatDayVals = separateDayAndNight(heatSched)
-    heatNightVal = sum(heatNightVals)/len(heatNightVals)
-    heatDayVal = sum(heatDayVals)/len(heatDayVals)
-    
-    #Write the resulting intGains into a string.
-    setPtString = '      <daytimeCoolingSetPoint>' + str(coolDayVal) + '</daytimeCoolingSetPoint>\n'
-    setPtString = setPtString + '      <nighttimeCoolingSetPoint>' + str(coolNightVal) + '</nighttimeCoolingSetPoint>\n'
-    setPtString = setPtString + '      <daytimeHeatingSetPoint>' + str(heatDayVal) + '</daytimeHeatingSetPoint>\n'
-    setPtString = setPtString + '      <nighttimeHeatingSetPoint>' + str(heatNightVal) + '</nighttimeHeatingSetPoint>\n'
-    
-    return setPtString
-
-
-def main(HBZoneDict, roofVegFract, wallVegFract, coolingCOP, heatingCOP, coolingSystemType, heatFract2Canyon):
+def main(HBZoneDict, roofVegFract, wallVegFract, coolingCOP, heatingCOP, coolingSystemType, heatFract2Canyon, df_textGen):
     #Define the building typolgy string.
     typologyString = '  <typology1 dist="100" name="' + HBZoneDict['zoneName'] + '">\n'
     typologyString = typologyString + '    <dist>100</dist>\n'
@@ -511,20 +315,20 @@ def main(HBZoneDict, roofVegFract, wallVegFract, coolingCOP, heatingCOP, cooling
     
     if len(HBZoneDict['zoneWallCnstr']) != 1: wallConstr = giveConstructionWarning(HBZoneDict['zoneWallCnstr'], HBZoneDict['zoneWallsAreas'], 'walls')
     else: wallConstr = HBZoneDict['zoneWallCnstr'][0]
-    wallCnstrString = createXMLFromEPConstr(wallConstr, 'wall', wallVegFract, startTemp)
+    wallCnstrString = df_textGen.createXMLFromEPConstr(wallConstr, 'wall', wallVegFract, startTemp)
     typologyString = typologyString + wallCnstrString
     
     if len(HBZoneDict['zoneRoofCnstr']) != 1: roofConstr = giveConstructionWarning(HBZoneDict['zoneRoofCnstr'], HBZoneDict['zoneFloorAreas'], 'walls')
     else: roofConstr = HBZoneDict['zoneRoofCnstr'][0]
-    roofCnstrString = createXMLFromEPConstr(roofConstr, 'roof', roofVegFract, startTemp)
+    roofCnstrString = df_textGen.createXMLFromEPConstr(roofConstr, 'roof', roofVegFract, startTemp)
     typologyString = typologyString + roofCnstrString
     
     if len(HBZoneDict['zoneFloorCnstr']) != 1: massConstr = giveConstructionWarning(HBZoneDict['zoneFloorCnstr'], HBZoneDict['zoneFloorAreas'], 'walls')
     else: massConstr = HBZoneDict['zoneFloorCnstr'][0]
-    massCnstrString = createXMLFromEPConstr(massConstr, 'mass', 0, startTemp)
+    massCnstrString = df_textGen.createXMLFromEPConstr(massConstr, 'mass', 0, startTemp)
     typologyString = typologyString + massCnstrString
     
-    glzCnstrString = createXMLFromEPWindow(HBZoneDict['glzRatio'], HBZoneDict['zoneGlzSrfCnstr'], HBZoneDict['zoneGlzSrfsAreas'])
+    glzCnstrString = df_textGen.createXMLFromEPWindow(HBZoneDict['glzRatio'], HBZoneDict['zoneGlzSrfCnstr'], HBZoneDict['zoneGlzSrfsAreas'])
     typologyString = typologyString + glzCnstrString
     
     typologyString = typologyString + '    </construction>\n'
@@ -535,7 +339,7 @@ def main(HBZoneDict, roofVegFract, wallVegFract, coolingCOP, heatingCOP, cooling
     buildingString = buildingString + '      <floorHeight>' + str(HBZoneDict['flr2FlrHeight']) + '</floorHeight>\n'
     
     #From the internal loads and schedules, compute total daytime / nighttime internal gains, as well as a radiant/latent fraction.
-    intGainString = constructIntGainString(HBZoneDict['equipSched'], HBZoneDict['lightSched'], HBZoneDict['pplSched'])
+    intGainString = df_textGen.constructIntGainString(HBZoneDict['equipSched'], HBZoneDict['lightSched'], HBZoneDict['pplSched'])
     buildingString = buildingString + intGainString
     
     #From the ventilation and infiltration lods/schedules, compute the values to plug into the XML.
@@ -546,7 +350,7 @@ def main(HBZoneDict, roofVegFract, wallVegFract, coolingCOP, heatingCOP, cooling
     if coolingSystemType == True: buildingString = buildingString + '      <coolingSystemType>air</coolingSystemType>\n'
     else: buildingString = buildingString + '      <coolingSystemType>water</coolingSystemType>\n'
     buildingString = buildingString + '      <coolingCOP>' + str(coolingCOP) + '</coolingCOP>\n'
-    setPtString = constructSetPtString(HBZoneDict['coolSetPtSched'], HBZoneDict['heatSetPtSched'])
+    setPtString = df_textGen.constructSetPtString(HBZoneDict['coolSetPtSched'], HBZoneDict['heatSetPtSched'])
     buildingString = buildingString + setPtString
     buildingString = buildingString + '      <coolingCapacity>' + str(HBZoneDict['coolingCapacity']) + '</coolingCapacity>\n'
     buildingString = buildingString + '      <heatingEfficiency>' + str(heatingCOP) + '</heatingEfficiency>\n'
@@ -572,9 +376,10 @@ def main(HBZoneDict, roofVegFract, wallVegFract, coolingCOP, heatingCOP, cooling
 #Check to be sure that Honeybee and Ladybug are flying.
 initCheck = False
 hb_hive = None
-if sc.sticky.has_key('honeybee_release') == True and sc.sticky.has_key("ladybug_release"):
+if sc.sticky.has_key('honeybee_release') == True and sc.sticky.has_key("ladybug_release") and sc.sticky.has_key("dragonfly_release"):
     hb_hive = sc.sticky["honeybee_Hive"]()
     lb_preparation = sc.sticky["ladybug_Preparation"]()
+    df_textGen = sc.sticky["dragonfly_UWGText"]()
     initCheck = True
 else:
     if not sc.sticky.has_key("honeybee_release"):
@@ -585,6 +390,10 @@ else:
         warning = "You need to let Ladybug fly to use this component."
         print warning
         ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+    if not sc.sticky.has_key("dragonfly_release"):
+        warning = "You need to let Dragonfly fly to use this component."
+        print warning
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
 
 
 #Get the properties of the HBZone and write them into a format for the UWG XML.
@@ -593,5 +402,5 @@ if _HBZone:
     if checkData == True:
         HBZoneDict = copyHBZoneData(hb_hive, lb_preparation)
         if HBZoneDict != -1:
-            buildingTypology = main(HBZoneDict, roofVegFract, wallVegFract, coolingCOP, heatingCOP, coolingSystemType, heatFract2Canyon)
+            buildingTypology = main(HBZoneDict, roofVegFract, wallVegFract, coolingCOP, heatingCOP, coolingSystemType, heatFract2Canyon, df_textGen)
 

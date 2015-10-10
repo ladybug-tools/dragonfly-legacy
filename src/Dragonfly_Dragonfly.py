@@ -46,7 +46,7 @@ Provided by Dragonfly 0.0.01
 
 ghenv.Component.Name = "Dragonfly_Dragonfly"
 ghenv.Component.NickName = 'Dragonfly'
-ghenv.Component.Message = 'VER 0.0.01\nSEP_21_2015'
+ghenv.Component.Message = 'VER 0.0.01\nOCT_10_2015'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "0 | Dragonfly"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -284,6 +284,227 @@ class df_findFolders(object):
         return None, None
 
 
+class UWGGeometry(object):
+    
+    
+    def getSrfCenPtandNormal(self, surface):
+        brepFace = surface.Faces[0]
+        if brepFace.IsPlanar and brepFace.IsSurface:
+            u_domain = brepFace.Domain(0)
+            v_domain = brepFace.Domain(1)
+            centerU = (u_domain.Min + u_domain.Max)/2
+            centerV = (v_domain.Min + v_domain.Max)/2
+            
+            centerPt = brepFace.PointAt(centerU, centerV)
+            normalVector = brepFace.NormalAt(centerU, centerV)
+        else:
+            centroid = rc.Geometry.AreaMassProperties.Compute(brepFace).Centroid
+            uv = brepFace.ClosestPoint(centroid)
+            centerPt = brepFace.PointAt(uv[1], uv[2])
+            normalVector = brepFace.NormalAt(uv[1], uv[2])
+        
+        return centerPt, normalVector
+
+
+class UWGTextGeneration(object):
+    
+    def createXMLFromEPConstr(self, epConstr, type, vegCoverage, startSetPt):
+        #Call the materials in the EP Construction.
+        hb_EPMaterialAUX = sc.sticky["honeybee_EPMaterialAUX"]()
+        materials, comments, UValue_SI, UValue_IP = hb_EPMaterialAUX.decomposeEPCnstr(epConstr.upper())
+        
+        ### Get all of the properties of the EP Materials.
+        conductivities = []
+        heatCapacities = []
+        thicknesses = []
+        albedo = 0
+        emissivity = 0
+        for count, matName in enumerate(materials):
+            values, comments, UValue_SI, UValue_IP = hb_EPMaterialAUX.decomposeMaterial(matName.upper(), ghenv.Component)
+            if values[0] == 'Material':
+                #Typical EP Opaque Material.
+                conductivities.append(values[3])
+                heatCapacities.append(float(values[4]) * float(values[5]))
+                thicknesses.append(float(values[2]))
+                
+                #If it's the outer-most construction, grab it's albedo and emissivity.
+                if count == 0:
+                    albedo = values[7]
+                    emissivity = values[6]
+            elif values[0] == 'Material:NoMass':
+                #Typical NoMass EP Opaque Material.
+                print "You have connected a zone with a NoMass material but the UWG requires that all constructions have a mass.  As such, a very low heat cpacity of 1 J/m3-K will be used."
+                conductivities.append(1/float(values[2]))
+                heatCapacities.append(1)
+                thicknesses.append(0.1)
+                
+                #If it's the outer-most construction, grab it's albedo and emissivity.
+                if count == 0:
+                    albedo = values[4]
+                    emissivity = values[3]
+        
+        ### Build the construction string from the properties.
+        #Start by building the header
+        constrStr = '      <' + type + '>\n'
+        constrStr = constrStr + '        <albedo>' + str(albedo) + '</albedo>\n'
+        constrStr = constrStr + '        <emissivity>' + str(emissivity) + '</emissivity>\n'
+        constrStr = constrStr + '        <materials name="' + epConstr + '">\n'
+        
+        # Next, write in the material names.
+        constrStr = constrStr + '          <names>\n'
+        for mat in materials:
+            constrStr = constrStr + '            <item>' + mat + '</item>\n'
+        constrStr = constrStr + '          </names>\n'
+        
+        # Next, write in the thermal conductivities.
+        constrStr = constrStr + '          <thermalConductivity>\n'
+        for cond in conductivities:
+            constrStr = constrStr + '            <item>' + str(cond) + '</item>\n'
+        constrStr = constrStr + '          </thermalConductivity>\n'
+        
+        # Next, write in the heat capacities.
+        constrStr = constrStr + '          <volumetricHeatCapacity>\n'
+        for cap in heatCapacities:
+            constrStr = constrStr + '            <item>' + str(cap) + '</item>\n'
+        constrStr = constrStr + '          </volumetricHeatCapacity>\n'
+        
+        # Finally, write in the thicknesses and close out the material properties.
+        constrStr = constrStr + '          <thickness>' +  str(thicknesses) + '</thickness>\n'
+        constrStr = constrStr + '        </materials>\n'
+        
+        
+        ### Write in other surface properties.
+        constrStr = constrStr + '        <vegetationCoverage>' + str(vegCoverage) + '</vegetationCoverage>\n'
+        if type == 'wall': constrStr = constrStr + '        <inclination>0</inclination>\n'
+        else: constrStr = constrStr + '        <inclination>1</inclination>\n'
+        constrStr = constrStr + '        <initialTemperature>' + str(startSetPt) + '</initialTemperature>\n'
+        constrStr = constrStr + '      </' + type + '>\n'
+        
+        
+        return constrStr
+    
+    def createXMLFromEPWindow(self, glzRatio, glzConstrs, glzAreas):
+        #Get a name of the construction from the construction that has the most area.
+        glzAreasSort, glzConstrsSort = zip(*sorted(zip(glzAreas, glzConstrs)))
+        glzName = glzConstrsSort[-1]
+        
+        #Get a weighted average U-value and SHGC.
+        uValues = []
+        SHGCs = []
+        avgUVal = 0
+        avgSHGC = 0
+        #Call the materials in the EP Construction.
+        hb_EPMaterialAUX = sc.sticky["honeybee_EPMaterialAUX"]()
+        for winConstr in glzConstrs:
+            materials, comments, UValue_SI, UValue_IP = hb_EPMaterialAUX.decomposeEPCnstr(winConstr.upper())
+            uValues.append(UValue_SI)
+            shgc = 1
+            for glzMat in materials:
+                values, comments, UValue_SI, UValue_IP = hb_EPMaterialAUX.decomposeMaterial(glzMat.upper(), ghenv.Component)
+                if values[0] == 'WindowMaterial:Glazing':
+                    #Full EP Glass material.
+                    shgc = shgc * float(values[4])
+                elif values[0] == 'WindowMaterial:SimpleGlazingSystem':
+                    #Simple window material.
+                    shgc = shgc * float(values[2])
+            SHGCs.append(shgc)
+        
+        for count, val in enumerate(uValues):
+            avgUVal = avgUVal + (val * (glzAreas[count]/sum(glzAreas)))
+        for count, val in enumerate(SHGCs):
+            avgSHGC = avgSHGC + (val * (glzAreas[count]/sum(glzAreas)))
+        
+        
+        #Build the string.
+        glzStr = '      <glazing name="' + glzName + '">\n'
+        glzStr = glzStr + '        <glazingRatio>' + str(glzRatio) + '</glazingRatio>\n'
+        glzStr = glzStr + '        <windowUvalue>' + str(avgUVal) + '</windowUvalue>\n'
+        glzStr = glzStr + '        <windowSHGC>' + str(avgSHGC) + '</windowSHGC>\n'
+        glzStr = glzStr + '      </glazing>\n'
+        
+        return glzStr
+    
+    #Have a function that separate day and night variables from the list.
+    def separateDayAndNight(self, schedule):
+        nightVals = []
+        dayVals = []
+        daycount = 0
+        startHour = 1
+        for val in schedule:
+            if startHour < 8:
+                nightVals.append(val)
+                startHour += 1
+            elif startHour < 19:
+                dayVals.append(val)
+                startHour += 1
+            else:
+                daycount+=1
+                dayVals.append(val)
+                startHour = startHour - 23
+        
+        return nightVals, dayVals
+    
+    def constructIntGainString(self, equipSched, lightSched, pplSched):
+        #Define defalut heat fractions for different types of loads.
+        #These numbers were copied from the rcommended values on the online UWG documentation:
+        #http://urbanmicroclimate.scripts.mit.edu/uwg_parameters.php
+        equipRadFrac = 0.5
+        lightRadFrac = 0.7
+        pplRadFrac = 0.3
+        equipLatFrac = 0
+        lightLatFrac = 0
+        pplLatFrac = 0.3
+        
+        
+        #Get the day and night values of each type of heat gain.
+        equipNightVals, equipDayVals = self.separateDayAndNight(equipSched)
+        equipNightVal = sum(equipNightVals)/len(equipNightVals)
+        equipDayVal = sum(equipDayVals)/len(equipDayVals)
+        
+        lightNightVals, lightDayVals = self.separateDayAndNight(lightSched)
+        lightNightVal = sum(lightNightVals)/len(lightNightVals)
+        lightDayVal = sum(lightDayVals)/len(lightDayVals)
+        
+        pplNightVals, pplDayVals = self.separateDayAndNight(pplSched)
+        pplNightVal = sum(pplNightVals)/len(pplNightVals)
+        pplDayVal = sum(pplDayVals)/len(pplDayVals)
+        
+        #Calculate the total heat gain and weighted-average radiant + latent fractions.
+        dayInternalGain = equipDayVal + lightDayVal + pplDayVal
+        nightInternalGain = equipNightVal + lightNightVal + pplNightVal
+        totalGain = (dayInternalGain + nightInternalGain) / 2
+        radiantFraction = ((((equipNightVal+equipDayVal)/2)/totalGain)*equipRadFrac) + ((((lightNightVal+lightDayVal)/2)/totalGain)*lightRadFrac) + ((((pplNightVal+pplDayVal)/2)/totalGain)*pplRadFrac)
+        latentFraction = ((((equipNightVal+equipDayVal)/2)/totalGain)*equipLatFrac) + ((((lightNightVal+lightDayVal)/2)/totalGain)*lightLatFrac) + ((((pplNightVal+pplDayVal)/2)/totalGain)*pplLatFrac)
+        
+        #Write the resulting intGains into a string.
+        intGainString = '      <dayInternalGains>' + str(dayInternalGain) + '</dayInternalGains>\n'
+        intGainString = intGainString + '      <nightInternalGains>' + str(nightInternalGain) + '</nightInternalGains>\n'
+        intGainString = intGainString + '      <radiantFraction>' + str(radiantFraction) + '</radiantFraction>\n'
+        intGainString = intGainString + '      <latentFraction>' + str(latentFraction) + '</latentFraction>\n'
+        
+        return intGainString
+    
+    
+    def constructSetPtString(self, coolSched, heatSched):
+        #Get the day and night values of each type of heat gain.
+        coolNightVals, coolDayVals = self.separateDayAndNight(coolSched)
+        coolNightVal = sum(coolNightVals)/len(coolNightVals)
+        coolDayVal = sum(coolDayVals)/len(coolDayVals)
+        
+        #Get the day and night values of each type of heat gain.
+        heatNightVals, heatDayVals = self.separateDayAndNight(heatSched)
+        heatNightVal = sum(heatNightVals)/len(heatNightVals)
+        heatDayVal = sum(heatDayVals)/len(heatDayVals)
+        
+        #Write the resulting intGains into a string.
+        setPtString = '      <daytimeCoolingSetPoint>' + str(coolDayVal) + '</daytimeCoolingSetPoint>\n'
+        setPtString = setPtString + '      <nighttimeCoolingSetPoint>' + str(coolNightVal) + '</nighttimeCoolingSetPoint>\n'
+        setPtString = setPtString + '      <daytimeHeatingSetPoint>' + str(heatDayVal) + '</daytimeHeatingSetPoint>\n'
+        setPtString = setPtString + '      <nighttimeHeatingSetPoint>' + str(heatNightVal) + '</nighttimeHeatingSetPoint>\n'
+        
+        return setPtString
+
+
 
 try:
     checkIn.checkForUpdates(LB= True, HB= False, OpenStudio = False, template = False)
@@ -355,6 +576,9 @@ if checkIn.letItFly:
         
         sc.sticky["dragonfly_folders"]["UWGPath"] = folders.UWGPath
         sc.sticky["dragonfly_folders"]["matlabPath"] = folders.matlabPath
+        sc.sticky["dragonfly_UWGGeometry"] = UWGGeometry
+        sc.sticky["dragonfly_UWGText"] = UWGTextGeneration
+        
         
         print "Hi " + os.getenv("USERNAME")+ "!\n" + \
               "Dragonfly is Flying! Vviiiiiiizzz...\n\n" + \
