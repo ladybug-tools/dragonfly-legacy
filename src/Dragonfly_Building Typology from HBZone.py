@@ -373,10 +373,10 @@ def main(HBZoneDict, roofVegFract, wallVegFract, coolingCOP, heatingCOP, cooling
 
 
 
-#Check to be sure that Honeybee and Ladybug are flying.
+#Check to be sure that Honeybee, Ladybug and Dragonfly are flying.
 initCheck = False
 hb_hive = None
-if sc.sticky.has_key('honeybee_release') == True and sc.sticky.has_key("ladybug_release") and sc.sticky.has_key("dragonfly_release"):
+if sc.sticky.has_key('honeybee_release') and sc.sticky.has_key("ladybug_release") and sc.sticky.has_key("dragonfly_release"):
     hb_hive = sc.sticky["honeybee_Hive"]()
     lb_preparation = sc.sticky["ladybug_Preparation"]()
     df_textGen = sc.sticky["dragonfly_UWGText"]()
@@ -397,7 +397,7 @@ else:
 
 
 #Get the properties of the HBZone and write them into a format for the UWG XML.
-if _HBZone:
+if _HBZone and initCheck == True:
     checkData, roofVegFract, wallVegFract, coolingCOP, heatingCOP, coolingSystemType, heatFract2Canyon = setDefaultInputs()
     if checkData == True:
         HBZoneDict = copyHBZoneData(hb_hive, lb_preparation)

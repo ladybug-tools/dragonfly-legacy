@@ -46,7 +46,7 @@ Provided by Dragonfly 0.0.01
 
 ghenv.Component.Name = "Dragonfly_Dragonfly"
 ghenv.Component.NickName = 'Dragonfly'
-ghenv.Component.Message = 'VER 0.0.01\nOCT_10_2015'
+ghenv.Component.Message = 'VER 0.0.01\nOCT_11_2015'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "0 | Dragonfly"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -307,6 +307,34 @@ class UWGGeometry(object):
 
 
 class UWGTextGeneration(object):
+    def __init__(self):
+        
+        self.defaultPavementStr = '    <urbanRoad>\n' + \
+        '      <albedo>0.165</albedo>\n' + \
+        '      <emissivity>0.95</emissivity>\n' + \
+        '      <materials name="Default">\n' + \
+        '        <names>\n' + \
+        '          <item>asphalt</item>\n' + \
+        '        </names>\n' + \
+        '        <thermalConductivity>\n' + \
+        '          <item>1</item>\n' + \
+        '        </thermalConductivity>\n' + \
+        '        <volumetricHeatCapacity>\n' + \
+        '          <item>1600000</item>\n' + \
+        '        </volumetricHeatCapacity>\n' + \
+        '        <thickness>1.25</thickness>\n' + \
+        '      </materials>\n' + \
+        '      <vegetationCoverage>valToReplace</vegetationCoverage>\n' + \
+        '      <inclination>1</inclination>\n' + \
+        '      <initialTemperature>setByEPW</initialTemperature>\n' + \
+        '    </urbanRoad>\n'
+        
+        self.defaultVegStr = '    <treeLatent>0.7</treeLatent>\n' + \
+        '    <grassLatent>0.6</grassLatent>\n' + \
+        '    <vegAlbedo>0.25</vegAlbedo>\n' + \
+        '    <vegStart>1</vegStart>\n' + \
+        '    <vegEnd>12</vegEnd>\n'
+    
     
     def createXMLFromEPConstr(self, epConstr, type, vegCoverage, startSetPt):
         #Call the materials in the EP Construction.
