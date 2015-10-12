@@ -46,7 +46,7 @@ Provided by Dragonfly 0.0.01
 
 ghenv.Component.Name = "Dragonfly_Dragonfly"
 ghenv.Component.NickName = 'Dragonfly'
-ghenv.Component.Message = 'VER 0.0.01\nOCT_11_2015'
+ghenv.Component.Message = 'VER 0.0.01\nOCT_12_2015'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "0 | Dragonfly"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -304,6 +304,42 @@ class UWGGeometry(object):
             normalVector = brepFace.NormalAt(uv[1], uv[2])
         
         return centerPt, normalVector
+    
+    # Make a function that attempts to extract the building footprint surfaces.
+    def separateBrepSrfs(self, brep, maxRoofAngle, maxFloorAngle):
+        up = []
+        down = []
+        side = []
+        topNormVectors = []
+        topCentPts = []
+        allNormVectors = []
+        roofNormals = []
+        sideNormals = []
+        for i in range(brep.Faces.Count):
+            surface = brep.Faces[i].DuplicateFace(False)
+            # find the normal
+            findNormal = self.getSrfCenPtandNormal(surface)
+            
+            #Get the angle to the Z-axis
+            if findNormal:
+                normal = findNormal[1]
+                allNormVectors.append(normal)
+                angle2Z = math.degrees(rc.Geometry.Vector3d.VectorAngle(normal, rc.Geometry.Vector3d.ZAxis))
+            else:
+                angle2Z = 0
+            
+            if  angle2Z < maxRoofAngle or angle2Z > 360- maxRoofAngle:
+                up.append(surface)
+                roofNormals.append((90 - angle2Z)/90)
+            elif  180 - maxFloorAngle < angle2Z < 180 + maxFloorAngle:
+                down.append(surface)
+                topNormVectors.append(normal)
+                topCentPts.append(findNormal[0])
+            else:
+                side.append(surface)
+                sideNormals.append((90 - angle2Z)/90)
+        
+        return down, up, side, sideNormals, roofNormals, topNormVectors, topCentPts, allNormVectors
 
 
 class UWGTextGeneration(object):

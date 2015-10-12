@@ -38,12 +38,12 @@ Provided by Dragonfly 0.0.01
         ----------------: ...
         roofBreps: The typology roof geometry.  This is used to determine the roof inclination angles.
         wllBreps: The typology wall geometry.  This is used to determine the wall inclination angles.
-        footpringBreps: The typology building footprint geometry as projected onto the worrldXY plane.  This is used to determine the ratios of each typology in the uarban area.
+        footpringBreps: The typology building footprint geometry as projected onto the worldXY plane.  This is used to determine the ratios of each typology in the uarban area.
 """
 
 ghenv.Component.Name = "Dragonfly_Typology Ratios"
 ghenv.Component.NickName = 'TypologyRatios'
-ghenv.Component.Message = 'VER 0.0.57\nOCT_11_2015'
+ghenv.Component.Message = 'VER 0.0.57\nOCT_12_2015'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "2 | GenerateUrbanClimate"
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
@@ -120,35 +120,6 @@ def main(df_UWGGeo):
     else: maxRoofAngle = 60
     groundProjection = rc.Geometry.Transform.PlanarProjection(rc.Geometry.Plane.WorldXY)
     
-    # Make a function that attempts to extrac the building footprint surfaces.
-    def separateBrepSrfs(brep):
-        up = []
-        down = []
-        side = []
-        roofNormals = []
-        sideNormals = []
-        for i in range(brep.Faces.Count):
-            surface = brep.Faces[i].DuplicateFace(False)
-            # find the normal
-            findNormal = df_UWGGeo.getSrfCenPtandNormal(surface)
-            
-            #Get the angle to the Z-axis
-            if findNormal:
-                normal = findNormal[1]
-                angle2Z = math.degrees(rc.Geometry.Vector3d.VectorAngle(normal, rc.Geometry.Vector3d.ZAxis))
-            else:
-                angle2Z = 0
-            
-            if  angle2Z < maxRoofAngle or angle2Z > 360- maxRoofAngle:
-                up.append(surface)
-                roofNormals.append((90 - angle2Z)/90)
-            elif  180 - maxFloorAngle < angle2Z < 180 + maxFloorAngle:
-                down.append(surface)
-            else:
-                side.append(surface)
-                sideNormals.append((90 - angle2Z)/90)
-        
-        return down, sideNormals, roofNormals, up, side
     
     # Use any downward-facing surfaces that we can identify as part of the building footprint to get the projected area.
     for typology in typologies:
@@ -160,15 +131,36 @@ def main(df_UWGGeo):
         typeWallNormals = []
         
         for brep in typology:
-            footPrintBreps, sideNormals, roofNormals, upSrfs, sideSrfs = separateBrepSrfs(brep)
+            #Separate out the surfaces of the Brep
+            footPrintBreps, upSrfs, sideSrfs, sideNormals, roofNormals, allNormVectors, allCentPts, actualAllNormVectors = df_UWGGeo.separateBrepSrfs(brep, maxRoofAngle, maxFloorAngle)
             
-            #Project the ground surface into the X/Y plane and take its area.
-            groundAreas = []
-            for srf in footPrintBreps:
-                srf.Transform(groundProjection)
-                groundAreas.append(rc.Geometry.AreaMassProperties.Compute(srf).Area)
-                typeProjBreps.append(srf)
-            typAreas.append(sum(groundAreas))
+            #Check to see if there are any building breps that self-intersect once they are projected into the XYPlane.  If so, we have to use an alternative method.
+            meshedBrep = rc.Geometry.Mesh.CreateFromBrep(brep, rc.Geometry.MeshingParameters.Coarse)
+            selfIntersect = False
+            for count, normal in enumerate(allNormVectors):
+                srfRay = rc.Geometry.Ray3d(allCentPts[count], normal)
+                for mesh in meshedBrep:
+                    intersectTest = rc.Geometry.Intersect.Intersection.MeshRay(mesh, srfRay)
+                    if intersectTest <= sc.doc.ModelAbsoluteTolerance: pass
+                    else: selfIntersect = True
+            
+            if selfIntersect == True:
+                # Use any downward-facing surfaces that we can identify as part of the building footprint and boolean them together to get the projected area.
+                grounBreps = []
+                for srf in footPrintBreps:
+                    srf.Transform(groundProjection)
+                    grounBreps.append(srf)
+                booleanSrf = rc.Geometry.Brep.CreateBooleanUnion(grounBreps, sc.doc.ModelAbsoluteTolerance)[0]
+                typeProjBreps.append(booleanSrf)
+                typAreas.append(rc.Geometry.AreaMassProperties.Compute(booleanSrf).Area)
+            else:
+                #Project the whole building brep into the X/Y plane and take half its area.
+                brepCopy = [brep][:][0]
+                brepCopy.Transform(groundProjection)
+                typAreas.append(rc.Geometry.AreaMassProperties.Compute(brepCopy).Area/2)
+                typeProjBreps.append(brepCopy)
+            
+            
             
             #Use the area of the roof surfaces to get a weighted average roof angle.
             roofSrfAreas = []
@@ -225,22 +217,24 @@ else:
 
 
 if len(_typology1Breps_) != 0 or len(_typology2Breps_) != 0 or len(_typology1Breps_) != 0 or len(_typology1Breps_) != 0:
-    checkData = checkInputs()
-    if checkData == True:
-        result = main(df_UWGGeo)
-        if result != -1:
-            typologyRatios, roofAngles, wallAngles, roofBrepsInit, wallBrepsInit, footprintBrepsInit = result
-            
-            roofBreps = DataTree[Object]()
-            wallBreps = DataTree[Object]()
-            footprintBreps = DataTree[Object]()
-            for dataCount, dataList in enumerate(footprintBrepsInit):
-                for item in dataList: footprintBreps.Add(item, GH_Path(dataCount))
-            for dataCount, dataList in enumerate(roofBrepsInit):
-                for item in dataList: roofBreps.Add(item, GH_Path(dataCount))
-            for dataCount, dataList in enumerate(wallBrepsInit):
-                for item in dataList: wallBreps.Add(item, GH_Path(dataCount))
-            
-            #Hide unwanted outputs
-            ghenv.Component.Params.Output[4].Hidden = True
-            ghenv.Component.Params.Output[5].Hidden = True
+    if _runIt:
+        checkData = checkInputs()
+        if checkData == True:
+            result = main(df_UWGGeo)
+            if result != -1:
+                typologyRatios, roofAngles, wallAngles, roofBrepsInit, wallBrepsInit, footprintBrepsInit = result
+                
+                roofBreps = DataTree[Object]()
+                wallBreps = DataTree[Object]()
+                footprintBreps = DataTree[Object]()
+                for dataCount, dataList in enumerate(footprintBrepsInit):
+                    for item in dataList: footprintBreps.Add(item, GH_Path(dataCount))
+                for dataCount, dataList in enumerate(roofBrepsInit):
+                    for item in dataList: roofBreps.Add(item, GH_Path(dataCount))
+                for dataCount, dataList in enumerate(wallBrepsInit):
+                    for item in dataList: wallBreps.Add(item, GH_Path(dataCount))
+                
+                #Hide unwanted outputs
+                ghenv.Component.Params.Output[4].Hidden = True
+                ghenv.Component.Params.Output[5].Hidden = True
+                ghenv.Component.Params.Output[6].Hidden = False

@@ -39,7 +39,7 @@ Provided by Dragonfly 0.0.01
 
 ghenv.Component.Name = "Dragonfly_Building Typology from HBZone"
 ghenv.Component.NickName = 'BldgTypologyFromZone'
-ghenv.Component.Message = 'VER 0.0.01\nOCT_11_2015'
+ghenv.Component.Message = 'VER 0.0.01\nOCT_12_2015'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "2 | GenerateUrbanClimate"
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
@@ -294,8 +294,8 @@ def computeHourlySchedVals(load, schName, lb_preparation):
 
 def main(HBZoneDict, roofVegFract, wallVegFract, coolingCOP, heatingCOP, coolingSystemType, heatFract2Canyon, df_textGen):
     #Define the building typolgy string.
-    typologyString = '  <typology1 dist="100" name="' + HBZoneDict['zoneName'] + '">\n'
-    typologyString = typologyString + '    <dist>100</dist>\n'
+    typologyString = '  <typology1 dist="TBDPercent" name="' + HBZoneDict['zoneName'] + '">\n'
+    typologyString = typologyString + '    <dist>TBDPercent</dist>\n'
     
     #Have a function to deal with the case where there are multiple constructions assigned to a given surface type.  In this case, we should just take the construction with the most surface area to define the typology.
     def giveConstructionWarning(constructionList, areaList, surfaceType):
