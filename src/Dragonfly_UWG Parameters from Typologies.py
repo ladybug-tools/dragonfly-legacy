@@ -113,15 +113,15 @@ def checkTheInputs(df_textGen, df_UWGGeo):
     typologyRatios = []
     if len(typologyRatios_) != 0:
         if len(typologyRatios_) == len(_buildingTypologies):
-            if sum(typologyRatios_) <= 1.01 and sum(typologyRatios_) >= 0.99:
-                for count, ratio in enumerate(typologyRatios_):
-                    if count != len(_buildingTypologies)-1: typologyRatios.append(int(round(ratio*100)))
-                    else: typologyRatios.append(100-sum(typologyRatios))
-                checkData2 = True
-            else:
-                warning = "The ratios connected to typologyRatios_ does not sum to 1. \n Make sure that your ratios sum to 1."
-                print warning
-                ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+            #if sum(typologyRatios_) <= 1.01 and sum(typologyRatios_) >= 0.99:
+            for count, ratio in enumerate(typologyRatios_):
+                if count != len(_buildingTypologies)-1: typologyRatios.append(int(round(ratio*100)))
+                else: typologyRatios.append(100-sum(typologyRatios))
+            checkData2 = True
+            #else:
+            #    warning = "The ratios connected to typologyRatios_ does not sum to 1. \n Make sure that your ratios sum to 1."
+            #    print warning
+            #    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
         else:
             warning = "The number of ratios connected to typologyRatios_ does not match \n the number of typologies connected to the _buildingTypologies input."
             print warning
@@ -550,7 +550,7 @@ def main(buildingTypologies, buildingBreps, buildingBrepAreas, srfNormalVecs, ty
     urbanString = urbanString + "    <nighttimeBLHeight>80</nighttimeBLHeight>\n"
     urbanString = urbanString + "    <refHeight>150</refHeight>\n"
     urbanString = urbanString +  pavementConstrString
-    urbanString = urbanString + "  <urbanArea>\n"
+    urbanString = urbanString + "  </urbanArea>\n"
     
     #Swap out the portions of the building typologies that we have caulculated (like fraction of each in the urban area and roof angle).
     #Replace the typology ratio in the typology string.
@@ -564,7 +564,7 @@ def main(buildingTypologies, buildingBreps, buildingBrepAreas, srfNormalVecs, ty
     newBuildingTypologies = []
     for count, typString in enumerate(buildingTypologies):
         typStringSplit = typString.split('inclination')
-        newTypString = typStringSplit[0] + 'inclination' + typStringSplit[1] + 'inclination' + typStringSplit[2] + 'inclination>' + str(roofAngles[count]) + '</inclination'
+        newTypString = typStringSplit[0] + 'inclination' + typStringSplit[1] + 'inclination' + typStringSplit[2] + 'inclination>' + str(round(roofAngles[count],2)) + '</inclination'
         for count, string in enumerate(typStringSplit[4:]):
             if count != len(typStringSplit[4:])-1: newTypString = newTypString + string + 'inclination'
             else: newTypString = newTypString + string
@@ -575,7 +575,7 @@ def main(buildingTypologies, buildingBreps, buildingBrepAreas, srfNormalVecs, ty
     newBuildingTypologies = []
     for count, typString in enumerate(buildingTypologies):
         typStringSplit = typString.split('inclination')
-        newTypString = typStringSplit[0] + 'inclination>' + str(wallAngles[count]) + '</inclination'
+        newTypString = typStringSplit[0] + 'inclination>' + str(round(wallAngles[count], 2)) + '</inclination'
         for count, string in enumerate(typStringSplit[2:]):
             if count != len(typStringSplit[2:])-1: newTypString = newTypString + string + 'inclination'
             else: newTypString = newTypString + string
@@ -593,7 +593,7 @@ def main(buildingTypologies, buildingBreps, buildingBrepAreas, srfNormalVecs, ty
     buildingTypologies = newBuildingTypologies
     
     #Combine everything into one string.
-    UWGPar = '<?xml version="1.0" encoding="utf-8"?>\n<xml_input>'
+    UWGPar = '<?xml version="1.0" encoding="utf-8"?>\n<xml_input>\n'
     for typ in buildingTypologies:
         UWGPar = UWGPar + typ
     UWGPar = UWGPar + urbanString

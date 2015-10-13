@@ -46,15 +46,205 @@ Provided by Dragonfly 0.0.01
         _xmlFileName_: An optional text string which will be used to name your XML and morphed EPW files.  Change this to aviod over-writing results of previous runs of the Urban Weather Generator.
     Returns:
         readMe!: ...
+        xmlText: The text written into the XML file.
         xmlFileAddress: The file path of the XML file that has been generated on your machine.
         epwFileAddress: The file path of the morphed EPW file that has been generated on your machine.  This only happens when you set "runUWG_" to "True."
 """
 
 ghenv.Component.Name = "Dragonfly_Run Urban Weather Generator"
 ghenv.Component.NickName = 'RunUWG'
-ghenv.Component.Message = 'VER 0.0.01\nSEP_29_2015'
+ghenv.Component.Message = 'VER 0.0.01\nOCT_12_2015'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "2 | GenerateUrbanClimate"
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
 except: pass
+
+
+import scriptcontext as sc
+import Rhino as rc
+import os
+
+from clr import AddReference
+AddReference('Grasshopper')
+import Grasshopper.Kernel as gh
+
+
+def checkTheInputs(df_textGen, lb_preparation):
+    # Set a warning variable.
+    w = gh.GH_RuntimeMessageLevel.Warning
+    
+    #Check to be sure that the EPW file is on the person's system.
+    checkData1 = True
+    if not os.path.isfile(_epwFile):
+        checkData1 = False
+        warning1 = "Could not find the connected _epwFile on your system. \n Make sure that you have the file on your system at this address:"
+        warning2 = _epwFile
+        print warning1
+        print warning2
+        ghenv.Component.AddRuntimeMessage(w, warning1)
+        ghenv.Component.AddRuntimeMessage(w, warning2)
+    
+    #Check to be sure that the _UWGParameters are valid.
+    checkData2 = True
+    if not _UWGParameters.startswith('<?xml version="1.0" encoding="utf-8"?>\n<xml_input>'):
+        checkData2 = False
+        warning = "The connected _UWGParameters are not valid parameters fromt one of the 'Dragonfly_UWG Parameters' components."
+        print warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
+    
+    #Check if there is a workingDir connected and, if not set a default. Create the directory on the person's system. 
+    checkData3 = True
+    if _workingDir_: workingDir = _workingDir_
+    else: workingDir = sc.sticky["Ladybug_DefaultFolder"] + 'unnamed\\UWG\\'
+    if not os.path.exists(workingDir):
+        try:
+            os.makedirs(workingDir)
+        except:
+            checkData3 = False
+            warning =  'cannot create the working directory as: ', workingDir + \
+                  '\nPlease set a new working directory'
+            print warning
+            ghenv.Component.AddRuntimeMessage(w, warning)
+    print 'Current working directory is set to: ' + workingDir
+    
+    #Set a default filename.
+    if _xmlFileName_:
+        if _xmlFileName_.endswith('.xml'): xmlFileName = _xmlFileName_
+        else: xmlFileName = _xmlFileName_ + '.xml'
+    else: xmlFileName = 'unnamed.xml'
+    
+    #Check the epwSitePar_ and, if there are none, set default ones.
+    checkData4 = True
+    if len(epwSitePar_) != 0:
+        try:
+            epwSiteParString, tempHeight, windHeight = epwSitePar_
+        except:
+            checkData4 = False
+            warning =  'epwSitePar_ is not valid.'
+            print warning
+            ghenv.Component.AddRuntimeMessage(w, warning)
+    else:
+        epwSiteParString = df_textGen.defaultRefSitePar
+        tempHeight = 10
+        windHeight = 10
+    
+    #Check the boundLayerPar_ and, if there are none, leave the default ones.
+    checkData5 = True
+    if boundLayerPar_:
+        if not boundLayerPar_.startswit('    <daytimeBLHeight>'):
+            checkData5 = False
+            warning =  'boundLayerPar_ is not valid.'
+            print warning
+            ghenv.Component.AddRuntimeMessage(w, warning)
+    
+    #Check the analysisPeriod and, if there is none, run the simulation for the whole year.
+    if analysisPeriod_:
+        stMonth, stDay, stHour, endMonth, endDay, endHour = lb_preparation.readRunPeriod(analysisPeriod)
+        startDOY = int(lb_preparation.getJD(stMonth, stDay))
+        endDOY = int(lb_preparation.getJD(endMonth, endDay))
+        simDuration = endDOY - startDOY
+        stHOY = lb_preparation.date2Hour(stMonth, stDay, 1)
+    else:
+        stMonth = 1
+        stDay = 1
+        simDuration = 365
+        stHOY = 1
+    analysisPeriodStr = '    <simuStartMonth>' + str(stMonth) + '</simuStartMonth>\n' +\
+                        '    <simuStartDay>' + str(stDay) + '</simuStartDay>\n' +\
+                        '    <simuDuration>' + str(simDuration) + '</simuDuration>\n'
+    
+    #Grab default untouchable parameters.
+    ### Note that I only say they are 'untochable' because there is no documentation about them on the UWG site the last time that I checked:
+    # http://urbanmicroclimate.scripts.mit.edu/uwg_parameters.php
+    untouchablePar = df_textGen.untouchablePar
+    
+    #Do a final check of everything and, if it's good, project any goemtry that needs to be projected in order to extract relevant parameters.
+    checkData = False
+    if checkData1 == True and checkData2 == True and checkData3 == True and checkData4 == True  and checkData5 == True:
+        checkData = True
+    
+    return checkData, workingDir, xmlFileName, _epwFile, epwSiteParString, tempHeight, windHeight, boundLayerPar_, analysisPeriodStr, stHOY, untouchablePar
+
+
+def main(workingDir, xmlFileName, epwFile, epwSiteParString, tempHeight, windHeight, boundLayerPar, analysisPeriodStr, stHOY, untouchablePar, df_textGen, lb_preparation):
+    #Extract the latitude, longitude, and start temperature for the analysis period fromt he EPW file.
+    locationData = lb_preparation.epwLocation(epwFile)
+    latitude = locationData[1]
+    longitude = locationData[2]
+    
+    dbTemp = []
+    epwfile = open(epwFile,"r")
+    lnum = 1 # line number
+    for line in epwfile:
+        if lnum > 8:
+            dbTemp.append(float(line.split(',')[6]))
+        lnum += 1
+    epwfile.close()
+    startTemp = dbTemp[stHOY]
+    
+    #Assemble the reference site string.
+    refSiteStr = '  <referenceSite>\n'
+    refSiteStr = refSiteStr + '    <latitude>' + str(latitude) + '</latitude>\n'
+    refSiteStr = refSiteStr + '    <longitude>' + str(longitude) + '</longitude>\n'
+    refSiteStr = refSiteStr + epwSiteParString
+    refSiteStr = refSiteStr + '  </referenceSite>\n'
+    
+    #Assemble the parameter string.
+    paramStr = '  <parameter>\n'
+    paramStr = paramStr + '    <tempHeight>' + str(tempHeight) + '</tempHeight>\n'
+    paramStr = paramStr + '    <windHeight>' + str(windHeight) + '</windHeight>\n'
+    paramStr = paramStr + untouchablePar
+    paramStr = paramStr + analysisPeriodStr
+    paramStr = paramStr + '  </parameter>\n'
+    
+    #Bring the whole string together.
+    xmlStr = _UWGParameters + refSiteStr + paramStr + '</xml_input>'
+    
+    #Replace the starting temperatures in the _UWGParameters with the starting temperature of the EPWFile.
+    xmlStrSplit = xmlStr.split('setByEPW')
+    newXmlStr = xmlStrSplit[0]
+    for count, string in enumerate(xmlStrSplit):
+        if count != 0: newXmlStr = newXmlStr + str(startTemp) + string
+    xmlStr = newXmlStr
+    
+    #Write the string into an XML file.
+    xmlFilePath = workingDir + xmlFileName
+    xmlFile = open(xmlFilePath, "w")
+    xmlFile.write(xmlStr)
+    xmlFile.close()
+    
+    #If the user has selected to run the UWG, run the XML and EPW through the UWG.
+    #if runUWG_:
+    #    #Copy the original epwfile into the direcotry.
+    #    epwFileName = 
+    #    if 
+    
+    
+    return xmlStr, xmlFilePath, None
+
+
+
+#Check to be sure that Dragonfly is flying.
+initCheck = False
+if sc.sticky.has_key("dragonfly_release"):
+    df_textGen = sc.sticky["dragonfly_UWGText"]()
+    lb_preparation = sc.sticky["ladybug_Preparation"]()
+    initCheck = True
+else:
+    if not sc.sticky.has_key("ladybug_release"):
+        warning = "You need to let Ladybug fly to use this component."
+        print warning
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+    if not sc.sticky.has_key("dragonfly_release"):
+        warning = "You need to let Dragonfly fly to use this component."
+        print warning
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+
+
+
+if initCheck == True and _writeXML == True and _epwFile and _UWGParameters:
+    checkData, workingDir, xmlFileName, epwFile, epwSiteParString, tempHeight, windHeight, boundLayerPar, analysisPeriodStr, stHOY, untouchablePar = checkTheInputs(df_textGen, lb_preparation)
+    if checkData == True:
+        xmlText, xmlFileAddress, epwFileAddress = main(workingDir, xmlFileName, epwFile, epwSiteParString, tempHeight, windHeight, boundLayerPar, analysisPeriodStr, stHOY, untouchablePar, df_textGen, lb_preparation)
+
