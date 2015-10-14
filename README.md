@@ -5,7 +5,7 @@ Dragonfly allows users to import several satellite image datasets into Rhino/Gra
 
 You need to have [Ladybug](https://github.com/mostaphaRoudsari/Ladybug) installed in order to run Dragonfly.
 
-It is also useful to have [Honeybee](https://github.com/mostaphaRoudsari/Honeybee) installed, which makes it easier to run the Dragonfly components that export to the Urban Weather Generator (UWG).
+It is also useful to have [Honeybee](https://github.com/mostaphaRoudsari/Honeybee) installed, which makes it easier to run the Dragonfly components that export to the [Urban Weather Generator (UWG)][https://github.com/hansukyang/UWG_Matlab].
 
 
 Licence
@@ -41,4 +41,6 @@ Contributors(a-z):
 [Mostapha Roudsari](https://github.com/mostapharoudsari)
 
 
-So many thanks to the Urban Microclimate Group at MIT, the IPCC and the LANDSAT, ASTER, SRTM and GPM projects at NASA!
+So many thanks to the [Urban Microclimate Group at MIT][http://urbanmicroclimate.scripts.mit.edu/index.php] and the [Urban Weather Gnerator Project][https://github.com/hansukyang/UWG_Matlab].
+
+Special thanks is also due to the IPCC and the LANDSAT, ASTER, SRTM and GPM projects at NASA!
