@@ -339,6 +339,7 @@ def main(workingDir, xmlFileName, epwFile, epwSiteParString, tempHeight, windHei
                 if startVegMonth != None and endVegMonth == None: endVegMonth = monCount+1
             else:
                 if startVegMonth == None: startVegMonth = monCount+1
+        if endVegMonth == None: endVegMonth = 12
         
         xmlStrSplit = xmlStr.split('findInEPW')
         newXmlStr = xmlStrSplit[0] + str(startVegMonth) + xmlStrSplit[1] + str(endVegMonth) + xmlStrSplit[2]

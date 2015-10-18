@@ -373,7 +373,7 @@ class UWGTextGeneration(object):
         
         self.defaultRefSitePar = '    <averageObstacleHeight>0.1</averageObstacleHeight>\n' + \
             '    <ruralRoad>\n' + \
-            '        <albedo>0.165</albedo>\n' + \
+            '        <albedo>0.25</albedo>\n' + \
             '        <emissivity>0.95</emissivity>\n' + \
             '        <materials name="Default">\n' + \
             '          <names>\n' + \
@@ -755,6 +755,7 @@ class UWGTextGeneration(object):
                     ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
                     albedo = 0.5
                     emissivity = 0.9
+        
         
         ### Build the construction string from the properties.
         #Start by building the header

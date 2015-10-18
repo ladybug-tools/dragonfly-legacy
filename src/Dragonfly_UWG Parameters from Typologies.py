@@ -218,7 +218,7 @@ def checkTheInputs(df_textGen, df_UWGGeo):
     if nonBldgHeat_:
         nonBldgSensHeat = nonBldgHeat_*(1-nonBldgLatentFract)
         nonBldgLatentHeat = nonBldgHeat_*(nonBldgLatentFract)
-        if nonBldgHeat < 0:
+        if nonBldgSensHeat < 0:
             checkData7 = False
             warning = "nonBldgHeat_ cannot be less than 0."
             print warning
