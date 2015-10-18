@@ -1,0 +1,24 @@
+Instructions for Installing Ladybug + Honeybee + Dragonfly:
+
+1. Make sure that you have a working copy of both Rhino and Grasshopper installed.
+
+2. Open Rhino and type "Grasshopper" into the command line (without quotations). Wait for grasshopper to load.
+
+3. Install GHPython 0.6.0.3 by downloading the file at this link (http://www.food4rhino.com/project/ghpython?ufh) and
+     drag the .gha file onto the Grasshopper canvas.
+
+4. Select and drag all of the Ladybug + Honeybee userObject files (download from http://www.food4rhino.com/project/ladybug-honeybee) onto your Grasshopper canvas.
+     You should see Ladybug and Honeybee appear as tabs on the grasshopper tool bar.
+
+5.Select and drag all of the Dragonfly userObject files (download from https://github.com/chriswmackey/Dragonfly/archive/master.zip) onto your Grasshopper canvas.
+     You should see Dragonfly appear as a tab on the grasshopper tool bar.
+	 
+6. Install EnergyPlus 8.3 to the root of your machine (C:\ ) by going to the EnergyPlus github
+     (https://github.com/NREL/EnergyPlus/releases/tag/v8.3.0), downloading the exe, and running it.
+     You should see the folder C:\EnergyPlusV8-3-0 appear on your system, indicating a successful install.
+
+7. Install the urban weather generator (UWG) by downloading the exe from this link and running it:
+	(https://github.com/chriswmackey/Dragonfly/blob/master/UWG/UWGEngine.exe?raw=true)
+
+8. Download the following zip file, place it at the root of your machine (C:\ ) and unzip it.
+	(https://github.com/chriswmackey/Dragonfly/blob/master/UWG/UWG.zip?raw=true).

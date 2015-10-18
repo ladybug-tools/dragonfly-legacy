@@ -46,7 +46,7 @@ Provided by Dragonfly 0.0.01
 
 ghenv.Component.Name = "Dragonfly_Dragonfly"
 ghenv.Component.NickName = 'Dragonfly'
-ghenv.Component.Message = 'VER 0.0.01\nOCT_12_2015'
+ghenv.Component.Message = 'VER 0.0.01\nOCT_17_2015'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "0 | Dragonfly"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -368,8 +368,8 @@ class UWGTextGeneration(object):
         self.defaultVegStr = '    <treeLatent>0.7</treeLatent>\n' + \
         '    <grassLatent>0.6</grassLatent>\n' + \
         '    <vegAlbedo>0.25</vegAlbedo>\n' + \
-        '    <vegStart>1</vegStart>\n' + \
-        '    <vegEnd>12</vegEnd>\n'
+        '    <vegStart>findInEPW</vegStart>\n' + \
+        '    <vegEnd>findInEPW</vegEnd>\n'
         
         self.defaultRefSitePar = '    <averageObstacleHeight>0.1</averageObstacleHeight>\n' + \
             '    <ruralRoad>\n' + \
@@ -400,9 +400,214 @@ class UWGTextGeneration(object):
             '    <wgmax>0.005</wgmax>\n' + \
             '    <exCoeff>0.3</exCoeff>\n'
     
-    def createBlankTypology(self, typNum):
+    def createBlankTypology2(self, typNum):
+        blankTypo = '  <typology2 dist="0" name="blankTypology2">\n' + \
+            '    <dist>0</dist>\n' + \
+            '    <construction>\n' + \
+            '      <wall>\n' + \
+            '        <albedo>0.5</albedo>\n' + \
+            '        <emissivity>0.5</emissivity>\n' + \
+            '        <materials name="Boston C Wall">\n' + \
+            '          <names>\n' + \
+            '            <item>Stucco</item>\n' + \
+            '            <item>Concrete HW</item>\n' + \
+            '            <item>Insulation</item>\n' + \
+            '            <item>Gypsum</item>\n' + \
+            '          </names>\n' + \
+            '          <thermalConductivity>\n' + \
+            '            <item>0.69</item>\n' + \
+            '            <item>1.31</item>\n' + \
+            '            <item>0.5</item>\n' + \
+            '            <item>0.16</item>\n' + \
+            '          </thermalConductivity>\n' + \
+            '          <volumetricHeatCapacity>\n' + \
+            '            <item>1555146</item>\n' + \
+            '            <item>1874432</item>\n' + \
+            '            <item>221752</item>\n' + \
+            '            <item>651467</item>\n' + \
+            '          </volumetricHeatCapacity>\n' + \
+            '          <thickness>[0.03,0.2,0.05,0.01]</thickness>\n' + \
+            '        </materials>\n' + \
+            '        <vegetationCoverage>0</vegetationCoverage>\n' + \
+            '        <inclination>0</inclination>\n' + \
+            '        <initialTemperature>20</initialTemperature>\n' + \
+            '      </wall>\n' + \
+            '      <roof>\n' + \
+            '        <albedo>0.2</albedo>\n' + \
+            '        <emissivity>0.2</emissivity>\n' + \
+            '        <materials name="Boston C Roof">\n' + \
+            '          <names>\n' + \
+            '            <item>Roof Membrane</item>\n' + \
+            '            <item>Metal Decking</item>\n' + \
+            '            <item></item>\n' + \
+            '          </names>\n' + \
+            '          <thermalConductivity>\n' + \
+            '            <item>0.16</item>\n' + \
+            '            <item>45.01</item>\n' + \
+            '          </thermalConductivity>\n' + \
+            '          <volumetricHeatCapacity>\n' + \
+            '            <item>1637083</item>\n' + \
+            '            <item>3213312</item>\n' + \
+            '          </volumetricHeatCapacity>\n' + \
+            '          <thickness>[0.01,0.0015]</thickness>\n' + \
+            '        </materials>\n' + \
+            '        <vegetationCoverage>0.2</vegetationCoverage>\n' + \
+            '        <inclination>1</inclination>\n' + \
+            '        <initialTemperature>20</initialTemperature>\n' + \
+            '      </roof>\n' + \
+            '      <mass>\n' + \
+            '        <albedo>0.5</albedo>\n' + \
+            '        <emissivity>0.5</emissivity>\n' + \
+            '        <materials name="Boston C IM">\n' + \
+            '          <names>\n' + \
+            '            <item>Concrete HW</item>\n' + \
+            '          </names>\n' + \
+            '          <thermalConductivity>\n' + \
+            '            <item>1.31</item>\n' + \
+            '          </thermalConductivity>\n' + \
+            '          <volumetricHeatCapacity>\n' + \
+            '            <item>1874432</item>\n' + \
+            '          </volumetricHeatCapacity>\n' + \
+            '          <thickness>[0.1]</thickness>\n' + \
+            '        </materials>\n' + \
+            '        <vegetationCoverage>0</vegetationCoverage>\n' + \
+            '        <inclination>1</inclination>\n' + \
+            '        <initialTemperature>20</initialTemperature>\n' + \
+            '      </mass>\n' + \
+            '      <glazing name="Boston C">\n' + \
+            '        <glazingRatio>0.212</glazingRatio>\n' + \
+            '        <windowUvalue>3.24</windowUvalue>\n' + \
+            '        <windowSHGC>0.39</windowSHGC>\n' + \
+            '      </glazing>\n' + \
+            '    </construction>\n' + \
+            '    <building name="BOS Commericial">\n' + \
+            '      <floorHeight>3</floorHeight>\n' + \
+            '      <dayInternalGains>24.7145454545455</dayInternalGains>\n' + \
+            '      <nightInternalGains>5.58725274725274</nightInternalGains>\n' + \
+            '      <radiantFraction>0.5</radiantFraction>\n' + \
+            '      <latentFraction>0.09</latentFraction>\n' + \
+            '      <infiltration>0.176785714285714</infiltration>\n' + \
+            '      <ventilation>1</ventilation>\n' + \
+            '      <coolingSystemType>air</coolingSystemType>\n' + \
+            '      <coolingCOP>3.7</coolingCOP>\n' + \
+            '      <daytimeCoolingSetPoint>25</daytimeCoolingSetPoint>\n' + \
+            '      <nighttimeCoolingSetPoint>26</nighttimeCoolingSetPoint>\n' + \
+            '      <daytimeHeatingSetPoint>20</daytimeHeatingSetPoint>\n' + \
+            '      <nighttimeHeatingSetPoint>17</nighttimeHeatingSetPoint>\n' + \
+            '      <coolingCapacity>205</coolingCapacity>\n' + \
+            '      <heatingEfficiency>0.8</heatingEfficiency>\n' + \
+            '      <nightSetStart>19</nightSetStart>\n' + \
+            '      <nightSetEnd>5</nightSetEnd>\n' + \
+            '      <heatReleasedToCanyon>0</heatReleasedToCanyon>\n' + \
+            '      <initialT>20</initialT>\n' + \
+            '    </building>\n' + \
+            '  </typology2>\n'
         
-        blankTypo = '  <typology' + str(typNum) +' dist="0" name="commercial2">\n' + \
+        return blankTypo
+    
+    
+    def createBlankTypology3(self, typNum):
+        blankTypo = '  <typology3 dist="0" name="blankTypology3">\n' + \
+            '    <dist>0</dist>\n' + \
+            '    <construction>\n' + \
+            '      <wall>\n' + \
+            '        <albedo>0.52</albedo>\n' + \
+            '        <emissivity>0.5</emissivity>\n' + \
+            '        <materials>\n' + \
+            '          <names>\n' + \
+            '            <item>Wood Siding</item>\n' + \
+            '          </names>\n' + \
+            '          <thermalConductivity>\n' + \
+            '            <item>0.11</item>\n' + \
+            '          </thermalConductivity>\n' + \
+            '          <volumetricHeatCapacity>\n' + \
+            '            <item>658990</item>\n' + \
+            '          </volumetricHeatCapacity>\n' + \
+            '          <thickness>[0.2]</thickness>\n' + \
+            '        </materials>\n' + \
+            '        <vegetationCoverage>0</vegetationCoverage>\n' + \
+            '        <inclination>0</inclination>\n' + \
+            '        <initialTemperature>20</initialTemperature>\n' + \
+            '      </wall>\n' + \
+            '      <roof>\n' + \
+            '        <albedo>0.1</albedo>\n' + \
+            '        <emissivity>0</emissivity>\n' + \
+            '        <materials name="Boston R Roof">\n' + \
+            '          <names>\n' + \
+            '            <item>Roof Membrane</item>\n' + \
+            '            <item>Insulation</item>\n' + \
+            '            <item>Metal Decking</item>\n' + \
+            '          </names>\n' + \
+            '          <thermalConductivity>\n' + \
+            '            <item>0.16</item>\n' + \
+            '            <item>0.5</item>\n' + \
+            '            <item>45.01</item>\n' + \
+            '          </thermalConductivity>\n' + \
+            '          <volumetricHeatCapacity>\n' + \
+            '            <item>1637083</item>\n' + \
+            '            <item>221752</item>\n' + \
+            '            <item>3213312</item>\n' + \
+            '          </volumetricHeatCapacity>\n' + \
+            '          <thickness>[0.01,0.1273,0.0015]</thickness>\n' + \
+            '        </materials>\n' + \
+            '        <vegetationCoverage>0.2</vegetationCoverage>\n' + \
+            '        <inclination>1</inclination>\n' + \
+            '        <initialTemperature>20</initialTemperature>\n' + \
+            '      </roof>\n' + \
+            '      <mass>\n' + \
+            '        <albedo>0.5</albedo>\n' + \
+            '        <emissivity>0.5</emissivity>\n' + \
+            '        <materials name="Boston R IM">\n' + \
+            '          <names>\n' + \
+            '            <item>Concrete HW</item>\n' + \
+            '          </names>\n' + \
+            '          <thermalConductivity>\n' + \
+            '            <item>1.31</item>\n' + \
+            '          </thermalConductivity>\n' + \
+            '          <volumetricHeatCapacity>\n' + \
+            '            <item>1874432</item>\n' + \
+            '          </volumetricHeatCapacity>\n' + \
+            '          <thickness>[0.1]</thickness>\n' + \
+            '        </materials>\n' + \
+            '        <vegetationCoverage>0</vegetationCoverage>\n' + \
+            '        <inclination>1</inclination>\n' + \
+            '        <initialTemperature>20</initialTemperature>\n' + \
+            '      </mass>\n' + \
+            '      <glazing name="Boston R">\n' + \
+            '        <glazingRatio>0.15</glazingRatio>\n' + \
+            '        <windowUvalue>3.8</windowUvalue>\n' + \
+            '        <windowSHGC>0.39</windowSHGC>\n' + \
+            '      </glazing>\n' + \
+            '    </construction>\n' + \
+            '    <building name="BOS Commericial">\n' + \
+            '      <floorHeight>3</floorHeight>\n' + \
+            '      <dayInternalGains>24.7145454545455</dayInternalGains>\n' + \
+            '      <nightInternalGains>5.58725274725274</nightInternalGains>\n' + \
+            '      <radiantFraction>0.5</radiantFraction>\n' + \
+            '      <latentFraction>0.09</latentFraction>\n' + \
+            '      <infiltration>0.176785714285714</infiltration>\n' + \
+            '      <ventilation>1</ventilation>\n' + \
+            '      <coolingSystemType>air</coolingSystemType>\n' + \
+            '      <coolingCOP>3.7</coolingCOP>\n' + \
+            '      <daytimeCoolingSetPoint>25</daytimeCoolingSetPoint>\n' + \
+            '      <nighttimeCoolingSetPoint>26</nighttimeCoolingSetPoint>\n' + \
+            '      <daytimeHeatingSetPoint>20</daytimeHeatingSetPoint>\n' + \
+            '      <nighttimeHeatingSetPoint>17</nighttimeHeatingSetPoint>\n' + \
+            '      <coolingCapacity>205</coolingCapacity>\n' + \
+            '      <heatingEfficiency>0.8</heatingEfficiency>\n' + \
+            '      <nightSetStart>19</nightSetStart>\n' + \
+            '      <nightSetEnd>5</nightSetEnd>\n' + \
+            '      <heatReleasedToCanyon>0</heatReleasedToCanyon>\n' + \
+            '      <initialT>20</initialT>\n' + \
+            '    </building>\n' + \
+            '  </typology3>\n'
+        
+        return blankTypo
+    
+    
+    def createBlankTypology4(self, typNum):
+        
+        blankTypo = '  <typology' + str(typNum) +' dist="0" name="commercial' + str(typNum) + '">\n' + \
             '    <dist>0</dist>\n' + \
             '    <construction>\n' + \
             '      <wall>\n' + \
@@ -477,7 +682,7 @@ class UWGTextGeneration(object):
             '        <windowSHGC>0.39</windowSHGC>\n' + \
             '      </glazing>\n' + \
             '    </construction>\n' + \
-            '    <building name="BOS Commericial">\n' + \
+            '    <building name="BOS Commercial' + str(typNum) + 'Bldg">\n' + \
             '      <floorHeight>3</floorHeight>\n' + \
             '      <dayInternalGains>24.7145454545455</dayInternalGains>\n' + \
             '      <nightInternalGains>5.58725274725274</nightInternalGains>\n' + \
@@ -536,6 +741,20 @@ class UWGTextGeneration(object):
                 if count == 0:
                     albedo = values[4]
                     emissivity = values[3]
+            
+            elif values[0] == 'Material:AirGap':
+                #Typical Air EP Material.
+                conductivities.append(1/float(values[1]))
+                heatCapacities.append(1.211025)
+                thicknesses.append(0.1)
+                
+                #If it's the outer-most construction, that's really frickin' weird.  Tell the user they did something worng!
+                if count == 0:
+                    warning = "You have input a material or zone that has an air resistance material on the outer layer.  \n I have no idea what reflectance or emissivity you want me to use for this material. \n Please use constructions that make sense."
+                    print warning
+                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+                    albedo = 0.5
+                    emissivity = 0.9
         
         ### Build the construction string from the properties.
         #Start by building the header
@@ -738,8 +957,8 @@ if checkIn.letItFly:
         folders = df_findFolders()
         sc.sticky["dragonfly_folders"] = {}
         if folders.UWGPath == None:
-            if os.path.isdir("c:\\Program Files (x86)\\UWG"):
-                folders.UWGPath = "c:\\Program Files (x86)\\UWG"
+            if os.path.isdir("c:\\UWG\\"):
+                folders.UWGPath = "c:\\UWG\\"
             else:
                 msg1 = "Dragonfly cannot find the Urban Weather Generator (UWG) folder on your system.\n" + \
                      "Make sure you have the Urban Weather Generator (UWG) installed on your system.\n" + \
@@ -753,8 +972,8 @@ if checkIn.letItFly:
                 
                 folders.UWGPath = ""
         
-        if os.path.isdir("c:\\Program Files (x86)\\MATLAB\\MATLAB Runtime\\v85"):
-            folders.matlabPath = "c:\\Program Files (x86)\\MATLAB\\MATLAB Runtime\\v85"
+        if os.path.isdir("c:\\Program Files\\MATLAB\\MATLAB Runtime\\v90\\"):
+            folders.matlabPath = "c:\\Program Files\\MATLAB\\MATLAB Runtime\\v90\\"
         else:
             
             msg3 = "Dragonfly cannot find the 32-bits version of the Matlab Runtime Compiler v8.5 (MRC 8.5) in your system. \n" + \
@@ -776,4 +995,5 @@ if checkIn.letItFly:
         
         print "Hi " + os.getenv("USERNAME")+ "!\n" + \
               "Dragonfly is Flying! Vviiiiiiizzz...\n\n" + \
-              "Default path is set to: " + sc.sticky["Dragonfly_DefaultFolder"]
+              "Default path is set to: " + sc.sticky["Dragonfly_DefaultFolder"] + "\n" + \
+              "UWGEngine path is set to: " + sc.sticky["dragonfly_folders"]["UWGPath"]

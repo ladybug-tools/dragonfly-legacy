@@ -53,7 +53,7 @@ Provided by Dragonfly 0.0.01
 
 ghenv.Component.Name = "Dragonfly_Run Urban Weather Generator"
 ghenv.Component.NickName = 'RunUWG'
-ghenv.Component.Message = 'VER 0.0.01\nOCT_12_2015'
+ghenv.Component.Message = 'VER 0.0.01\nOCT_17_2015'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "2 | GenerateUrbanClimate"
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
@@ -64,6 +64,7 @@ except: pass
 import scriptcontext as sc
 import Rhino as rc
 import os
+import shutil
 
 from clr import AddReference
 AddReference('Grasshopper')
@@ -93,10 +94,26 @@ def checkTheInputs(df_textGen, lb_preparation):
         print warning
         ghenv.Component.AddRuntimeMessage(w, warning)
     
+    #Set a default filename.
+    if _xmlFileName_:
+        if _xmlFileName_.endswith('.xml'):
+            xmlFileName = _xmlFileName_
+            simName = _xmlFileName_.replace('.xml', "")	
+        else:
+            xmlFileName = _xmlFileName_ + '.xml'
+            simName = _xmlFileName_
+    else:
+        xmlFileName = 'unnamed.xml'
+        simName = 'unnamed'
+    
+    
     #Check if there is a workingDir connected and, if not set a default. Create the directory on the person's system. 
     checkData3 = True
-    if _workingDir_: workingDir = _workingDir_
-    else: workingDir = sc.sticky["Ladybug_DefaultFolder"] + 'unnamed\\UWG\\'
+    if _workingDir_:
+        if _workingDir_.endswith('\\'): workingDir = _workingDir_ + simName + '\\UWG\\'
+        else: workingDir = _workingDir_ + '\\' + simName + '\\UWG\\'
+    else:
+        workingDir = sc.sticky["Ladybug_DefaultFolder"] + simName + '\\UWG\\'
     if not os.path.exists(workingDir):
         try:
             os.makedirs(workingDir)
@@ -108,11 +125,6 @@ def checkTheInputs(df_textGen, lb_preparation):
             ghenv.Component.AddRuntimeMessage(w, warning)
     print 'Current working directory is set to: ' + workingDir
     
-    #Set a default filename.
-    if _xmlFileName_:
-        if _xmlFileName_.endswith('.xml'): xmlFileName = _xmlFileName_
-        else: xmlFileName = _xmlFileName_ + '.xml'
-    else: xmlFileName = 'unnamed.xml'
     
     #Check the epwSitePar_ and, if there are none, set default ones.
     checkData4 = True
@@ -140,16 +152,18 @@ def checkTheInputs(df_textGen, lb_preparation):
     
     #Check the analysisPeriod and, if there is none, run the simulation for the whole year.
     if analysisPeriod_:
-        stMonth, stDay, stHour, endMonth, endDay, endHour = lb_preparation.readRunPeriod(analysisPeriod)
+        stMonth, stDay, stHour, endMonth, endDay, endHour = lb_preparation.readRunPeriod(analysisPeriod_)
         startDOY = int(lb_preparation.getJD(stMonth, stDay))
         endDOY = int(lb_preparation.getJD(endMonth, endDay))
-        simDuration = endDOY - startDOY
+        simDuration = endDOY - startDOY + 1
         stHOY = lb_preparation.date2Hour(stMonth, stDay, 1)
+        analysisPeriod = analysisPeriod_
     else:
         stMonth = 1
         stDay = 1
         simDuration = 365
         stHOY = 1
+        analysisPeriod = [(1,1,1),(12,31,24)]
     analysisPeriodStr = '    <simuStartMonth>' + str(stMonth) + '</simuStartMonth>\n' +\
                         '    <simuStartDay>' + str(stDay) + '</simuStartDay>\n' +\
                         '    <simuDuration>' + str(simDuration) + '</simuDuration>\n'
@@ -164,10 +178,98 @@ def checkTheInputs(df_textGen, lb_preparation):
     if checkData1 == True and checkData2 == True and checkData3 == True and checkData4 == True  and checkData5 == True:
         checkData = True
     
-    return checkData, workingDir, xmlFileName, _epwFile, epwSiteParString, tempHeight, windHeight, boundLayerPar_, analysisPeriodStr, stHOY, untouchablePar
+    return checkData, workingDir, xmlFileName, _epwFile, epwSiteParString, tempHeight, windHeight, boundLayerPar_, analysisPeriodStr, stHOY, analysisPeriod, untouchablePar
 
 
-def main(workingDir, xmlFileName, epwFile, epwSiteParString, tempHeight, windHeight, boundLayerPar, analysisPeriodStr, stHOY, untouchablePar, df_textGen, lb_preparation):
+def writeBatchFile(workingDir, xmlFileName, epwFileAddress, newEPWFileName, UWGDirectory = 'C:\\UWG', runInBackground = False):
+    
+    workingDrive = workingDir[:2]
+    
+    epwFileName = epwFileAddress.split('\\')[-1]
+    epwFileDir = epwFileAddress.split(epwFileName)[0]
+    
+    if not workingDir.EndsWith('\\'): workingDir = workingDir + '\\'
+    
+    if xmlFileName.EndsWith('.xml'):  shXMLFileName = xmlFileName.replace('.xml', '')
+    else: shXMLFileName = xmlFileName
+    
+    fullPath = workingDir + shXMLFileName
+    
+    folderName = workingDir.replace( (workingDrive + '\\'), '')
+    
+    batchStr = workingDrive + '\ncd\\' +  folderName + '\n' + UWGDirectory + \
+            '\UWGEngine ' + epwFileDir + ' ' + epwFileName + ' ' + workingDir + ' ' + xmlFileName + ' ' + workingDir + ' ' + newEPWFileName
+    
+    batchFileAddress = fullPath +'.bat'
+    batchfile = open(batchFileAddress, 'w')
+    batchfile.write(batchStr)
+    batchfile.close()
+    
+    #execute the batch file
+    if runInBackground:		
+        self.runCmd(batchFileAddress)		
+    else:		
+        os.system(batchFileAddress)		
+
+def runCmd(batchFileAddress, shellKey = True):
+    batchFileAddress.replace("\\", "/")		
+    p = subprocess.Popen(["cmd /c ", batchFileAddress], shell=shellKey, stdout=subprocess.PIPE, stderr=subprocess.PIPE)		
+    out, err = p.communicate()		
+
+def reOrderEPWData(originalEpwFile, newEPWFile, analysisPeriod, workingDir, lb_preparation):
+    #Get the hours of the analysis period and turn them into lines of the EPW.
+    headerReplaceLines = []
+    headerLineNum = 6
+    HOYS, months, days = lb_preparation.getHOYsBasedOnPeriod(analysisPeriod, 1)
+    for hour in HOYS: headerReplaceLines.append(hour+headerLineNum)
+    
+    #Make a new EPW and write the appropriate lines into it.
+    finalEWPFileName = newEPWFile.split('\\')[-1].split('.epw')[0]
+    finalEWPFileName = finalEWPFileName + '-' + str(analysisPeriod[0][0])+ str(analysisPeriod[0][1])+ str(analysisPeriod[0][2]) + '-' + str(analysisPeriod[1][0])+ str(analysisPeriod[1][1])+ str(analysisPeriod[1][2]) + '.epw'
+    finalFilePath = workingDir + finalEWPFileName
+    finalFile = open(finalFilePath, "w")
+    originalFile = open(originalEpwFile, "r")
+    newFile = open(newEPWFile, "r")
+    
+    #Grab the parts from the original EPW to keep.
+    originalEPWLines1 = []
+    originalEPWLines2 = []
+    periodTrigger = False
+    lastVal = False
+    for lineCount, line in enumerate(originalFile):
+        if lineCount not in headerReplaceLines and periodTrigger == False: originalEPWLines1.append(line)
+        elif lineCount not in headerReplaceLines and periodTrigger == True:
+            if lastVal == False: originalEPWLines2.append(line)
+            lastVal = False
+        else:
+            if periodTrigger == False: originalEPWLines1.append(line)
+            periodTrigger = True
+            lastVal = True
+    
+    #Grab the parts from the new EPW to insert.
+    maxLine = len(HOYS) + 8
+    newEPWLines = []
+    for lineCountNew, newLine in enumerate(newFile):
+        if lineCountNew > 7 and lineCountNew < maxLine: newEPWLines.append(newLine)
+    
+    #Build the new EPW file.
+    for line in originalEPWLines1: finalFile.write(line)
+    for line in newEPWLines:
+        finalFile.write(line)
+    for line in originalEPWLines2: finalFile.write(line)
+    
+    finalFile.close()
+    originalFile.close()
+    newFile.close()
+    
+    #Delete the old epw file.
+    os.remove(newEPWFile)
+    
+    
+    return finalFilePath
+
+
+def main(workingDir, xmlFileName, epwFile, epwSiteParString, tempHeight, windHeight, boundLayerPar, analysisPeriodStr, stHOY, analysisPeriod, untouchablePar, df_textGen, lb_preparation):
     #Extract the latitude, longitude, and start temperature for the analysis period fromt he EPW file.
     locationData = lb_preparation.epwLocation(epwFile)
     latitude = locationData[1]
@@ -198,6 +300,7 @@ def main(workingDir, xmlFileName, epwFile, epwSiteParString, tempHeight, windHei
     paramStr = paramStr + analysisPeriodStr
     paramStr = paramStr + '  </parameter>\n'
     
+    
     #Bring the whole string together.
     xmlStr = _UWGParameters + refSiteStr + paramStr + '</xml_input>'
     
@@ -208,6 +311,39 @@ def main(workingDir, xmlFileName, epwFile, epwSiteParString, tempHeight, windHei
         if count != 0: newXmlStr = newXmlStr + str(startTemp) + string
     xmlStr = newXmlStr
     
+    #If the vegetation start and end months are supposed to be defined by the EPW, try to do that.
+    if 'findInEPW' in xmlStr:
+        #Define a average monthly temperature above which vegetation participates.
+        thresholdTemp = 10
+        
+        monthTemps = [[]]
+        monthNum = 0
+        monthTracker = 0
+        for count, temp in enumerate(dbTemp):
+            if monthTracker < 730:
+                monthTemps[monthNum].append(temp)
+                monthTracker += 1
+            else:
+                monthTracker = 0
+                monthNum +=1
+                monthTemps.append([])
+                monthTemps[monthNum].append(temp)
+        avgMonthTemps = []
+        for monthList in monthTemps:
+            avgMonthTemps.append(sum(monthList)/len(monthList))
+        
+        startVegMonth = None
+        endVegMonth = None
+        for monCount, temp in enumerate(avgMonthTemps):
+            if temp < thresholdTemp:
+                if startVegMonth != None and endVegMonth == None: endVegMonth = monCount+1
+            else:
+                if startVegMonth == None: startVegMonth = monCount+1
+        
+        xmlStrSplit = xmlStr.split('findInEPW')
+        newXmlStr = xmlStrSplit[0] + str(startVegMonth) + xmlStrSplit[1] + str(endVegMonth) + xmlStrSplit[2]
+        xmlStr = newXmlStr
+    
     #Write the string into an XML file.
     xmlFilePath = workingDir + xmlFileName
     xmlFile = open(xmlFilePath, "w")
@@ -215,13 +351,18 @@ def main(workingDir, xmlFileName, epwFile, epwSiteParString, tempHeight, windHei
     xmlFile.close()
     
     #If the user has selected to run the UWG, run the XML and EPW through the UWG.
-    #if runUWG_:
-    #    #Copy the original epwfile into the direcotry.
-    #    epwFileName = 
-    #    if 
+    newEPWFileDirectory = None
+    if runUWG_:
+        #Copy the original epwfile into the direcotry.
+        newEPWFileName = xmlFileName.split('.xml')[0] + '_' + epwFile.split('\\')[-1]
+        newEPWFileDirectory = workingDir + newEPWFileName
+        writeBatchFile(workingDir, xmlFileName, epwFile, newEPWFileName, sc.sticky["dragonfly_folders"]["UWGPath"])
+        #If the analysis period is not set for the whole year, I have to place the simulated time period correctly in the new weather file
+        #(for some reason, the UWG likes to write the new time period from the start of the year.
+        if str(analysisPeriod[0]) == '(1,1,1)' and str(analysisPeriod[0]) == '(12,31,24)': pass
+        else: newEPWFileDirectory = reOrderEPWData(epwFile, newEPWFileDirectory, analysisPeriod, workingDir, lb_preparation)
     
-    
-    return xmlStr, xmlFilePath, None
+    return xmlStr, xmlFilePath, newEPWFileDirectory
 
 
 
@@ -244,7 +385,7 @@ else:
 
 
 if initCheck == True and _writeXML == True and _epwFile and _UWGParameters:
-    checkData, workingDir, xmlFileName, epwFile, epwSiteParString, tempHeight, windHeight, boundLayerPar, analysisPeriodStr, stHOY, untouchablePar = checkTheInputs(df_textGen, lb_preparation)
+    checkData, workingDir, xmlFileName, epwFile, epwSiteParString, tempHeight, windHeight, boundLayerPar, analysisPeriodStr, stHOY, analysisPeriod, untouchablePar = checkTheInputs(df_textGen, lb_preparation)
     if checkData == True:
-        xmlText, xmlFileAddress, epwFileAddress = main(workingDir, xmlFileName, epwFile, epwSiteParString, tempHeight, windHeight, boundLayerPar, analysisPeriodStr, stHOY, untouchablePar, df_textGen, lb_preparation)
+        xmlText, xmlFileAddress, epwFileAddress = main(workingDir, xmlFileName, epwFile, epwSiteParString, tempHeight, windHeight, boundLayerPar, analysisPeriodStr, stHOY, analysisPeriod, untouchablePar, df_textGen, lb_preparation)
 

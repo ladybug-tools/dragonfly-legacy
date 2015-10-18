@@ -75,7 +75,7 @@ Provided by Dragonfly 0.0.01
 
 ghenv.Component.Name = "Dragonfly_UWG Parameters from Typologies"
 ghenv.Component.NickName = 'UWGParFromTypology'
-ghenv.Component.Message = 'VER 0.0.01\nOCT_12_2015'
+ghenv.Component.Message = 'VER 0.0.01\nOCT_17_2015'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "2 | GenerateUrbanClimate"
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
@@ -113,15 +113,15 @@ def checkTheInputs(df_textGen, df_UWGGeo):
     typologyRatios = []
     if len(typologyRatios_) != 0:
         if len(typologyRatios_) == len(_buildingTypologies):
-            #if sum(typologyRatios_) <= 1.01 and sum(typologyRatios_) >= 0.99:
-            for count, ratio in enumerate(typologyRatios_):
-                if count != len(_buildingTypologies)-1: typologyRatios.append(int(round(ratio*100)))
-                else: typologyRatios.append(100-sum(typologyRatios))
-            checkData2 = True
-            #else:
-            #    warning = "The ratios connected to typologyRatios_ does not sum to 1. \n Make sure that your ratios sum to 1."
-            #    print warning
-            #    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+            if sum(typologyRatios_) <= 1.01 and sum(typologyRatios_) >= 0.99:
+                for count, ratio in enumerate(typologyRatios_):
+                    if count != len(_buildingTypologies)-1: typologyRatios.append(int(round(ratio*100)))
+                    else: typologyRatios.append(100-sum(typologyRatios))
+                checkData2 = True
+            else:
+                warning = "The ratios connected to typologyRatios_ does not sum to 1. \n Make sure that your ratios sum to 1."
+                print warning
+                ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
         else:
             warning = "The number of ratios connected to typologyRatios_ does not match \n the number of typologies connected to the _buildingTypologies input."
             print warning
@@ -129,7 +129,7 @@ def checkTheInputs(df_textGen, df_UWGGeo):
     else:
         if len(_buildingTypologies) == 1: typologyRatios = [100]
         if len(_buildingTypologies) == 2: typologyRatios = [50, 50]
-        if len(_buildingTypologies) == 3: typologyRatios = [33, 33, 34]
+        if len(_buildingTypologies) == 3: typologyRatios = [34, 33, 33]
         if len(_buildingTypologies) == 4: typologyRatios = [25, 25, 25, 25]
         print "No value has been connected for typologyRatios. \n It will be assumed that each typology occupies an equal part of the urban area."
         checkData2 = True
@@ -506,6 +506,134 @@ def getBldgAdjacencies(buildingBreps, srfNormalVecs):
     
     return newAjdacenList
 
+
+def createMatStr(name, thermalConduct, heatCapacity, thickness):
+    # Write in the material name.
+    constrStr = '          <names>\n'
+    constrStr = constrStr + '            <item>' + name + '</item>\n'
+    constrStr = constrStr + '          </names>\n'
+    
+    # Next, write in the thermal conductivity.
+    constrStr = constrStr + '          <thermalConductivity>\n'
+    constrStr = constrStr + '            <item>' + str(thermalConduct) + '</item>\n'
+    constrStr = constrStr + '          </thermalConductivity>\n'
+    
+    # Next, write in the heat capacity.
+    constrStr = constrStr + '          <volumetricHeatCapacity>\n'
+    constrStr = constrStr + '            <item>' + str(heatCapacity) + '</item>\n'
+    constrStr = constrStr + '          </volumetricHeatCapacity>\n'
+    
+    # Finally, write in the thickness.
+    constrStr = constrStr + '          <thickness>' +  str([float(thickness)]) + '</thickness>\n'
+    
+    
+    return constrStr
+
+def convertConstrsToOneMat(typology):
+    #Rebuild the 'dictionary' of material properties.
+    unchangingLines = [[]]
+    constructionLines = []
+    constrCount = -1
+    constrTrigger = False
+    
+    for line in typology.split('\n'):
+        if '<materials' in line:
+            constrTrigger = True
+            unchangingLines[constrCount+1].append(line)
+            constructionLines.append([])
+            constrCount += 1
+        elif '</materials>' in line:
+            constrTrigger = False
+            unchangingLines.append([])
+            unchangingLines[constrCount+1].append(line)
+        elif constrTrigger == False:
+            unchangingLines[constrCount+1].append(line)
+        elif constrTrigger == True:
+            constructionLines[constrCount].append(line)
+    
+    #Get the names, conductivity, thermal capacity and thickness of each construction.
+    names = []
+    thermalConduct = []
+    heatCapacity = []
+    thickness = []
+    
+    for constrCount, constrPropList in enumerate(constructionLines):
+        names.append([])
+        thermalConduct.append([])
+        heatCapacity.append([])
+        thickness.append([])
+        nameTrigger = False
+        conductTrigger = False
+        heatCapaTrigger = False
+        for props in constrPropList:
+            if '<names>' in props: nameTrigger = True
+            elif '<thermalConductivity>' in props:
+                nameTrigger = False
+                conductTrigger = True
+            elif '<volumetricHeatCapacity>' in props:
+                conductTrigger = False
+                heatCapaTrigger = True
+            elif '<thickness>' in props:
+                thickslist = props.split('<thickness>[')[-1].split(']</thickness>')[0].split(', ')
+                for val in thickslist:
+                    thickness[constrCount].append(float(val))
+            elif '</materials>' in props or '</names>' in props or '</volumetricHeatCapacity>' in props or '</thermalConductivity>' in props: pass
+            elif nameTrigger == True:
+                names[constrCount].append(props.split('<item>')[-1].split('</item>')[0])
+            elif conductTrigger == True:
+                thermalConduct[constrCount].append(float(props.split('<item>')[-1].split('</item>')[0]))
+            elif heatCapaTrigger == True:
+                heatCapacity[constrCount].append(float(props.split('<item>')[-1].split('</item>')[0]))
+    
+    #Put everytthing into final lists.
+    finalNames = []
+    finalThermalConduct = []
+    finalHeatCapacity = []
+    finalThickness = []
+    
+    for nameList in names:
+        finalName = ''
+        for name in nameList: finalName = finalName + name + '-'
+        finalNames.append(finalName)
+    
+    for thickList in thickness:
+        finalThickness.append(sum(thickList))
+    
+    for condCount, conductList in enumerate(thermalConduct):
+        rValList = []
+        for matCount, cond in enumerate(conductList):
+            rValList.append((1/cond)*thickness[condCount][matCount])
+        totalRVal = sum(rValList)
+        totalUVal = 1/totalRVal
+        totalCond = totalUVal*finalThickness[condCount]
+        finalThermalConduct.append(totalCond)
+    
+    for capCount, capList in enumerate(heatCapacity):
+        heatCapList = []
+        for matCount, cap in enumerate(capList):
+            heatCapList.append(cap*thickness[capCount][matCount])
+        totalCap = sum(heatCapList)/finalThickness[capCount]
+        finalHeatCapacity.append(totalCap)
+    
+    
+    #Build up new material strings from the new parameters.
+    newMatStrs = []
+    for constrCount, constr in enumerate(finalNames):
+        newMatStrs.append(createMatStr(constr, finalThermalConduct[constrCount], finalHeatCapacity[constrCount], finalThickness[constrCount]))
+    
+    #Rebuild everything back into one typology.
+    newTypology = ''
+    for lineListCount, lineList in enumerate(unchangingLines):
+        for line in lineList:
+            newTypology = newTypology + line + '\n'
+        if lineListCount != len(unchangingLines)-1:
+            newTypology = newTypology + newMatStrs[lineListCount]
+    
+    
+    return newTypology
+
+
+
 def main(buildingTypologies, buildingBreps, buildingBrepAreas, srfNormalVecs, typologyRatios, roofAngles, wallAngles, averageBuildingHeight, siteCoverageRatio, totalGrassCoverage, totalTreeCoverage, vegetationParString, pavementConstrString, nonBldgSensHeat, nonBldgLatentHeat, characteristicLength, totalTerrainArea):
     #Solve adjacencies between the building breps so that we don't have redundant facade surfaces in our facade-to-site ratio calculation.
     adjNumList = getBldgAdjacencies(buildingBreps, srfNormalVecs)
@@ -534,6 +662,13 @@ def main(buildingTypologies, buildingBreps, buildingBrepAreas, srfNormalVecs, ty
     
     #Compute the facade to site ratio by subtracting twice the building footprint from the total shape area.
     facade2SiteRatio = (sum(totalBuildingAreaList)-(2*sum(totalGroundAreaList)))/totalTerrainArea
+    
+    ### Put in a work-around for the bugginess of typology 3 in the UWG.
+    if len(buildingTypologies) > 2:
+        for count, typology in enumerate(buildingTypologies):
+            if count == 2 or count == 3:
+                newTypology = convertConstrsToOneMat(typology)
+                buildingTypologies[count] = newTypology
     
     
     #Create the urban area string.
@@ -591,6 +726,11 @@ def main(buildingTypologies, buildingBreps, buildingBrepAreas, srfNormalVecs, ty
         newTypString2 = newTypString1.replace('</typology1', strToReplace2)
         newBuildingTypologies.append(newTypString2)
     buildingTypologies = newBuildingTypologies
+    
+    #Add blank typologies to the UWGString.
+    if len(buildingTypologies) < 2: buildingTypologies =  buildingTypologies + [df_textGen.createBlankTypology2(2)]
+    if len(buildingTypologies) < 3: buildingTypologies =  buildingTypologies + [df_textGen.createBlankTypology3(3)]
+    if len(buildingTypologies) < 4: buildingTypologies =  buildingTypologies + [df_textGen.createBlankTypology4(4)]
     
     #Combine everything into one string.
     UWGPar = '<?xml version="1.0" encoding="utf-8"?>\n<xml_input>\n'
