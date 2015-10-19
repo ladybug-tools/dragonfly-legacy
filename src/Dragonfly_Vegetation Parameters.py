@@ -37,9 +37,73 @@ Provided by Dragonfly 0.0.01
 
 ghenv.Component.Name = "Dragonfly_Vegetation Parameters"
 ghenv.Component.NickName = 'vegetationPar'
-ghenv.Component.Message = 'VER 0.0.01\nSEP_29_2015'
+ghenv.Component.Message = 'VER 0.0.01\nOCT_17_2015'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "2 | GenerateUrbanClimate"
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "4"
 except: pass
+
+
+from clr import AddReference
+AddReference('Grasshopper')
+import Grasshopper.Kernel as gh
+
+
+#Set default parameters.
+checkData = True
+if vegStartMonth_:
+    if vegStartMonth_ > 0 and vegStartMonth_ <= 12: vegStartMonth = vegStartMonth_
+    else:
+        checkData = False
+        warning = "vegStartMonth_ must be between 1 and 12."
+        print warning
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+else: vegStartMonth = 'findInEPW'
+
+if vegEndMonth_:
+    if vegEndMonth_ > 0 and vegEndMonth_ <= 12: vegEndMonth = vegEndMonth_
+    else:
+        checkData = False
+        warning = "vegEndMonth_ must be between 1 and 12."
+        print warning
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+else: vegEndMonth = 'findInEPW'
+
+if vegetationAlbedo_:
+    if vegetationAlbedo_ >= 0 and vegetationAlbedo_ <= 1: vegAlbedo = vegetationAlbedo_
+    else:
+        checkData = False
+        warning = "vegetationAlbedo_ must be between 0 and 1."
+        print warning
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+else: vegAlbedo = 0.25
+
+if treeLatentFraction_:
+    if treeLatentFraction_ >= 0 and treeLatentFraction_ <= 1: treeLatentFraction = treeLatentFraction_
+    else:
+        checkData = False
+        warning = "treeLatentFraction_ must be between 0 and 1."
+        print warning
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+else: treeLatentFraction = 0.7
+
+if grassLatentFraction_:
+    if grassLatentFraction_ >= 0 and grassLatentFraction_ <= 1: grassLatentFraction = grassLatentFraction_
+    else:
+        checkData = False
+        warning = "grassLatentFraction_ must be between 0 and 1."
+        print warning
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+else: grassLatentFraction = 0.6
+
+
+
+if checkData == True:
+    vegetationPar = '    <treeLatent>' + str(treeLatentFraction) + '</treeLatent>\n' + \
+            '    <grassLatent>' + str(grassLatentFraction) + '</grassLatent>\n' + \
+            '    <vegAlbedo>' + str(vegAlbedo) + '</vegAlbedo>\n' + \
+            '    <vegStart>' + str(vegStartMonth) + '</vegStart>\n' + \
+            '    <vegEnd>' + str(vegEndMonth) + '</vegEnd>\n'
+
+

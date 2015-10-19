@@ -144,7 +144,7 @@ def checkTheInputs(df_textGen, lb_preparation):
     #Check the boundLayerPar_ and, if there are none, leave the default ones.
     checkData5 = True
     if boundLayerPar_:
-        if not boundLayerPar_.startswit('    <daytimeBLHeight>'):
+        if not boundLayerPar_.startswith('    <daytimeBLHeight>'):
             checkData5 = False
             warning =  'boundLayerPar_ is not valid.'
             print warning
@@ -300,11 +300,17 @@ def main(workingDir, xmlFileName, epwFile, epwSiteParString, tempHeight, windHei
     paramStr = paramStr + analysisPeriodStr
     paramStr = paramStr + '  </parameter>\n'
     
+    #Insert the boundary layer par.
+    if boundLayerPar:
+        UWGParametersSplit = _UWGParameters.split("    <daytimeBLHeight>700</daytimeBLHeight>\n    <nighttimeBLHeight>80</nighttimeBLHeight>\n    <refHeight>150</refHeight>\n")
+        UWGParameters = UWGParametersSplit[0] + boundLayerPar + UWGParametersSplit[-1]
+    else:
+        UWGParameters = _UWGParameters
     
     #Bring the whole string together.
-    xmlStr = _UWGParameters + refSiteStr + paramStr + '</xml_input>'
+    xmlStr = UWGParameters + refSiteStr + paramStr + '</xml_input>'
     
-    #Replace the starting temperatures in the _UWGParameters with the starting temperature of the EPWFile.
+    #Replace the starting temperatures in the UWGParameters with the starting temperature of the EPWFile.
     xmlStrSplit = xmlStr.split('setByEPW')
     newXmlStr = xmlStrSplit[0]
     for count, string in enumerate(xmlStrSplit):

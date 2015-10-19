@@ -35,9 +35,22 @@ Provided by Dragonfly 0.0.01
 
 ghenv.Component.Name = "Dragonfly_Boundary Layer Parameters"
 ghenv.Component.NickName = 'boundaryLayerPar'
-ghenv.Component.Message = 'VER 0.0.01\nSEP_29_2015'
+ghenv.Component.Message = 'VER 0.0.01\nOCT_17_2015'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "2 | GenerateUrbanClimate"
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "4"
 except: pass
+
+
+#Set default parameters.
+if dayBndLayerHeight_: dayBndLayerHeight = dayBndLayerHeight_
+else: dayBndLayerHeight = 700
+if nightBndLayerHeight_: nightBndLayerHeight = nightBndLayerHeight_
+else: nightBndLayerHeight = 80
+if referenceHeight_: referenceHeight = referenceHeight_
+else: referenceHeight = 150
+
+boundLayerPar = "    <daytimeBLHeight>" + str(dayBndLayerHeight) + "</daytimeBLHeight>\n"
+boundLayerPar = boundLayerPar + "    <nighttimeBLHeight>" + str(nightBndLayerHeight) + "</nighttimeBLHeight>\n"
+boundLayerPar = boundLayerPar + "    <refHeight>" + str(referenceHeight) + "</refHeight>\n"

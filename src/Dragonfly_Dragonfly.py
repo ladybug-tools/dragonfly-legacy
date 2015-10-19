@@ -728,23 +728,23 @@ class UWGTextGeneration(object):
                 
                 #If it's the outer-most construction, grab it's albedo and emissivity.
                 if count == 0:
-                    albedo = values[7]
+                    albedo = 1 - float(values[7])
                     emissivity = values[6]
             elif values[0] == 'Material:NoMass':
-                #Typical NoMass EP Opaque Material.
+                #Typical NoMass EP Opaque Material.  I took heat capacities and thickness here from a roof membrane material.
                 print "You have connected a zone with a NoMass material but the UWG requires that all constructions have a mass.  As such, a very low heat cpacity of 1 J/m3-K will be used."
-                conductivities.append(1/float(values[2]))
-                heatCapacities.append(1)
-                thicknesses.append(0.1)
+                conductivities.append((1/float(values[2]))*0.01)
+                heatCapacities.append(1637083)
+                thicknesses.append(0.01)
                 
                 #If it's the outer-most construction, grab it's albedo and emissivity.
                 if count == 0:
-                    albedo = values[4]
+                    albedo = 1 - float(values[4])
                     emissivity = values[3]
             
             elif values[0] == 'Material:AirGap':
                 #Typical Air EP Material.
-                conductivities.append(1/float(values[1]))
+                conductivities.append(0.1/float(values[1]))
                 heatCapacities.append(1.211025)
                 thicknesses.append(0.1)
                 
