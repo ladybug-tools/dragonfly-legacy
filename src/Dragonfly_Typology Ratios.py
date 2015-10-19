@@ -43,7 +43,7 @@ Provided by Dragonfly 0.0.01
 
 ghenv.Component.Name = "Dragonfly_Typology Ratios"
 ghenv.Component.NickName = 'TypologyRatios'
-ghenv.Component.Message = 'VER 0.0.57\nOCT_17_2015'
+ghenv.Component.Message = 'VER 0.0.57\nOCT_18_2015'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "2 | GenerateUrbanClimate"
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015

@@ -75,7 +75,7 @@ Provided by Dragonfly 0.0.01
 
 ghenv.Component.Name = "Dragonfly_UWG Parameters from Typologies"
 ghenv.Component.NickName = 'UWGParFromTypology'
-ghenv.Component.Message = 'VER 0.0.01\nOCT_17_2015'
+ghenv.Component.Message = 'VER 0.0.01\nOCT_18_2015'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "2 | GenerateUrbanClimate"
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
