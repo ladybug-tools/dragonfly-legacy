@@ -75,7 +75,7 @@ Provided by Dragonfly 0.0.01
 
 ghenv.Component.Name = "Dragonfly_UWG Parameters from Typologies"
 ghenv.Component.NickName = 'UWGParFromTypology'
-ghenv.Component.Message = 'VER 0.0.01\nOCT_18_2015'
+ghenv.Component.Message = 'VER 0.0.01\nOCT_20_2015'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "2 | GenerateUrbanClimate"
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
@@ -639,26 +639,33 @@ def main(buildingTypologies, buildingBreps, buildingBrepAreas, srfNormalVecs, ty
     adjNumList = getBldgAdjacencies(buildingBreps, srfNormalVecs)
     
     #Use the final adjacency list to select out the breps that are adjacent to one another and boolean union them together.
+    ### I am bypassing this now until I can put it in its own adjacency-solving component.
     adjacentBrepsList = []
     adjacentBrepAreaList = []
-    for adjCount, adjList in enumerate(adjNumList):
-        adjacentBrepsList.append([])
-        adjacentBrepAreaList.append([])
-        for bldgCount in adjList:
-            adjacentBrepsList[adjCount].append(buildingBreps[bldgCount])
-            adjacentBrepAreaList[adjCount].append(buildingBrepAreas[bldgCount])
-    
     totalBuildingAreaList = []
     totalGroundAreaList = []
     booleanBuildings = []
-    for listCount, brepList in enumerate(adjacentBrepsList):
+    
+    #for adjCount, adjList in enumerate(adjNumList):
+    #    adjacentBrepsList.append([])
+    #    adjacentBrepAreaList.append([])
+    #    for bldgCount in adjList:
+    #        adjacentBrepsList[adjCount].append(buildingBreps[bldgCount])
+    #        adjacentBrepAreaList[adjCount].append(buildingBrepAreas[bldgCount])
+    #for listCount, brepList in enumerate(adjacentBrepsList):
+    #    fullBldgArea = 0
+    #    booleanSrfs = rc.Geometry.Brep.CreateBooleanUnion(brepList, sc.doc.ModelAbsoluteTolerance)
+    #    booleanBuildings.extend(booleanSrfs)
+    #    for continuousBldg in booleanSrfs:
+    #        fullBldgArea += rc.Geometry.AreaMassProperties.Compute(continuousBldg).Area
+    #    totalBuildingAreaList.append(fullBldgArea)
+    #    totalGroundAreaList.append(sum(adjacentBrepAreaList[listCount]))
+    
+    for listCount, brep in enumerate(buildingBreps):
         fullBldgArea = 0
-        booleanSrfs = rc.Geometry.Brep.CreateBooleanUnion(brepList, sc.doc.ModelAbsoluteTolerance)
-        booleanBuildings.extend(booleanSrfs)
-        for continuousBldg in booleanSrfs:
-            fullBldgArea += rc.Geometry.AreaMassProperties.Compute(continuousBldg).Area
+        fullBldgArea += rc.Geometry.AreaMassProperties.Compute(brep).Area
         totalBuildingAreaList.append(fullBldgArea)
-        totalGroundAreaList.append(sum(adjacentBrepAreaList[listCount]))
+        totalGroundAreaList.append(buildingBrepAreas[listCount])
     
     #Compute the facade to site ratio by subtracting twice the building footprint from the total shape area.
     facade2SiteRatio = (sum(totalBuildingAreaList)-(2*sum(totalGroundAreaList)))/totalTerrainArea
@@ -748,7 +755,7 @@ def main(buildingTypologies, buildingBreps, buildingBrepAreas, srfNormalVecs, ty
     print 'Characteristic Length =   ' + str(int(characteristicLength)) + ' meters'
     
     
-    return UWGPar, booleanBuildings
+    return UWGPar, buildingBreps
 
 
 

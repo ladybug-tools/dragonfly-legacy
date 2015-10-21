@@ -53,7 +53,7 @@ Provided by Dragonfly 0.0.01
 
 ghenv.Component.Name = "Dragonfly_Run Urban Weather Generator"
 ghenv.Component.NickName = 'RunUWG'
-ghenv.Component.Message = 'VER 0.0.01\nOCT_18_2015'
+ghenv.Component.Message = 'VER 0.0.01\nOCT_20_2015'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "2 | GenerateUrbanClimate"
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
@@ -249,8 +249,21 @@ def reOrderEPWData(originalEpwFile, newEPWFile, analysisPeriod, workingDir, lb_p
     #Grab the parts from the new EPW to insert.
     maxLine = len(HOYS) + 8
     newEPWLines = []
+    hour = HOYS[0]
     for lineCountNew, newLine in enumerate(newFile):
-        if lineCountNew > 7 and lineCountNew < maxLine: newEPWLines.append(newLine)
+        if lineCountNew > 7 and lineCountNew < maxLine:
+            d, m, t = lb_preparation.hour2Date(hour, True)
+            finalLine = ''
+            newLineSplit = newLine.split(',')
+            for valCount, val in enumerate(newLineSplit):
+                if valCount == 1: finalLine = finalLine + str(int(m)+1) + ','
+                elif valCount == 2: finalLine = finalLine + str(int(d)) + ','
+                elif valCount == 3: finalLine = finalLine + str(int(t)) + ','
+                elif valCount != 1-len(newLineSplit): finalLine = finalLine + val + ','
+                else: finalLine = finalLine + val
+            finalLine = finalLine[:-1]
+            newEPWLines.append(finalLine)
+            hour +=1
     
     #Build the new EPW file.
     for line in originalEPWLines1: finalFile.write(line)
