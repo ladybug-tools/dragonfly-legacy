@@ -49,6 +49,7 @@ Provided by Dragonfly 0.0.01
         _pavementBrep: A list of breps that represent the paved portion of the urban area.  Note that this input brep should just reflect the surface of the terrain and should not be a solid.  Also note that this surface should be coninuous beneath the ground of the HBZones and should only be interrupted in grassy areas where the user intends to connect up such grassy surfaces to the "grassBrep_" input below.  The limits of this surface will be used to determine the density of the urban area so including a surface that extends well beyond the area where the HBZones are will cause the simulation to inacurately model the density.
         treesOrCoverage_: Either a list of breps that represent the trees of the urban area that is being modeled or a number between 0 and 1 that represents that fraction of tree coverage in the urban area.  If breps are input, they will be projected to the ground plane to compute the area of tree coverage as seen from above.  Thus, simpler tree geometry like boxes that represent the tree canopies are preferred.  If nothing is input here, it will be assumed that there are no trees in the urban area.
         grassOrCoverage_: Either a list of breps that represent the grassy ground surfaces of the urban area or a number between 0 and 1 that represents that fraction of the _pavementBrep that is covered in grass. If nothing is input here, it will be assumed that there is no grass in the urban area.
+        booleanedBldgs_: An optional list of boolened building solids that will be used to compute the facade area of buildings exposed to the outdoor air.  This should essentially be the same buildings plugged into the _buildingBreps input but passed through a native grasshopper "Solid Union" component.  The booleaning of solids is not done inside this component since this can be a time-intensive operation for large uban areas with a lot of buildings.  If no value is input here, it will be assumed that all building surfaces surfaces that are not a roof or floor are exposed to the outside air.
         --------------------: ...
         vegetationPar_: An optional list of Vegetation Parameters from the "Dragonfly_Vegetation Parameters" component.  If no vegetation parameters are input here, the UWG will attempt to determine the months in which vegetation is active by looking at the average monthly temperatures in the EPW file.
         pavementConstr_: A text string representing the construction of the uban pavement.  This construction can be either from the OpenStudio Library (the "Honeybee_Call from EP Construction Library" component) or it can be a custom construction from the "Honeybee_EnergyPlus Construction" component.  If no construction is input here, a default construction for asphalt will be used for simulating all paved areas of the urban neighborhood.
@@ -75,7 +76,7 @@ Provided by Dragonfly 0.0.01
 
 ghenv.Component.Name = "Dragonfly_UWG Parameters from Typologies"
 ghenv.Component.NickName = 'UWGParFromTypology'
-ghenv.Component.Message = 'VER 0.0.01\nOCT_20_2015'
+ghenv.Component.Message = 'VER 0.0.01\nOCT_28_2015'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "2 | GenerateUrbanClimate"
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
@@ -214,6 +215,7 @@ def checkTheInputs(df_textGen, df_UWGGeo):
         nonBldgLatentFract = 0
         print "No value is connected for nonBldgLatentFract_ and so it will be assumed that this value is 0 and that all heat within the canyon is sensible."
     
+    #Check the non-bldg sensible heat.
     checkData7 = True
     if nonBldgHeat_:
         nonBldgSensHeat = nonBldgHeat_*(1-nonBldgLatentFract)
@@ -228,6 +230,9 @@ def checkTheInputs(df_textGen, df_UWGGeo):
         nonBldgLatentHeat = 7*(nonBldgLatentFract)
         print "No value is connected for nonBldgHeat_ and so a default of 7 W/m2 will be used, which is characteristic of medium density urban areas."
     
+    #Check the booleaned buildings.
+    if len(booleanedBldgs_) != 0: booleanedBldgs = booleanedBldgs_
+    else: booleanedBldgs = _buildingBreps
     
     #Do a final check of everything and, if it's good, project any goemtry that needs to be projected in order to extract relevant parameters.
     checkData = False
@@ -393,118 +398,7 @@ def checkTheInputs(df_textGen, df_UWGGeo):
                 totalTreeCoverage = totalTreeArea/(totalPavedArea + totalGrassArea)
     
     
-    return checkData, _buildingTypologies, _buildingBreps, buildingBrepAreas, srfNormalVecs, typologyRatios, roofAngles, wallAngles, averageBuildingHeight, siteCoverageRatio, totalGrassCoverage, totalTreeCoverage, vegetationParString, pavementConstrString, nonBldgSensHeat, nonBldgLatentHeat, characteristicLength, totalTerrainArea, projectedBldgBreps, projectedTreeBreps, projectedPaveBreps, projectedGrassBreps
-
-
-def notTheSameBldg(targetZone, testZone):
-    return targetZone.Faces != testZone.Faces
-
-
-def shootIt(rayList, geometry, tol = 0.01, bounce =1):
-   # shoot a list of rays from surface to geometry
-   # to find if geometry is adjacent to surface
-   for ray in rayList:
-        intPt = rc.Geometry.Intersect.Intersection.RayShoot(ray, geometry, bounce)
-        if intPt:
-            if ray.Position.DistanceTo(intPt[0]) <= tol:
-                return True #'Bang!'
-
-def getBldgAdjacencies(buildingBreps, srfNormalVecs):
-    tol = sc.doc.ModelAbsoluteTolerance
-    meshPar = rc.Geometry.MeshingParameters.Default
-    adjacentBldgNumList = []
-    
-    for testBldgCount, testBldg in enumerate(buildingBreps):
-        allMatchFound = False
-        # mesh each surface and test if it will be adjacent to any surface
-        # from other zones
-        for testSrfCount, srf in enumerate(testBldg.Faces):
-            srfFace = rc.Geometry.BrepFace.ToBrep(srf)
-            #Create a mesh of surface to use center points as test points
-            BrepMesh = rc.Geometry.Mesh.CreateFromBrep(srfFace, meshPar)[0]
-            
-            # calculate face normals
-            BrepMesh.FaceNormals.ComputeFaceNormals()
-            BrepMesh.FaceNormals.UnitizeFaceNormals()
-            
-            # dictionary to collect center points and rays
-            raysDict = {}
-            for faceIndex in range(BrepMesh.Faces.Count):
-                srfNormal = (BrepMesh.FaceNormals)[faceIndex]
-                meshSrfCen = BrepMesh.Faces.GetFaceCenter(faceIndex)
-                # move testPt backward for half of tolerance
-                meshSrfCen = rc.Geometry.Point3d.Add(meshSrfCen, -rc.Geometry.Vector3d(srfNormal)* tol /2)
-                
-                raysDict[meshSrfCen] = rc.Geometry.Ray3d(meshSrfCen, srfNormal)
-            
-            for tarBldgCount, targetBldg in enumerate(buildingBreps):
-                if notTheSameBldg(targetBldg, testBldg):
-                    # check ray intersection to see if this zone is next to the surface
-                    if shootIt(raysDict.values(), [targetBldg], tol + sc.doc.ModelAbsoluteTolerance):
-                        for tarSrfCount, surface in enumerate(targetBldg.Faces):
-                            surfaceBrep = rc.Geometry.BrepFace.ToBrep(surface)
-                            # check distance with the nearest point on each surface
-                            for pt in raysDict.keys():
-                                if surfaceBrep.ClosestPoint(pt).DistanceTo(pt) <= tol:
-                                    # extra check for normal direction
-                                    normalAngle = abs(rc.Geometry.Vector3d.VectorAngle(srfNormalVecs[tarBldgCount][tarSrfCount], srfNormalVecs[testBldgCount][testSrfCount]))
-                                    revNormalAngle = abs(rc.Geometry.Vector3d.VectorAngle(srfNormalVecs[tarBldgCount][tarSrfCount], -srfNormalVecs[testBldgCount][testSrfCount]))
-                                    if normalAngle==0  or revNormalAngle <= sc.doc.ModelAngleToleranceRadians:
-                                        #Have a value to keep track of whether a match has been found for a zone.
-                                        matchFound = False
-                                        
-                                        #Check the current adjacencies list to find out where to place the zone.
-                                        for zoneAdjListCount, zoneAdjList in enumerate(adjacentBldgNumList):
-                                            #Maybe we already have both of the zones as adjacent.
-                                            if testBldgCount in zoneAdjList and tarBldgCount in zoneAdjList:
-                                                matchFound = True
-                                            #If we have the zone but not the adjacent zone, append it to the list.
-                                            elif testBldgCount in zoneAdjList and tarBldgCount not in zoneAdjList:
-                                                adjacentBldgNumList[zoneAdjListCount].append(tarBldgCount)
-                                                matchFound = True
-                                            #If we have the adjacent zone but not the zone itself, append it to the list.
-                                            elif testBldgCount not in zoneAdjList and tarBldgCount in zoneAdjList:
-                                                adjacentBldgNumList[zoneAdjListCount].append(testBldgCount)
-                                                matchFound = True
-                                            else: pass
-                                        
-                                        #If no match was found, start a new list.
-                                        if matchFound == False:
-                                            adjacentBldgNumList.append([testBldgCount])
-        if allMatchFound == False:
-            #The building is not adjacent to any other buildings so we will put it in its own list.
-            adjacentBldgNumList.append([testBldgCount])
-    
-    #Remove duplicates found in the process of looking for adjacencies.
-    fullAdjacentList = []
-    newAjdacenList = []
-    for listCount, zoneList in enumerate(adjacentBldgNumList):
-        good2Go = True
-        listCheck = []
-        notAccountedForCheck = []
-        
-        #Check if the zones are already accounted for
-        for zoneNum in zoneList:
-            if zoneNum in fullAdjacentList: listCheck.append(zoneNum)
-            else: notAccountedForCheck.append(zoneNum)
-        
-        if len(listCheck) == len(zoneList):
-            #All zones in the list are already accounted for.
-            good2Go = False
-        
-        if good2Go == True and len(listCheck) == 0:
-            #All of the zones in the list are not yet accounted for.
-            newAjdacenList.append(zoneList)
-            fullAdjacentList.extend(adjacentBldgNumList[listCount])
-        elif good2Go == True:
-            #Find the existing zone list that contains the duplicates and append the non-duplicates to the list.
-            for val in listCheck:
-                for existingListCount, existingList in enumerate(newAjdacenList):
-                    if val in existingList: thisIsTheList = existingListCount
-            newAjdacenList[thisIsTheList].extend(notAccountedForCheck)
-            fullAdjacentList.extend(notAccountedForCheck)
-    
-    return newAjdacenList
+    return checkData, _buildingTypologies, _buildingBreps, buildingBrepAreas, srfNormalVecs, typologyRatios, roofAngles, wallAngles, averageBuildingHeight, siteCoverageRatio, totalGrassCoverage, totalTreeCoverage, vegetationParString, pavementConstrString, nonBldgSensHeat, nonBldgLatentHeat, characteristicLength, totalTerrainArea, projectedBldgBreps, projectedTreeBreps, projectedPaveBreps, projectedGrassBreps, booleanedBldgs
 
 
 def createMatStr(name, thermalConduct, heatCapacity, thickness):
@@ -634,7 +528,7 @@ def convertConstrsToOneMat(typology):
 
 
 
-def main(buildingTypologies, buildingBreps, buildingBrepAreas, srfNormalVecs, typologyRatios, roofAngles, wallAngles, averageBuildingHeight, siteCoverageRatio, totalGrassCoverage, totalTreeCoverage, vegetationParString, pavementConstrString, nonBldgSensHeat, nonBldgLatentHeat, characteristicLength, totalTerrainArea):
+def main(buildingTypologies, buildingBreps, buildingBrepAreas, srfNormalVecs, typologyRatios, roofAngles, wallAngles, averageBuildingHeight, siteCoverageRatio, totalGrassCoverage, totalTreeCoverage, vegetationParString, pavementConstrString, nonBldgSensHeat, nonBldgLatentHeat, characteristicLength, totalTerrainArea, booleanedBldgs):
     #Solve adjacencies between the building breps so that we don't have redundant facade surfaces in our facade-to-site ratio calculation.
     adjNumList = getBldgAdjacencies(buildingBreps, srfNormalVecs)
     
@@ -646,29 +540,12 @@ def main(buildingTypologies, buildingBreps, buildingBrepAreas, srfNormalVecs, ty
     totalGroundAreaList = []
     booleanBuildings = []
     
-    #for adjCount, adjList in enumerate(adjNumList):
-    #    adjacentBrepsList.append([])
-    #    adjacentBrepAreaList.append([])
-    #    for bldgCount in adjList:
-    #        adjacentBrepsList[adjCount].append(buildingBreps[bldgCount])
-    #        adjacentBrepAreaList[adjCount].append(buildingBrepAreas[bldgCount])
-    #for listCount, brepList in enumerate(adjacentBrepsList):
-    #    fullBldgArea = 0
-    #    booleanSrfs = rc.Geometry.Brep.CreateBooleanUnion(brepList, sc.doc.ModelAbsoluteTolerance)
-    #    booleanBuildings.extend(booleanSrfs)
-    #    for continuousBldg in booleanSrfs:
-    #        fullBldgArea += rc.Geometry.AreaMassProperties.Compute(continuousBldg).Area
-    #    totalBuildingAreaList.append(fullBldgArea)
-    #    totalGroundAreaList.append(sum(adjacentBrepAreaList[listCount]))
-    
-    for listCount, brep in enumerate(buildingBreps):
-        fullBldgArea = 0
-        fullBldgArea += rc.Geometry.AreaMassProperties.Compute(brep).Area
-        totalBuildingAreaList.append(fullBldgArea)
-        totalGroundAreaList.append(buildingBrepAreas[listCount])
-    
+    #Get the surface areas of booleaned buildings.
+    for listCount, brep in enumerate(booleanedBldgs):
+        totalBuildingAreaList.append(rc.Geometry.AreaMassProperties.Compute(brep).Area)
+    print sum(totalBuildingAreaList)
     #Compute the facade to site ratio by subtracting twice the building footprint from the total shape area.
-    facade2SiteRatio = (sum(totalBuildingAreaList)-(2*sum(totalGroundAreaList)))/totalTerrainArea
+    facade2SiteRatio = (sum(totalBuildingAreaList)-(2*sum(buildingBrepAreas)))/totalTerrainArea
     
     ### Put in a work-around for the bugginess of typology 3 in the UWG.
     if len(buildingTypologies) > 2:
@@ -777,7 +654,7 @@ else:
 
 
 if initCheck == True and _runIt == True and len(_buildingTypologies) != 0 and len(_buildingBreps) != 0 and len(_pavementBrep) != 0:
-    checkData, buildingTypologies, buildingBreps, buildingBrepAreas, srfNormalVecs, typologyRatios, roofAngles, wallAngles, averageBuildingHeight, siteCoverageRatio, totalGrassCoverage, totalTreeCoverage, vegetationParString, pavementConstrString, nonBldgSensHeat, nonBldgLatentHeat, characteristicLength, totalTerrainArea, bldgFootprints, treeFootprints, pavementSrf, grassSrf = checkTheInputs(df_textGen, df_UWGGeo)
+    checkData, buildingTypologies, buildingBreps, buildingBrepAreas, srfNormalVecs, typologyRatios, roofAngles, wallAngles, averageBuildingHeight, siteCoverageRatio, totalGrassCoverage, totalTreeCoverage, vegetationParString, pavementConstrString, nonBldgSensHeat, nonBldgLatentHeat, characteristicLength, totalTerrainArea, bldgFootprints, treeFootprints, pavementSrf, grassSrf, booleanedBldgs = checkTheInputs(df_textGen, df_UWGGeo)
     if checkData == True:
-        UWGParameters, joinedBldgs = main(buildingTypologies, buildingBreps, buildingBrepAreas, srfNormalVecs, typologyRatios, roofAngles, wallAngles, averageBuildingHeight, siteCoverageRatio, totalGrassCoverage, totalTreeCoverage, vegetationParString, pavementConstrString, nonBldgSensHeat, nonBldgLatentHeat, characteristicLength, totalTerrainArea)
+        UWGParameters, joinedBldgs = main(buildingTypologies, buildingBreps, buildingBrepAreas, srfNormalVecs, typologyRatios, roofAngles, wallAngles, averageBuildingHeight, siteCoverageRatio, totalGrassCoverage, totalTreeCoverage, vegetationParString, pavementConstrString, nonBldgSensHeat, nonBldgLatentHeat, characteristicLength, totalTerrainArea, booleanedBldgs)
 

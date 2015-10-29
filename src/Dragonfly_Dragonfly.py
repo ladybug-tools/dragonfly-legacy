@@ -46,7 +46,7 @@ Provided by Dragonfly 0.0.01
 
 ghenv.Component.Name = "Dragonfly_Dragonfly"
 ghenv.Component.NickName = 'Dragonfly'
-ghenv.Component.Message = 'VER 0.0.01\nOCT_18_2015'
+ghenv.Component.Message = 'VER 0.0.01\nOCT_28_2015'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "0 | Dragonfly"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -745,7 +745,7 @@ class UWGTextGeneration(object):
             elif values[0] == 'Material:AirGap':
                 #Typical Air EP Material.
                 conductivities.append(0.1/float(values[1]))
-                heatCapacities.append(1.211025)
+                heatCapacities.append(1211.025)
                 thicknesses.append(0.1)
                 
                 #If it's the outer-most construction, that's really frickin' weird.  Tell the user they did something worng!
