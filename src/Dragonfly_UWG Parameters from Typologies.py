@@ -76,7 +76,7 @@ Provided by Dragonfly 0.0.01
 
 ghenv.Component.Name = "Dragonfly_UWG Parameters from Typologies"
 ghenv.Component.NickName = 'UWGParFromTypology'
-ghenv.Component.Message = 'VER 0.0.01\nOCT_28_2015'
+ghenv.Component.Message = 'VER 0.0.01\nNOV_01_2015'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "2 | GenerateUrbanClimate"
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
@@ -529,8 +529,6 @@ def convertConstrsToOneMat(typology):
 
 
 def main(buildingTypologies, buildingBreps, buildingBrepAreas, srfNormalVecs, typologyRatios, roofAngles, wallAngles, averageBuildingHeight, siteCoverageRatio, totalGrassCoverage, totalTreeCoverage, vegetationParString, pavementConstrString, nonBldgSensHeat, nonBldgLatentHeat, characteristicLength, totalTerrainArea, booleanedBldgs):
-    #Solve adjacencies between the building breps so that we don't have redundant facade surfaces in our facade-to-site ratio calculation.
-    adjNumList = getBldgAdjacencies(buildingBreps, srfNormalVecs)
     
     #Use the final adjacency list to select out the breps that are adjacent to one another and boolean union them together.
     ### I am bypassing this now until I can put it in its own adjacency-solving component.
