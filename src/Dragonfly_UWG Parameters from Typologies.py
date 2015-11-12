@@ -76,7 +76,7 @@ Provided by Dragonfly 0.0.01
 
 ghenv.Component.Name = "Dragonfly_UWG Parameters from Typologies"
 ghenv.Component.NickName = 'UWGParFromTypology'
-ghenv.Component.Message = 'VER 0.0.01\nNOV_01_2015'
+ghenv.Component.Message = 'VER 0.0.01\nNOV_11_2015'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "2 | GenerateUrbanClimate"
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
@@ -541,7 +541,7 @@ def main(buildingTypologies, buildingBreps, buildingBrepAreas, srfNormalVecs, ty
     #Get the surface areas of booleaned buildings.
     for listCount, brep in enumerate(booleanedBldgs):
         totalBuildingAreaList.append(rc.Geometry.AreaMassProperties.Compute(brep).Area)
-    print sum(totalBuildingAreaList)
+    
     #Compute the facade to site ratio by subtracting twice the building footprint from the total shape area.
     facade2SiteRatio = (sum(totalBuildingAreaList)-(2*sum(buildingBrepAreas)))/totalTerrainArea
     
