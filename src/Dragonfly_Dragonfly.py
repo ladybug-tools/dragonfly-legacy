@@ -46,7 +46,7 @@ Provided by Dragonfly 0.0.01
 
 ghenv.Component.Name = "Dragonfly_Dragonfly"
 ghenv.Component.NickName = 'Dragonfly'
-ghenv.Component.Message = 'VER 0.0.01\nOCT_28_2015'
+ghenv.Component.Message = 'VER 0.0.01\nNOV_07_2015'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "0 | Dragonfly"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -66,6 +66,7 @@ import System
 import time
 from itertools import chain
 import datetime
+import zipfile
 
 PI = math.pi
 rc.Runtime.HostUtils.DisplayOleAlerts(False)
@@ -147,7 +148,7 @@ class CheckIn():
         # print int(availableVersion.replace(".", "")), int(currentVersion.replace(".", ""))
         return int(availableVersion.replace(".", "")) > int(currentVersion.replace(".", ""))
     
-    def checkForUpdates(self, LB= True, HB= True, OpenStudio = True, template = True):
+    def checkForUpdates(self, LB= True, HB= True, OpenStudio = True, template = True, DF = True):
         
         url = "https://github.com/mostaphaRoudsari/ladybug/raw/master/resources/versions.txt"
         versionFile = os.path.join(sc.sticky["Dragonfly_DefaultFolder"], "versions.txt")
@@ -156,22 +157,13 @@ class CheckIn():
         with open("c:/ladybug/versions.txt", "r")as vf:
             versions= eval("\n".join(vf.readlines()))
         
-        if LB:
-            ladybugVersion = versions['Ladybug']
-            currentLadybugVersion = self.getComponentVersion() # I assume that this function will be called inside Ladybug_ladybug Component
-            if self.isNewerVersionAvailable(currentLadybugVersion, ladybugVersion):
-                msg = "There is a newer version of Ladybug available to download! " + \
-                      "We strongly recommend you to download the newer version from Food4Rhino: " + \
-                      "http://www.food4rhino.com/project/ladybug-honeybee"
-                print msg
-                ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
-        if HB:
-            honeybeeVersion = versions['Honeybee']
-            currentHoneybeeVersion = self.getComponentVersion() # I assume that this function will be called inside Honeybee_Honeybee Component
-            if self.isNewerVersionAvailable(currentHoneybeeVersion, honeybeeVersion):
-                msg = "There is a newer version of Honeybee available to download! " + \
-                      "We strongly recommend you to download the newer version from Food4Rhino: " + \
-                      "http://www.food4rhino.com/project/ladybug-honeybee"
+        if DF:
+            dragonflyVersion = versions['Dragonfly']
+            currentDragonflyVersion = self.getComponentVersion()
+            if self.isNewerVersionAvailable(currentDragonflyVersion, dragonflyVersion):
+                msg = "There is a newer version of Dragonfly available to download! " + \
+                      "We strongly recommend you to download the newer version from the Dragonfly github: " + \
+                      "https://github.com/chriswmackey/Dragonfly/archive/master.zip"
                 print msg
                 ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
             
@@ -951,6 +943,23 @@ except:
     sc.sticky["dragonfly_release"] = False
 
 
+
+def unzip(source_filename, dest_dir):
+    with zipfile.ZipFile(source_filename) as zf:
+        for member in zf.infolist():
+            # Path traversal defense copied from
+            # http://hg.python.org/cpython/file/tip/Lib/http/server.py#l789
+            words = member.filename.split('\\')
+            path = dest_dir
+            for word in words[:-1]:
+                drive, word = os.path.splitdrive(word)
+                head, word = os.path.split(word)
+                if word in (os.curdir, os.pardir, ''): continue
+                path = os.path.join(path, word)
+            zf.extract(member, path)
+
+
+
 if checkIn.letItFly:
     sc.sticky["dragonfly_release"] = versionCheck()       
     
@@ -958,30 +967,38 @@ if checkIn.letItFly:
         folders = df_findFolders()
         sc.sticky["dragonfly_folders"] = {}
         if folders.UWGPath == None:
-            if os.path.isdir("c:\\UWG\\"):
-                folders.UWGPath = "c:\\UWG\\"
+            if os.path.isdir(sc.sticky["Dragonfly_DefaultFolder"] + "\\UWG\\"):
+                folders.UWGPath = sc.sticky["Dragonfly_DefaultFolder"] + "\\UWG\\"
             else:
-                msg1 = "Dragonfly cannot find the Urban Weather Generator (UWG) folder on your system.\n" + \
-                     "Make sure you have the Urban Weather Generator (UWG) installed on your system.\n" + \
-                     "You won't be able to morph EPW files to account for urban heat island effects without this application.\n" + \
-                     "You can download the UWG from the MIT microclimate website here:"
-                msg2 = "http://urbanmicroclimate.scripts.mit.edu/uwg.php"
-                
-                
-                ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg1)
-                ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg2)
-                
-                folders.UWGPath = ""
+                # Try to download these files in the background.
+                try:
+                    ## download File
+                    print 'Downloading UWG to ', sc.sticky["Dragonfly_DefaultFolder"]
+                    updatedLink = "https://github.com/hansukyang/UWG_Matlab/blob/master/UWGEngine/UWG.zip?raw=true"
+                    localFilePath = sc.sticky["Dragonfly_DefaultFolder"] + 'UWG.zip'
+                    client = System.Net.WebClient()
+                    client.DownloadFile(updatedLink, localFilePath)
+                    #Unzip the file
+                    unzip(localFilePath, sc.sticky["Dragonfly_DefaultFolder"])
+                    folders.UWGPath = sc.sticky["Dragonfly_DefaultFolder"] + "\\UWG\\"
+                except:
+                    msg1 = "Dragonfly failed to download the Urban Weather Generator (UWG) folder in the background.\n" + \
+                         "Download the following file and unzip it into the C:\ drive of your system:"
+                    msg2 = "https://github.com/hansukyang/UWG_Matlab/blob/master/UWGEngine/for_testing.zip?raw=true"
+                    
+                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg1)
+                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg2)
+                    
+                    folders.UWGPath = ""
         
         if os.path.isdir("c:\\Program Files\\MATLAB\\MATLAB Runtime\\v90\\"):
             folders.matlabPath = "c:\\Program Files\\MATLAB\\MATLAB Runtime\\v90\\"
         else:
             
-            msg3 = "Dragonfly cannot find the 32-bits version of the Matlab Runtime Compiler v8.5 (MRC 8.5) in your system. \n" + \
+            msg3 = "Dragonfly cannot find the correct version of the Matlab Runtime Compiler v9.0 (MRC 9.0) in your system. \n" + \
             "You won't be able to morph EPW files to account for urban heat island effects without this application. \n" + \
-            "Make sure that you have the 32-bits version installed and not the 64-bits version." + \
-            "You can download the Matlab Runtime Compiler v 8.5 (MRC 8.5) from here:"
-            msg4 = "http://www.mathworks.com/products/compiler/mcr/index.html"
+            "You can download an installer for the the Matlab Runtime Compiler from this link on the UWG github:"
+            msg4 = "https://github.com/hansukyang/UWG_Matlab/blob/master/UWGEngine/for_redistribution/UWGEngine.exe?raw=true"
             
             ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg3)
             ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg4)
