@@ -5,21 +5,21 @@ Dragonfly allows users to import several satellite image datasets into Rhino/Gra
 
 You need to have [Ladybug](https://github.com/mostaphaRoudsari/Ladybug) installed in order to run Dragonfly.
 
-It is also useful to have [Honeybee](https://github.com/mostaphaRoudsari/Honeybee) installed, which makes it easier to run the Dragonfly components that export to the [Urban Weather Generator (UWG)][https://github.com/hansukyang/UWG_Matlab].
+It is also useful to have [Honeybee](https://github.com/mostaphaRoudsari/Honeybee) installed, which makes it easier to run the Dragonfly components that export to the [Urban Weather Generator (UWG)](https://github.com/hansukyang/UWG_Matlab).
 
 
 Licence
 ========================================
 Dragonfly: A Plugin for Climate Data Generation (GPL) started by Chris Mackey
- 
+
 Copyright (c) 2013-2015, Chris Mackey
 
 Dragonfly is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 3 of the License, or (at your option) any later version. 
- 
+
 Dragonfly is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
- 
+
 You should have received a copy of the GNU General Public License along with Dragonfly; If not, see <http://www.gnu.org/licenses/>.
- 
+
 @license GPL-3.0+ <http://spdx.org/licenses/GPL-3.0+>
 
 
