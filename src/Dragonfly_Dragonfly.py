@@ -46,7 +46,7 @@ Provided by Dragonfly 0.0.01
 
 ghenv.Component.Name = "Dragonfly_Dragonfly"
 ghenv.Component.NickName = 'Dragonfly'
-ghenv.Component.Message = 'VER 0.0.01\nNOV_07_2015'
+ghenv.Component.Message = 'VER 0.0.01\nNOV_22_2015'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "0 | Dragonfly"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -391,120 +391,20 @@ class UWGTextGeneration(object):
             '    <windMax>10</windMax>\n' + \
             '    <wgmax>0.005</wgmax>\n' + \
             '    <exCoeff>0.3</exCoeff>\n'
-    
-    def createBlankTypology2(self, typNum):
-        blankTypo = '  <typology2 dist="0" name="blankTypology2">\n' + \
-            '    <dist>0</dist>\n' + \
-            '    <construction>\n' + \
-            '      <wall>\n' + \
-            '        <albedo>0.5</albedo>\n' + \
-            '        <emissivity>0.5</emissivity>\n' + \
-            '        <materials name="Boston C Wall">\n' + \
-            '          <names>\n' + \
-            '            <item>Stucco</item>\n' + \
-            '            <item>Concrete HW</item>\n' + \
-            '            <item>Insulation</item>\n' + \
-            '            <item>Gypsum</item>\n' + \
-            '          </names>\n' + \
-            '          <thermalConductivity>\n' + \
-            '            <item>0.69</item>\n' + \
-            '            <item>1.31</item>\n' + \
-            '            <item>0.5</item>\n' + \
-            '            <item>0.16</item>\n' + \
-            '          </thermalConductivity>\n' + \
-            '          <volumetricHeatCapacity>\n' + \
-            '            <item>1555146</item>\n' + \
-            '            <item>1874432</item>\n' + \
-            '            <item>221752</item>\n' + \
-            '            <item>651467</item>\n' + \
-            '          </volumetricHeatCapacity>\n' + \
-            '          <thickness>[0.03,0.2,0.05,0.01]</thickness>\n' + \
-            '        </materials>\n' + \
-            '        <vegetationCoverage>0</vegetationCoverage>\n' + \
-            '        <inclination>0</inclination>\n' + \
-            '        <initialTemperature>20</initialTemperature>\n' + \
-            '      </wall>\n' + \
-            '      <roof>\n' + \
-            '        <albedo>0.2</albedo>\n' + \
-            '        <emissivity>0.2</emissivity>\n' + \
-            '        <materials name="Boston C Roof">\n' + \
-            '          <names>\n' + \
-            '            <item>Roof Membrane</item>\n' + \
-            '            <item>Metal Decking</item>\n' + \
-            '            <item></item>\n' + \
-            '          </names>\n' + \
-            '          <thermalConductivity>\n' + \
-            '            <item>0.16</item>\n' + \
-            '            <item>45.01</item>\n' + \
-            '          </thermalConductivity>\n' + \
-            '          <volumetricHeatCapacity>\n' + \
-            '            <item>1637083</item>\n' + \
-            '            <item>3213312</item>\n' + \
-            '          </volumetricHeatCapacity>\n' + \
-            '          <thickness>[0.01,0.0015]</thickness>\n' + \
-            '        </materials>\n' + \
-            '        <vegetationCoverage>0.2</vegetationCoverage>\n' + \
-            '        <inclination>1</inclination>\n' + \
-            '        <initialTemperature>20</initialTemperature>\n' + \
-            '      </roof>\n' + \
-            '      <mass>\n' + \
-            '        <albedo>0.5</albedo>\n' + \
-            '        <emissivity>0.5</emissivity>\n' + \
-            '        <materials name="Boston C IM">\n' + \
-            '          <names>\n' + \
-            '            <item>Concrete HW</item>\n' + \
-            '          </names>\n' + \
-            '          <thermalConductivity>\n' + \
-            '            <item>1.31</item>\n' + \
-            '          </thermalConductivity>\n' + \
-            '          <volumetricHeatCapacity>\n' + \
-            '            <item>1874432</item>\n' + \
-            '          </volumetricHeatCapacity>\n' + \
-            '          <thickness>[0.1]</thickness>\n' + \
-            '        </materials>\n' + \
-            '        <vegetationCoverage>0</vegetationCoverage>\n' + \
-            '        <inclination>1</inclination>\n' + \
-            '        <initialTemperature>20</initialTemperature>\n' + \
-            '      </mass>\n' + \
-            '      <glazing name="Boston C">\n' + \
-            '        <glazingRatio>0.212</glazingRatio>\n' + \
-            '        <windowUvalue>3.24</windowUvalue>\n' + \
-            '        <windowSHGC>0.39</windowSHGC>\n' + \
-            '      </glazing>\n' + \
-            '    </construction>\n' + \
-            '    <building name="BOS Commericial">\n' + \
-            '      <floorHeight>3</floorHeight>\n' + \
-            '      <dayInternalGains>24.7145454545455</dayInternalGains>\n' + \
-            '      <nightInternalGains>5.58725274725274</nightInternalGains>\n' + \
-            '      <radiantFraction>0.5</radiantFraction>\n' + \
-            '      <latentFraction>0.09</latentFraction>\n' + \
-            '      <infiltration>0.176785714285714</infiltration>\n' + \
-            '      <ventilation>1</ventilation>\n' + \
-            '      <coolingSystemType>air</coolingSystemType>\n' + \
-            '      <coolingCOP>3.7</coolingCOP>\n' + \
-            '      <daytimeCoolingSetPoint>25</daytimeCoolingSetPoint>\n' + \
-            '      <nighttimeCoolingSetPoint>26</nighttimeCoolingSetPoint>\n' + \
-            '      <daytimeHeatingSetPoint>20</daytimeHeatingSetPoint>\n' + \
-            '      <nighttimeHeatingSetPoint>17</nighttimeHeatingSetPoint>\n' + \
-            '      <coolingCapacity>205</coolingCapacity>\n' + \
-            '      <heatingEfficiency>0.8</heatingEfficiency>\n' + \
-            '      <nightSetStart>19</nightSetStart>\n' + \
-            '      <nightSetEnd>5</nightSetEnd>\n' + \
-            '      <heatReleasedToCanyon>0</heatReleasedToCanyon>\n' + \
-            '      <initialT>20</initialT>\n' + \
-            '    </building>\n' + \
-            '  </typology2>\n'
         
-        return blankTypo
+        self.wallConductByClimate = [0.1, 0.064195, 0.046769, 0.041895, 0.041895, 0.039754, 0.033948, 0.027743, 0.017693]
+        self.roofConductByClimate = [0.1, 0.048999, 0.041123, 0.041123, 0.041123, 0.039754, 0.035685, 0.035685, 0.025749]
+        self.windowUValByClimate = [10, 5.84, 4.258698, 3.690871, 2.271305, 1.987392, 1.987392, 1.987392, 1.987392]
+        self.windowSHGCByClimate = [0.9, 0.25, 0.25, 0.25, 0.31, 0.31, 0.31, 0.35, 0.35]
     
     
-    def createBlankTypology3(self, typNum):
-        blankTypo = '  <typology3 dist="0" name="blankTypology3">\n' + \
+    def createBlankTypology(self, typNum):
+        blankTypo = '  <typology' + str(typNum) + ' dist="0" name="blankTypology' + str(typNum) + '">\n' + \
             '    <dist>0</dist>\n' + \
             '    <construction>\n' + \
             '      <wall>\n' + \
-            '        <albedo>0.52</albedo>\n' + \
-            '        <emissivity>0.5</emissivity>\n' + \
+            '        <albedo>0.5</albedo>\n' + \
+            '        <emissivity>0.9</emissivity>\n' + \
             '        <materials>\n' + \
             '          <names>\n' + \
             '            <item>Wood Siding</item>\n' + \
@@ -522,25 +422,19 @@ class UWGTextGeneration(object):
             '        <initialTemperature>20</initialTemperature>\n' + \
             '      </wall>\n' + \
             '      <roof>\n' + \
-            '        <albedo>0.1</albedo>\n' + \
-            '        <emissivity>0</emissivity>\n' + \
+            '        <albedo>0.25</albedo>\n' + \
+            '        <emissivity>0.9</emissivity>\n' + \
             '        <materials name="Boston R Roof">\n' + \
             '          <names>\n' + \
-            '            <item>Roof Membrane</item>\n' + \
             '            <item>Insulation</item>\n' + \
-            '            <item>Metal Decking</item>\n' + \
             '          </names>\n' + \
             '          <thermalConductivity>\n' + \
-            '            <item>0.16</item>\n' + \
             '            <item>0.5</item>\n' + \
-            '            <item>45.01</item>\n' + \
             '          </thermalConductivity>\n' + \
             '          <volumetricHeatCapacity>\n' + \
-            '            <item>1637083</item>\n' + \
             '            <item>221752</item>\n' + \
-            '            <item>3213312</item>\n' + \
             '          </volumetricHeatCapacity>\n' + \
-            '          <thickness>[0.01,0.1273,0.0015]</thickness>\n' + \
+            '          <thickness>[0.1273]</thickness>\n' + \
             '        </materials>\n' + \
             '        <vegetationCoverage>0.2</vegetationCoverage>\n' + \
             '        <inclination>1</inclination>\n' + \
@@ -548,7 +442,7 @@ class UWGTextGeneration(object):
             '      </roof>\n' + \
             '      <mass>\n' + \
             '        <albedo>0.5</albedo>\n' + \
-            '        <emissivity>0.5</emissivity>\n' + \
+            '        <emissivity>0.9</emissivity>\n' + \
             '        <materials name="Boston R IM">\n' + \
             '          <names>\n' + \
             '            <item>Concrete HW</item>\n' + \
@@ -592,112 +486,233 @@ class UWGTextGeneration(object):
             '      <heatReleasedToCanyon>0</heatReleasedToCanyon>\n' + \
             '      <initialT>20</initialT>\n' + \
             '    </building>\n' + \
-            '  </typology3>\n'
-        
-        return blankTypo
-    
-    
-    def createBlankTypology4(self, typNum):
-        
-        blankTypo = '  <typology' + str(typNum) +' dist="0" name="commercial' + str(typNum) + '">\n' + \
-            '    <dist>0</dist>\n' + \
-            '    <construction>\n' + \
-            '      <wall>\n' + \
-            '        <albedo>0.5</albedo>\n' + \
-            '        <emissivity>0.5</emissivity>\n' + \
-            '        <materials name="Boston C Wall">\n' + \
-            '          <names>\n' + \
-            '            <item>Stucco</item>\n' + \
-            '            <item>Stucco</item>\n' + \
-            '          </names>\n' + \
-            '          <thermalConductivity>\n' + \
-            '            <item>0.69</item>\n' + \
-            '            <item>0.69</item>\n' + \
-            '          </thermalConductivity>\n' + \
-            '          <volumetricHeatCapacity>\n' + \
-            '            <item>1555146</item>\n' + \
-            '            <item>1555146</item>\n' + \
-            '          </volumetricHeatCapacity>\n' + \
-            '          <thickness>[0.03, 0.03]</thickness>\n' + \
-            '        </materials>\n' + \
-            '        <vegetationCoverage>0</vegetationCoverage>\n' + \
-            '        <inclination>0</inclination>\n' + \
-            '        <initialTemperature>20</initialTemperature>\n' + \
-            '      </wall>\n' + \
-            '      <roof>\n' + \
-            '        <albedo>2</albedo>\n' + \
-            '        <emissivity>0.2</emissivity>\n' + \
-            '        <materials name="Boston C Roof">\n' + \
-            '          <names>\n' + \
-            '            <item>Roof Membrane</item>\n' + \
-            '            <item>Roof Membrane</item>\n' + \
-            '            <item>Stucco</item>\n' + \
-            '          </names>\n' + \
-            '          <thermalConductivity>\n' + \
-            '            <item>0.16</item>\n' + \
-            '            <item>0.16</item>\n' + \
-            '            <item>0.16</item>\n' + \
-            '          </thermalConductivity>\n' + \
-            '          <volumetricHeatCapacity>\n' + \
-            '            <item>1637083</item>\n' + \
-            '            <item>1637083</item>\n' + \
-            '            <item>1637083</item>\n' + \
-            '          </volumetricHeatCapacity>\n' + \
-            '           <thickness>[0.01,0.1273,0.0015]</thickness>\n' + \
-            '         </materials>\n' + \
-            '        <vegetationCoverage>0</vegetationCoverage>\n' + \
-            '        <inclination>1</inclination>\n' + \
-            '        <initialTemperature>20</initialTemperature>\n' + \
-            '      </roof>\n' + \
-            '      <mass>\n' + \
-            '        <albedo>0.5</albedo>\n' + \
-            '        <emissivity>0.5</emissivity>\n' + \
-            '        <materials name="Boston C IM">\n' + \
-            '          <names>\n' + \
-            '            <item>Concrete HW</item>\n' + \
-            '          </names>\n' + \
-            '          <thermalConductivity>\n' + \
-            '            <item>1.31</item>\n' + \
-            '          </thermalConductivity>\n' + \
-            '          <volumetricHeatCapacity>\n' + \
-            '            <item>1874432</item>\n' + \
-            '          </volumetricHeatCapacity>\n' + \
-            '          <thickness>[0.1]</thickness>\n' + \
-            '        </materials>\n' + \
-            '        <vegetationCoverage>0</vegetationCoverage>\n' + \
-            '        <inclination>1</inclination>\n' + \
-            '        <initialTemperature>20</initialTemperature>\n' + \
-            '      </mass>\n' + \
-            '      <glazing name="Boston C">\n' + \
-            '        <glazingRatio>0.212</glazingRatio>\n' + \
-            '        <windowUvalue>3.24</windowUvalue>\n' + \
-            '        <windowSHGC>0.39</windowSHGC>\n' + \
-            '      </glazing>\n' + \
-            '    </construction>\n' + \
-            '    <building name="BOS Commercial' + str(typNum) + 'Bldg">\n' + \
-            '      <floorHeight>3</floorHeight>\n' + \
-            '      <dayInternalGains>24.7145454545455</dayInternalGains>\n' + \
-            '      <nightInternalGains>5.58725274725274</nightInternalGains>\n' + \
-            '      <radiantFraction>0.5</radiantFraction>\n' + \
-            '      <latentFraction>0.09</latentFraction>\n' + \
-            '      <infiltration>0.176785714285714</infiltration>\n' + \
-            '      <ventilation>1</ventilation>\n' + \
-            '      <coolingSystemType>air</coolingSystemType>\n' + \
-            '      <coolingCOP>3.7</coolingCOP>\n' + \
-            '      <daytimeCoolingSetPoint>25</daytimeCoolingSetPoint>\n' + \
-            '      <nighttimeCoolingSetPoint>26</nighttimeCoolingSetPoint>\n' + \
-            '      <daytimeHeatingSetPoint>20</daytimeHeatingSetPoint>\n' + \
-            '      <nighttimeHeatingSetPoint>17</nighttimeHeatingSetPoint>\n' + \
-            '      <coolingCapacity>205</coolingCapacity>\n' + \
-            '      <heatingEfficiency>0.8</heatingEfficiency>\n' + \
-            '      <nightSetStart>19</nightSetStart>\n' + \
-            '      <nightSetEnd>5</nightSetEnd>\n' + \
-            '      <heatReleasedToCanyon>0</heatReleasedToCanyon>\n' + \
-            '      <initialT>20</initialT>\n' + \
-            '    </building>\n' + \
             '  </typology' + str(typNum) + '>\n'
         
         return blankTypo
+    
+    
+    def defaultCommTypology(self, flr2Flr, glzRatio, climateZone, wallVeg, roofVeg):
+        #Create the Commercial Typology.
+        commTypo = '  <typology1 dist="TBDPercent" name="DefaultCommercial">\n' + \
+            '    <dist>TBDPercent</dist>\n' + \
+            '    <construction>\n' + \
+            '      <wall>\n' + \
+            '        <albedo>0.4</albedo>\n' + \
+            '        <emissivity>0.9</emissivity>\n' + \
+            '        <materials name="ASHRAE 90.1-2010 EXTWALL METAL">\n' + \
+            '          <names>\n' + \
+            '            <item>Metal Siding</item>\n' + \
+            '            <item>Metal Building Wall Insulation</item>\n' + \
+            '            <item>1/2IN Gypsum</item>\n' + \
+            '          </names>\n' + \
+            '          <thermalConductivity>\n' + \
+            '            <item>44.9599999999999</item>\n' + \
+            '            <item>0.049</item>\n' + \
+            '            <item>' + str(self.wallConductByClimate[climateZone]) + '</item>\n' + \
+            '          </thermalConductivity>\n' + \
+            '          <volumetricHeatCapacity>\n' + \
+            '            <item>3152432.6</item>\n' + \
+            '            <item>221752.0</item>\n' + \
+            '            <item>651467.000000</item>\n' + \
+            '          </volumetricHeatCapacity>\n' + \
+            '          <thickness>[0.0015, 0.0815632376352, 0.012699999999999999]</thickness>\n' + \
+            '        </materials>\n' + \
+            '        <vegetationCoverage>' + str(wallVeg) + '</vegetationCoverage>\n' + \
+            '        <inclination>0</inclination>\n' + \
+            '        <initialTemperature>15.6</initialTemperature>\n' + \
+            '      </wall>\n' + \
+            '      <roof>\n' + \
+            '        <albedo>0.2</albedo>\n' + \
+            '        <emissivity>0.9</emissivity>\n' + \
+            '        <materials name="ASPHALTROOF">\n' + \
+            '          <names>\n' + \
+            '            <item>ASPHALTMEMBRANE</item>\n' + \
+            '            <item>METAL ROOF INSULATION</item>\n' + \
+            '            <item>METAL DECKING</item>\n' + \
+            '          </names>\n' + \
+            '          <thermalConductivity>\n' + \
+            '            <item>0.02</item>\n' + \
+            '            <item>' + str(self.roofConductByClimate[climateZone]) + '</item>\n' + \
+            '            <item>45.006</item>\n' + \
+            '          </thermalConductivity>\n' + \
+            '          <volumetricHeatCapacity>\n' + \
+            '            <item>1637083</item>\n' + \
+            '            <item>221752.0</item>\n' + \
+            '            <item>3213312.0</item>\n' + \
+            '          </volumetricHeatCapacity>\n' + \
+            '          <thickness>[0.01, 0.12602578716560001, 0.0015]</thickness>\n' + \
+            '        </materials>\n' + \
+            '        <vegetationCoverage>' + str(roofVeg) + '</vegetationCoverage>\n' + \
+            '        <inclination>1</inclination>\n' + \
+            '        <initialTemperature>15.6</initialTemperature>\n' + \
+            '      </roof>\n' + \
+            '      <mass>\n' + \
+            '        <albedo>0.3</albedo>\n' + \
+            '        <emissivity>0.9</emissivity>\n' + \
+            '        <materials name="Interior Floor">\n' + \
+            '          <names>\n' + \
+            '            <item>F16 Acoustic tile</item>\n' + \
+            '            <item>F05 Ceiling air space resistance</item>\n' + \
+            '            <item>M11 100mm lightweight concrete</item>\n' + \
+            '          </names>\n' + \
+            '          <thermalConductivity>\n' + \
+            '            <item>0.06</item>\n' + \
+            '            <item>0.555555555556</item>\n' + \
+            '            <item>0.53</item>\n' + \
+            '          </thermalConductivity>\n' + \
+            '          <volumetricHeatCapacity>\n' + \
+            '            <item>217120.000000</item>\n' + \
+            '            <item>1211.025</item>\n' + \
+            '            <item>1075200.0</item>\n' + \
+            '          </volumetricHeatCapacity>\n' + \
+            '          <thickness>[0.019099999999999999, 0.10000000000000001, 0.1016]</thickness>\n' + \
+            '        </materials>\n' + \
+            '        <vegetationCoverage>0</vegetationCoverage>\n' + \
+            '        <inclination>1</inclination>\n' + \
+            '        <initialTemperature>15.6</initialTemperature>\n' + \
+            '      </mass>\n' + \
+            '      <glazing name="ASHRAE 90.1-2010 EXTWINDOW METAL">\n' + \
+            '        <glazingRatio>' + str(glzRatio) + '</glazingRatio>\n' + \
+            '        <windowUvalue>' + str(self.windowUValByClimate[climateZone]) + '</windowUvalue>\n' + \
+            '        <windowSHGC>' + str(self.windowSHGCByClimate[climateZone]) + '</windowSHGC>\n' + \
+            '      </glazing>\n' + \
+            '    </construction>\n' + \
+            '    <building name="OfficeBuilding">\n' + \
+            '      <floorHeight>' + str(flr2Flr) + '</floorHeight>\n' + \
+            '      <dayInternalGains>16.6907306330</dayInternalGains>\n' + \
+            '      <nightInternalGains>4.73692433306</nightInternalGains>\n' + \
+            '      <radiantFraction>0.540530874392</radiantFraction>\n' + \
+            '      <latentFraction>0.061651734104</latentFraction>\n' + \
+            '      <infiltration>0.160149750871</infiltration>\n' + \
+            '      <ventilation>0.417711093299</ventilation>\n' + \
+            '      <coolingSystemType>air</coolingSystemType>\n' + \
+            '      <coolingCOP>3.0</coolingCOP>\n' + \
+            '      <daytimeCoolingSetPoint>24.4167123288</daytimeCoolingSetPoint>\n' + \
+            '      <nighttimeCoolingSetPoint>26.0243835616</nighttimeCoolingSetPoint>\n' + \
+            '      <daytimeHeatingSetPoint>20.1665753425</daytimeHeatingSetPoint>\n' + \
+            '      <nighttimeHeatingSetPoint>16.9512328767</nighttimeHeatingSetPoint>\n' + \
+            '      <coolingCapacity>205</coolingCapacity>\n' + \
+            '      <heatingEfficiency>0.8</heatingEfficiency>\n' + \
+            '      <nightSetStart>20</nightSetStart>\n' + \
+            '      <nightSetEnd>8</nightSetEnd>\n' + \
+            '      <heatReleasedToCanyon>0.5</heatReleasedToCanyon>\n' + \
+            '      <initialT>15.6</initialT>\n' + \
+            '    </building>\n' + \
+            '  </typology1>\n'
+        
+        return commTypo
+    
+    
+    def defaultResidTypology(self, flr2Flr, glzRatio, climateZone, wallVeg, roofVeg):
+        #Create the Residential Typology.
+        residTypo = '  <typology1 dist="TBDPercent" name="DefaultResidence">\n' + \
+            '    <dist>TBDPercent</dist>\n' + \
+            '    <construction>\n' + \
+            '      <wall>\n' + \
+            '        <albedo>0.22</albedo>\n' + \
+            '        <emissivity>0.9</emissivity>\n' + \
+            '        <materials name="ASHRAE 90.1-2010 EXTWALL WOODFRAME">\n' + \
+            '          <names>\n' + \
+            '            <item>Wood Siding</item>\n' + \
+            '            <item>Wood Frame Wall Insulation</item>\n' + \
+            '            <item>1/2IN Gypsum</item>\n' + \
+            '          </names>\n' + \
+            '          <thermalConductivity>\n' + \
+            '            <item>0.11</item>\n' + \
+            '            <item>' + str(self.wallConductByClimate[climateZone]) + '</item>\n' + \
+            '            <item>0.16</item>\n' + \
+            '          </thermalConductivity>\n' + \
+            '          <volumetricHeatCapacity>\n' + \
+            '            <item>658990.2</item>\n' + \
+            '            <item>221752.0</item>\n' + \
+            '            <item>651467.000000</item>\n' + \
+            '          </volumetricHeatCapacity>\n' + \
+            '          <thickness>[0.01, 0.0815632376352, 0.012699999999999999]</thickness>\n' + \
+            '        </materials>\n' + \
+            '        <vegetationCoverage>' + str(wallVeg) + '</vegetationCoverage>\n' + \
+            '        <inclination>0</inclination>\n' + \
+            '        <initialTemperature>21.1000003815</initialTemperature>\n' + \
+            '      </wall>\n' + \
+            '      <roof>\n' + \
+            '        <albedo>0.2</albedo>\n' + \
+            '        <emissivity>0.9</emissivity>\n' + \
+            '        <materials name="ASPHALTROOF">\n' + \
+            '          <names>\n' + \
+            '            <item>ASPHALTMEMBRANE</item>\n' + \
+            '            <item>IEAD ROOF INSULATION</item>\n' + \
+            '            <item>METAL DECKING</item>\n' + \
+            '          </names>\n' + \
+            '          <thermalConductivity>\n' + \
+            '            <item>0.02</item>\n' + \
+            '            <item>' + str(self.roofConductByClimate[climateZone]) + '</item>\n' + \
+            '            <item>45.006</item>\n' + \
+            '          </thermalConductivity>\n' + \
+            '          <volumetricHeatCapacity>\n' + \
+            '            <item>1637083</item>\n' + \
+            '            <item>221752.0</item>\n' + \
+            '            <item>3213312.0</item>\n' + \
+            '          </volumetricHeatCapacity>\n' + \
+            '          <thickness>[0.01, 0.12733264797253799, 0.0015]</thickness>\n' + \
+            '        </materials>\n' + \
+            '        <vegetationCoverage>' + str(roofVeg) + '</vegetationCoverage>\n' + \
+            '        <inclination>1</inclination>\n' + \
+            '        <initialTemperature>21.1000003815</initialTemperature>\n' + \
+            '      </roof>\n' + \
+            '      <mass>\n' + \
+            '        <albedo>0.7</albedo>\n' + \
+            '        <emissivity>0.9</emissivity>\n' + \
+            '        <materials name="Interior Floor">\n' + \
+            '          <names>\n' + \
+            '            <item>F16 Acoustic tile</item>\n' + \
+            '            <item>F05 Ceiling air space resistance</item>\n' + \
+            '            <item>M11 100mm lightweight concrete</item>\n' + \
+            '          </names>\n' + \
+            '          <thermalConductivity>\n' + \
+            '            <item>0.06</item>\n' + \
+            '            <item>0.555555555556</item>\n' + \
+            '            <item>0.53</item>\n' + \
+            '          </thermalConductivity>\n' + \
+            '          <volumetricHeatCapacity>\n' + \
+            '            <item>217120.000000</item>\n' + \
+            '            <item>1211.025</item>\n' + \
+            '            <item>1075200.0</item>\n' + \
+            '          </volumetricHeatCapacity>\n' + \
+            '          <thickness>[0.019099999999999999, 0.10000000000000001, 0.1016]</thickness>\n' + \
+            '        </materials>\n' + \
+            '        <vegetationCoverage>0</vegetationCoverage>\n' + \
+            '        <inclination>1</inclination>\n' + \
+            '        <initialTemperature>21.1000003815</initialTemperature>\n' + \
+            '      </mass>\n' + \
+            '      <glazing name="ASHRAE 90.1-2010 EXTWINDOW METAL CLIMATEZONE 1">\n' + \
+            '        <glazingRatio>' + str(glzRatio) + '</glazingRatio>\n' + \
+            '        <windowUvalue>' + str(self.windowUValByClimate[climateZone]) + '</windowUvalue>\n' + \
+            '        <windowSHGC>' + str(self.windowSHGCByClimate[climateZone]) + '</windowSHGC>\n' + \
+            '      </glazing>\n' + \
+            '    </construction>\n' + \
+            '    <building name="ResidenceBuilding">\n' + \
+            '      <floorHeight>' + str(flr2Flr) + '</floorHeight>\n' + \
+            '      <dayInternalGains>7.50688450751</dayInternalGains>\n' + \
+            '      <nightInternalGains>10.0155473446</nightInternalGains>\n' + \
+            '      <radiantFraction>0.535689045372</radiantFraction>\n' + \
+            '      <latentFraction>0.0795843900193</latentFraction>\n' + \
+            '      <infiltration>0.271882332363</infiltration>\n' + \
+            '      <ventilation>0.0</ventilation>\n' + \
+            '      <coolingSystemType>air</coolingSystemType>\n' + \
+            '      <coolingCOP>1.7</coolingCOP>\n' + \
+            '      <daytimeCoolingSetPoint>23.8999996185</daytimeCoolingSetPoint>\n' + \
+            '      <nighttimeCoolingSetPoint>23.8999996185</nighttimeCoolingSetPoint>\n' + \
+            '      <daytimeHeatingSetPoint>21.1000003815</daytimeHeatingSetPoint>\n' + \
+            '      <nighttimeHeatingSetPoint>21.1000003815</nighttimeHeatingSetPoint>\n' + \
+            '      <coolingCapacity>205</coolingCapacity>\n' + \
+            '      <heatingEfficiency>0.8</heatingEfficiency>\n' + \
+            '      <nightSetStart>20</nightSetStart>\n' + \
+            '      <nightSetEnd>8</nightSetEnd>\n' + \
+            '      <heatReleasedToCanyon>1.0</heatReleasedToCanyon>\n' + \
+            '      <initialT>21.1000003815</initialT>\n' + \
+            '    </building>\n' + \
+            '  </typology1>\n'
+        
+        return residTypo
     
     def createXMLFromEPConstr(self, epConstr, type, vegCoverage, startSetPt):
         #Call the materials in the EP Construction.
@@ -724,7 +739,7 @@ class UWGTextGeneration(object):
                     emissivity = values[6]
             elif values[0] == 'Material:NoMass':
                 #Typical NoMass EP Opaque Material.  I took heat capacities and thickness here from a roof membrane material.
-                print "You have connected a zone with a NoMass material but the UWG requires that all constructions have a mass.  As such, a very low heat cpacity of 1 J/m3-K will be used."
+                print "You have connected a zone with a NoMass material but the UWG requires that all constructions have a mass.  As such, a very low heat cpacity of 1637 kJ/m3-K will be used with a thickness of 1 cm."
                 conductivities.append((1/float(values[2]))*0.01)
                 heatCapacities.append(1637083)
                 thicknesses.append(0.01)
@@ -879,8 +894,12 @@ class UWGTextGeneration(object):
         dayInternalGain = equipDayVal + lightDayVal + pplDayVal
         nightInternalGain = equipNightVal + lightNightVal + pplNightVal
         totalGain = (dayInternalGain + nightInternalGain) / 2
-        radiantFraction = ((((equipNightVal+equipDayVal)/2)/totalGain)*equipRadFrac) + ((((lightNightVal+lightDayVal)/2)/totalGain)*lightRadFrac) + ((((pplNightVal+pplDayVal)/2)/totalGain)*pplRadFrac)
-        latentFraction = ((((equipNightVal+equipDayVal)/2)/totalGain)*equipLatFrac) + ((((lightNightVal+lightDayVal)/2)/totalGain)*lightLatFrac) + ((((pplNightVal+pplDayVal)/2)/totalGain)*pplLatFrac)
+        if totalGain != 0:
+            radiantFraction = ((((equipNightVal+equipDayVal)/2)/totalGain)*equipRadFrac) + ((((lightNightVal+lightDayVal)/2)/totalGain)*lightRadFrac) + ((((pplNightVal+pplDayVal)/2)/totalGain)*pplRadFrac)
+            latentFraction = ((((equipNightVal+equipDayVal)/2)/totalGain)*equipLatFrac) + ((((lightNightVal+lightDayVal)/2)/totalGain)*lightLatFrac) + ((((pplNightVal+pplDayVal)/2)/totalGain)*pplLatFrac)
+        else:
+            radiantFraction = 0
+            latentFraction = 0
         
         #Write the resulting intGains into a string.
         intGainString = '      <dayInternalGains>' + str(dayInternalGain) + '</dayInternalGains>\n'

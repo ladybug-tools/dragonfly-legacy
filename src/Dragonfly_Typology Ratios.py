@@ -43,7 +43,7 @@ Provided by Dragonfly 0.0.01
 
 ghenv.Component.Name = "Dragonfly_Typology Ratios"
 ghenv.Component.NickName = 'TypologyRatios'
-ghenv.Component.Message = 'VER 0.0.57\nOCT_18_2015'
+ghenv.Component.Message = 'VER 0.0.57\nNOV_22_2015'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "2 | GenerateUrbanClimate"
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
@@ -213,7 +213,7 @@ if sc.sticky.has_key('dragonfly_release') == True:
     df_UWGGeo = sc.sticky["dragonfly_UWGGeometry"]()
 else:
     print "You should first let Dragonfly  fly..."
-    ghenv.Component.AddRuntimeMessage(w, "You should first let Dragonfly fly...")
+    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, "You should first let Dragonfly fly...")
 
 
 if len(_typology1Breps_) != 0 or len(_typology2Breps_) != 0 or len(_typology1Breps_) != 0 or len(_typology1Breps_) != 0:

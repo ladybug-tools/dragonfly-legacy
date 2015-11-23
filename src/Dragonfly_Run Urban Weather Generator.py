@@ -33,7 +33,7 @@ http://urbanmicroclimate.scripts.mit.edu/publications.php
 Provided by Dragonfly 0.0.01
     Args:
         _epwFile: An .epw file path on your system as a text string.  This is the rural or airport file that will be morphed to reflect the climate conditions within an urban canyon.
-        _UWGParameters: A list of parameters from one of the 'Dragonfly_UWG Parameters' components.  This list describes describes the characteristics of the urban street canyon for which an epw file will be produced.
+        _UWGCity: A list of parameters from one of the 'Dragonfly_UWG Parameters' components.  This list describes describes the characteristics of the urban street canyon for which an epw file will be produced.
         analysisPeriod_: An optional analysis period from the 'Ladybug_Analysis Period' component.  If no Analysis period is given, the Urban Weather Generator will be run for the enitre year.
         --------------------: ...
         epwSitePar_: An optional list of Reference EPW Site Parameters from the "Dragonfly_Reference EPW Site Par" component.
@@ -53,7 +53,7 @@ Provided by Dragonfly 0.0.01
 
 ghenv.Component.Name = "Dragonfly_Run Urban Weather Generator"
 ghenv.Component.NickName = 'RunUWG'
-ghenv.Component.Message = 'VER 0.0.01\nOCT_20_2015'
+ghenv.Component.Message = 'VER 0.0.01\nNOV_22_2015'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "2 | GenerateUrbanClimate"
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
@@ -86,11 +86,11 @@ def checkTheInputs(df_textGen, lb_preparation):
         ghenv.Component.AddRuntimeMessage(w, warning1)
         ghenv.Component.AddRuntimeMessage(w, warning2)
     
-    #Check to be sure that the _UWGParameters are valid.
+    #Check to be sure that the _UWGCity are valid.
     checkData2 = True
-    if not _UWGParameters.startswith('<?xml version="1.0" encoding="utf-8"?>\n<xml_input>'):
+    if not _UWGCity.startswith('<?xml version="1.0" encoding="utf-8"?>\n<xml_input>'):
         checkData2 = False
-        warning = "The connected _UWGParameters are not valid parameters fromt one of the 'Dragonfly_UWG Parameters' components."
+        warning = "The connected _UWGCity are not valid parameters fromt one of the 'Dragonfly_UWG Parameters' components."
         print warning
         ghenv.Component.AddRuntimeMessage(w, warning)
     
@@ -315,15 +315,15 @@ def main(workingDir, xmlFileName, epwFile, epwSiteParString, tempHeight, windHei
     
     #Insert the boundary layer par.
     if boundLayerPar:
-        UWGParametersSplit = _UWGParameters.split("    <daytimeBLHeight>700</daytimeBLHeight>\n    <nighttimeBLHeight>80</nighttimeBLHeight>\n    <refHeight>150</refHeight>\n")
-        UWGParameters = UWGParametersSplit[0] + boundLayerPar + UWGParametersSplit[-1]
+        UWGCitySplit = _UWGCity.split("    <daytimeBLHeight>700</daytimeBLHeight>\n    <nighttimeBLHeight>80</nighttimeBLHeight>\n    <refHeight>150</refHeight>\n")
+        UWGCity = UWGCitySplit[0] + boundLayerPar + UWGCitySplit[-1]
     else:
-        UWGParameters = _UWGParameters
+        UWGCity = _UWGCity
     
     #Bring the whole string together.
-    xmlStr = UWGParameters + refSiteStr + paramStr + '</xml_input>'
+    xmlStr = UWGCity + refSiteStr + paramStr + '</xml_input>'
     
-    #Replace the starting temperatures in the UWGParameters with the starting temperature of the EPWFile.
+    #Replace the starting temperatures in the UWGCity with the starting temperature of the EPWFile.
     xmlStrSplit = xmlStr.split('setByEPW')
     newXmlStr = xmlStrSplit[0]
     for count, string in enumerate(xmlStrSplit):
@@ -404,7 +404,7 @@ else:
 
 
 
-if initCheck == True and _writeXML == True and _epwFile and _UWGParameters:
+if initCheck == True and _writeXML == True and _epwFile and _UWGCity:
     checkData, workingDir, xmlFileName, epwFile, epwSiteParString, tempHeight, windHeight, boundLayerPar, analysisPeriodStr, stHOY, analysisPeriod, untouchablePar = checkTheInputs(df_textGen, lb_preparation)
     if checkData == True:
         xmlText, xmlFileAddress, epwFileAddress = main(workingDir, xmlFileName, epwFile, epwSiteParString, tempHeight, windHeight, boundLayerPar, analysisPeriodStr, stHOY, analysisPeriod, untouchablePar, df_textGen, lb_preparation)

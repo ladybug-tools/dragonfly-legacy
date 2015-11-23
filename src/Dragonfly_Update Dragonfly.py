@@ -36,7 +36,7 @@ Provided by Dragonfly 0.0.60
 
 ghenv.Component.Name = "Dragonfly_Update Dragonfly"
 ghenv.Component.NickName = 'updateDragonfly'
-ghenv.Component.Message = 'VER 0.0.60\nSEP_19_2015'
+ghenv.Component.Message = 'VER 0.0.60\nNOV_22_2015'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "4 | Developers"
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
