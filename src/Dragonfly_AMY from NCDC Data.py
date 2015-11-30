@@ -20,19 +20,26 @@
 
 
 """
-Use this component to generate a building typology using a HBZone that represents a single floor of the entire building.  The resulting typology can be plugged into the "Dragonfly_UWG Parameters from Typologies" component.
+Use this component to create an AMY weather file from a year of data downloaded from the National Climactic Data Center (NCDC) database and an existing TMY weather file for the location.
+_
+The existing EPW file is needed both to determine values that are not present in the data file (like latitude) and to help determine a relationship between radiation/illuminance and sky cover.  Since NCDC data usually does not contain data for radiation but does contain detailed information on cloud cover, this cloud cover information and the relation between cloud cover and radiation is used to produce radiation values in the new file.
+_
+All of the files in the NCDC database can be found on this map here:
+http://gis.ncdc.noaa.gov/map/viewer/#app=cdo&cfg=cdo&theme=hourly&layers=1&node=gi
+_
+The front page of the NCDC database can be found here:
+http://www.ncdc.noaa.gov/cdo-web/
 -
 Provided by Dragonfly 0.0.01
     Args:
-        _HBZones: A HBZone that represents a single floor of the whole building typology that you hope to create.  While it is important that this zone represent a single typical floor for the building typology, the roof construction of this zone should be representative of the roof of the whole building (not an interior ceilings).  The floor of the zone represents the interior floor construction.
-        roofVegFraction_: A number between 0 and 1 that represents the fraction of the building's roof that is covered in vegetation, such as green roof, grassy lawn, etc. If no value is input here, it will be assumed that the roof has no vegetation.
-        wallVegFraction_: A number between 0 and 1 that represents the fraction of the building's walls that is covered in vegetation, such as green wall, vine-covered wall, etc. If no value is input here, it will be assumed that the roof has no vegetation.
-        coolingCOP_: A number representing the mechanical cooling system coefficient of performance (COP), as defined as the ratio of the heat removed from a building over the electrical energy used by the building cooling system.  If no value is input here, a typical value of 3.7 will be used.
-        heatingCOP_: A number representing the effectiveness of the building heating system at transforming the fuel energy (either electricity or burned fuel) into building heat energy. If no value is input here, a typical value of 0.8 will be used, representative of a typical gas furnace.
-        coolingSystemType_: Set to 'True' to have the building modeled with an air-based cooling system and set to 'False' to have the building modeled with a water-based system.  The default is set to 'True' to model the building with an air-based system.
-        heatFract2Canyon_: A number between 0 an 1 that represents the fraction of the waste heat from the mechanical cooling system that is exhausted into the urban canyon as opposed to being release above your neighborhood boundary layer.  If no value is input here, a default of 0.5 will be used, assuming that half of the cooling system's waste heat is rejected to the canyon in the fashion that window AC units would.  Set to 0 to assume that all waste heat is exhausted through the roof.
+        _NCDCDataFile: A text string representing the file path of an annual NCDC data file that you have downloaded and unzipped to your system.  This is the file ending in 'dat.txt' in the unzipped folder that you have downloaded.  You can download NCDC data files by picking a location on this online map: http://gis.ncdc.noaa.gov/map/viewer/#app=cdo&cfg=cdo&theme=hourly&layers=1&node=gi.
+        _originalEPW: An text string representing an .epw file path on your system.  This EPW should be for the same location as the NCDC file above.
+        patchMissingVals_: Set to 'True' to have the component attempt to fill gaps in recorded data by placing in data from previous hours.  Set to 'False' to just write the default missing value into the EPW file (which is susually 99, 999, 9999, or some version of this).  The default is set to 'True'.  Note that setting this to 'False' will also mean that no radiation or illuminance calulation is performed for the weather file and the values of the original fil are written instead.
+        AMYfilename_: An optional text string to set the name of the output AMY file.
+        _runIt: Set to 'True' to run the component and generate an AMY file from the connected NCDC data and existing EPW file.
     Returns:
-        buildingTypology: A building typology that can be plugged into the "Dragonfly_UWG Parameters from Typologies" component.
+        readMe!:...
+        epwFile: The file address of the AMY file that has been written to your machine.
 """
 
 
@@ -44,7 +51,7 @@ ghenv.Component.NickName = 'AMYfromNCDC'
 ghenv.Component.Message = 'VER 0.0.01\nNOV_30_2015'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "3 | GenerateEPW"
-#compatibleLBVersion = VER 0.0.59\nFEB_01_2015
+#compatibleLBVersion = VER 0.0.59\nNOV_30_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
 except: pass
 
@@ -52,7 +59,76 @@ except: pass
 w = gh.GH_RuntimeMessageLevel.Warning
 
 
-def ncdc2epw(NCDC_File, lb_comfortModels):
+def computeRadSkyCoverRelation(skyCov, dirRad, difRad, glbRad):
+    #Create the lists to be filled
+    dirRadRelatMtx, difRadRelatMtx, glbRadRelatMtx = [], [], []
+    for month in range(12):
+        dirRadRelatMtx.append([])
+        difRadRelatMtx.append([])
+        glbRadRelatMtx.append([])
+        for hour in range(24):
+            dirRadRelatMtx[month].append([])
+            difRadRelatMtx[month].append([])
+            glbRadRelatMtx[month].append([])
+            for cov in range(11):
+                dirRadRelatMtx[month][hour].append([])
+                difRadRelatMtx[month][hour].append([])
+                glbRadRelatMtx[month][hour].append([])
+    
+    #Sort the lists into the matrices.
+    def sortVals(hourlyList, matrix, cloudCov):
+        for count, val in enumerate(hourlyList):
+            d, m, t = lb_preparation.hour2Date(count+1, True)
+            hour = t - 1
+            matrix[m][hour][int(cloudCov[count])].append(val)
+    sortVals(dirRad, dirRadRelatMtx, skyCov)
+    sortVals(difRad, difRadRelatMtx, skyCov)
+    sortVals(glbRad, glbRadRelatMtx, skyCov)
+    
+    #Average the sortedvalues of the maxrix.
+    def avgVals(matrix):
+        for mCount, month in enumerate(matrix):
+            for hCount, hour in enumerate(month):
+                for skyCnt, skyCov in enumerate(hour):
+                    if len(skyCov) != 0:
+                        matrix[mCount][hCount][skyCnt] = sum(skyCov)/len(skyCov)
+    avgVals(dirRadRelatMtx)
+    avgVals(difRadRelatMtx)
+    avgVals(glbRadRelatMtx)
+    
+    #if there are gaps in the matrix, interpolate between neighboring values or take a neighboring value.
+    def interpVals(matrix):
+        for mCount, month in enumerate(matrix):
+            for hCount, hour in enumerate(month):
+                for skyCnt, skyCov in enumerate(hour):
+                    if skyCov == []:
+                        try: matrix[mCount][hCount][skyCnt] = float((matrix[mCount][hCount][skyCnt+1] + matrix[mCount][hCount][skyCnt-1])/2)
+                        except:
+                            try: matrix[mCount][hCount][skyCnt] = float((matrix[mCount][hCount][skyCnt+1] + matrix[mCount][hCount][skyCnt-1])/2)
+                            except:
+                                try: matrix[mCount][hCount][skyCnt] = float(matrix[mCount][hCount][skyCnt+1])
+                                except:
+                                    try: matrix[mCount][hCount][skyCnt] = float(matrix[mCount][hCount][skyCnt-1])
+                                    except:
+                                        print "did not make it"
+                                        matrix[mCount][hCount][skyCnt] = 0
+    interpVals(dirRadRelatMtx)
+    interpVals(difRadRelatMtx)
+    interpVals(glbRadRelatMtx)
+    
+    return dirRadRelatMtx, difRadRelatMtx, glbRadRelatMtx
+
+def computeFromCloudCov(cloudCov, relatMtx):
+    finalDataList = []
+    for count, val in enumerate(cloudCov):
+        d, m, t = lb_preparation.hour2Date(count+1, True)
+        hour = t - 1
+        finalDataList.append(relatMtx[m][hour][int(val)])
+    
+    return finalDataList
+
+
+def getNCDC(NCDC_File, patchMissingVals, lb_comfortModels):
     #Types of Data to Pull from the file.
     modelYear = []
     dbTemp = []
@@ -69,12 +145,16 @@ def ncdc2epw(NCDC_File, lb_comfortModels):
     dateList = []
     hourList = []
     
+    #Have a list that relates NCDC sky cover to percent of the sky covered.
+    percentSkyCovList = [0, 1, 2, 4, 5, 6, 8, 9, 10, 10]
+    
     #Pull out the relevant information from the NCDCFile.
     NCDCFile = open(NCDC_File,"r")
     for lnum, line in enumerate(NCDCFile):
         if lnum > 1:
-            day = str(line.split(',')[2])
-            hour = str(line.split(',')[3])[:2]
+            splitLine = line.split(',')
+            day = str(splitLine[2])
+            hour = str(splitLine[3])[:2]
             date = day+hour
             
             if date not in dateList:
@@ -84,20 +164,23 @@ def ncdc2epw(NCDC_File, lb_comfortModels):
                     if hourFloat != lasthour+1:
                         if hourFloat > lasthour+1:
                             while lasthour+1 < hourFloat:
-                                modelYear.append(float(line.split(',')[2]))
-                                if float(line.split(',')[12]) > 900: dbTemp.append(dbTemp[-1])
-                                else: dbTemp.append(float(line.split(',')[20]))
-                                if float(line.split(',')[22]) > 900: dewPoint.append(dewPoint[-1])
-                                else: dewPoint.append(float(line.split(',')[22]))
-                                barPress.append(float(line.split(',')[24]))
-                                windSpeed.append(float(line.split(',')[10]))
-                                windDir.append(float(line.split(',')[7]))
-                                if line.split(',')[12] == '99999': ceilingHeight.append(ceilingHeight[-1])
-                                else: ceilingHeight.append(float(line.split(',')[12]))
-                                if line.split(',')[16] == '99999' or line.split(',')[16] == '      ': visibility.append(visibility[-1])
-                                else: visibility.append(float(line.split(',')[16]))
-                                if line.split(',')[590] == '99': cloudCov.append(cloudCov[-1])
-                                else: cloudCov.append(float(line.split(',')[590]))
+                                modelYear.append(''.join(list(splitLine[2])[:4]))
+                                if float(splitLine[20]) > 900 and patchMissingVals: dbTemp.append(dbTemp[-1])
+                                else: dbTemp.append(float(splitLine[20]))
+                                if float(splitLine[22]) > 900 and patchMissingVals: dewPoint.append(dewPoint[-1])
+                                else: dewPoint.append(float(splitLine[22]))
+                                if float(splitLine[24]) > 9000 and patchMissingVals: barPress.append(barPress[-1])
+                                else: barPress.append(float(splitLine[24]))
+                                if float(splitLine[10]) > 900 and patchMissingVals: windSpeed.append(windSpeed[-1])
+                                else: windSpeed.append(float(splitLine[10]))
+                                if float(splitLine[7]) > 900 and patchMissingVals: windDir.append(windDir[-1])
+                                else: windDir.append(float(splitLine[7]))
+                                if splitLine[12] == '99999' and patchMissingVals: ceilingHeight.append(ceilingHeight[-1])
+                                else: ceilingHeight.append(float(splitLine[12]))
+                                if splitLine[16] == '99999' or splitLine[16] == '      ' and patchMissingVals:visibility.append(visibility[-1])
+                                else: visibility.append(float(splitLine[16]))
+                                if splitLine[590] == '99' and patchMissingVals: cloudCov.append(cloudCov[-1])
+                                else: cloudCov.append(percentSkyCovList[int(splitLine[590])])
                                 
                                 hourList.append(str(lasthour))
                                 dateList.append(date)
@@ -105,40 +188,46 @@ def ncdc2epw(NCDC_File, lb_comfortModels):
                                 lasthour += 1
                         elif lasthour != 23:
                             while lasthour-24 < hourFloat-1:
-                                modelYear.append(float(line.split(',')[2]))
-                                if float(line.split(',')[12]) > 900: dbTemp.append(dbTemp[-1])
-                                else: dbTemp.append(float(line.split(',')[20]))
-                                if float(line.split(',')[22]) > 900: dewPoint.append(dewPoint[-1])
-                                else: dewPoint.append(float(line.split(',')[22]))
-                                barPress.append(float(line.split(',')[24]))
-                                windSpeed.append(float(line.split(',')[10]))
-                                windDir.append(float(line.split(',')[7]))
-                                if line.split(',')[12] == '99999': ceilingHeight.append(ceilingHeight[-1])
-                                else: ceilingHeight.append(float(line.split(',')[12]))
-                                if line.split(',')[16] == '99999' or line.split(',')[16] == '      ': visibility.append(visibility[-1])
-                                else: visibility.append(float(line.split(',')[16]))
-                                if line.split(',')[590] == '99': cloudCov.append(cloudCov[-1])
-                                else: cloudCov.append(float(line.split(',')[590]))
+                                modelYear.append(''.join(list(splitLine[2])[:4]))
+                                if float(splitLine[20]) > 900 and patchMissingVals: dbTemp.append(dbTemp[-1])
+                                else: dbTemp.append(float(splitLine[20]))
+                                if float(splitLine[22]) > 900 and patchMissingVals: dewPoint.append(dewPoint[-1])
+                                else: dewPoint.append(float(splitLine[22]))
+                                if float(splitLine[24]) > 9000 and patchMissingVals: barPress.append(barPress[-1])
+                                else: barPress.append(float(splitLine[24]))
+                                if float(splitLine[10]) > 900 and patchMissingVals: windSpeed.append(windSpeed[-1])
+                                else: windSpeed.append(float(splitLine[10]))
+                                if float(splitLine[7]) > 900 and patchMissingVals: windDir.append(windDir[-1])
+                                else: windDir.append(float(splitLine[7]))
+                                if splitLine[12] == '99999' and patchMissingVals: ceilingHeight.append(ceilingHeight[-1])
+                                else: ceilingHeight.append(float(splitLine[12]))
+                                if splitLine[16] == '99999' or splitLine[16] == '      ' and patchMissingVals: visibility.append(visibility[-1])
+                                else: visibility.append(float(splitLine[16]))
+                                if splitLine[590] == '99' and patchMissingVals: cloudCov.append(cloudCov[-1])
+                                else: cloudCov.append(percentSkyCovList[int(splitLine[590])])
                                 hourList.append(str(lasthour))
                                 dateList.append(date)
                                 
                                 lasthour += 1
                 except: pass
                 
-                modelYear.append(float(line.split(',')[2]))
-                if float(line.split(',')[12]) > 900: dbTemp.append(dbTemp[-1])
-                else: dbTemp.append(float(line.split(',')[20]))
-                if float(line.split(',')[22]) > 900: dewPoint.append(dewPoint[-1])
-                else: dewPoint.append(float(line.split(',')[22]))
-                barPress.append(float(line.split(',')[24]))
-                windSpeed.append(float(line.split(',')[10]))
-                windDir.append(float(line.split(',')[7]))
-                if line.split(',')[12] == '99999': ceilingHeight.append(ceilingHeight[-1])
-                else: ceilingHeight.append(float(line.split(',')[12]))
-                if line.split(',')[16] == '99999' or line.split(',')[16] == '      ': visibility.append(visibility[-1])
-                else: visibility.append(float(line.split(',')[16]))
-                if line.split(',')[590] == '99': cloudCov.append(cloudCov[-1])
-                else: cloudCov.append(float(line.split(',')[590]))
+                modelYear.append(''.join(list(splitLine[2])[:4]))
+                if float(splitLine[20]) > 900 and patchMissingVals: dbTemp.append(dbTemp[-1])
+                else: dbTemp.append(float(splitLine[20]))
+                if float(splitLine[22]) > 900 and patchMissingVals: dewPoint.append(dewPoint[-1])
+                else: dewPoint.append(float(splitLine[22]))
+                if float(splitLine[24]) > 9000 and patchMissingVals: barPress.append(barPress[-1])
+                else: barPress.append(float(splitLine[24]))
+                if float(splitLine[10]) > 900 and patchMissingVals: windSpeed.append(windSpeed[-1])
+                else: windSpeed.append(float(splitLine[10]))
+                if float(splitLine[7]) > 900 and patchMissingVals: windDir.append(windDir[-1])
+                else: windDir.append(float(splitLine[7]))
+                if splitLine[12] == '99999' and patchMissingVals: ceilingHeight.append(ceilingHeight[-1])
+                else: ceilingHeight.append(float(splitLine[12]))
+                if splitLine[16] == '99999' or splitLine[16] == '      ' and patchMissingVals: visibility.append(visibility[-1])
+                else: visibility.append(float(splitLine[16]))
+                if splitLine[590] == '99' and patchMissingVals: cloudCov.append(cloudCov[-1])
+                else: cloudCov.append(percentSkyCovList[int(splitLine[590])])
                 
                 hourList.append(hour)
                 dateList.append(date)
@@ -150,21 +239,127 @@ def ncdc2epw(NCDC_File, lb_comfortModels):
     for val in barPress:
         barpressNew.append(float(val)*100)
     
+    #Check cloud cover values to be sure that values greater than 100% are read as 100%
+    for count, val in enumerate(cloudCov):
+        if val > 9: cloudCov[count] = 9
+    
     #Compute relative humidity from dry bulb and dew point.
     for count, temp in enumerate(dbTemp):
-        RH = lb_comfortModels.calcRelHumidFromDryBulbDewPt(temp, dewPoint[count])
-        if RH > 100: relHumid.append(100)
-        else: relHumid.append(RH)
+        if temp < 900 and dewPoint[count] < 900:
+            RH = lb_comfortModels.calcRelHumidFromDryBulbDewPt(temp, dewPoint[count])
+            if RH > 100: relHumid.append(100)
+            else: relHumid.append(RH)
+        else:
+            relHumid.append(999)
     
-    return dewPoint
+    return modelYear, dbTemp, dewPoint, relHumid, windSpeed, windDir, barpressNew, cloudCov, visibility, ceilingHeight
+
+def writeEPW(originalEPW, AMYfilename, modelYear, dbTemp, dewPoint, relHumid, windSpeed, windDir, barPress, cloudCov, visibility, ceilingHeight, dirRad, difRad, glbRad, dirIll, difIll, glbIll):
+    #Assemble all of the lines for the EPW.
+    linesForEpw = []
+    hourCount = 0
+    originalEpwfile = open(originalEPW,"r")
+    for lnum, line in enumerate(originalEpwfile):
+        if lnum < 8: linesForEpw.append(line)
+        else:
+            splitLine = line.split(',')
+            newline = str(modelYear[hourCount]) + ','
+            newline = newline + str(splitLine[1]) + ','
+            newline = newline + str(splitLine[2]) + ','
+            newline = newline + str(splitLine[3]) + ','
+            newline = newline + str(splitLine[4]) + ','
+            newline = newline + str(splitLine[5]) + ','
+            newline = newline + str(dbTemp[hourCount]) + ','
+            newline = newline + str(dewPoint[hourCount]) + ','
+            newline = newline + str(relHumid[hourCount]) + ','
+            newline = newline + str(barPress[hourCount]) + ','
+            newline = newline + str(splitLine[10]) + ','
+            newline = newline + str(splitLine[11]) + ','
+            newline = newline + str(splitLine[12]) + ','
+            newline = newline + str(glbRad[hourCount]) + ','
+            newline = newline + str(dirRad[hourCount]) + ','
+            newline = newline + str(difRad[hourCount]) + ','
+            newline = newline + str(glbIll[hourCount]) + ','
+            newline = newline + str(dirIll[hourCount]) + ','
+            newline = newline + str(difIll[hourCount]) + ','
+            newline = newline + str(splitLine[19]) + ','
+            newline = newline + str(windDir[hourCount]) + ','
+            newline = newline + str(windSpeed[hourCount]) + ','
+            newline = newline + str(cloudCov[hourCount]) + ','
+            newline = newline + str(cloudCov[hourCount]) + ','
+            newline = newline + str(visibility[hourCount]) + ','
+            newline = newline + str(ceilingHeight[hourCount]) + ','
+            newline = newline + str(splitLine[26]) + ','
+            newline = newline + str(splitLine[27]) + ','
+            newline = newline + str(splitLine[28]) + ','
+            newline = newline + str(splitLine[29]) + ','
+            newline = newline + str(splitLine[30]) + ','
+            newline = newline + str(splitLine[31]) + ','
+            newline = newline + str(splitLine[32]) + ','
+            newline = newline + str(splitLine[33]) + ','
+            newline = newline + str(splitLine[34])
+            
+            linesForEpw.append(newline)
+            hourCount +=1
+    
+    #Write all of the data into a new file.
+    workingDirInit = originalEPW.split('\\')[:-1]
+    workingDir = ''
+    for folder in workingDirInit:
+        workingDir = workingDir + folder + '\\'
+    finalFilePath = workingDir + AMYfilename + '.epw'
+    finalFile = open(finalFilePath, "w")
+    for line in linesForEpw:
+        finalFile.write(line)
+    
+    #Close the files
+    finalFile.close()
+    originalEpwfile.close()
+    
+    
+    return finalFilePath
 
 
 def main(NCDCDataFile, originalEPW, lb_preparation, lb_comfortModels):
+    #Set a default patchMissingVals_.
+    if patchMissingVals_ == None: patchMissingVals = True
+    else: patchMissingVals = patchMissingVals_
     
-    data = ncdc2epw(NCDCDataFile, lb_comfortModels)
+    #Set default AMYfilename.
+    if AMYfilename_ == None: AMYfilename = originalEPW.split('\\')[-1].split('.epw')[0] + 'AMY'
+    else:
+        if AMYfilename_.endswith('.epw'): AMYfilename = AMYfilename.split('.epw')[0]
+        else: AMYfilename = AMYfilename_
+    
+    #Determine the relationship between sky cover and radiation in the existing EPW file.
+    weatherData = lb_preparation.epwDataReader(originalEPW)
+    skyCov = weatherData[11][7:]
+    dirRad = weatherData[5][7:]
+    difRad = weatherData[6][7:]
+    glbRad = weatherData[7][7:]
+    dirIll = weatherData[8][7:]
+    difIll = weatherData[9][7:]
+    glbIll = weatherData[10][7:]
+    dirRadRelatMtx, difRadRelatMtx, glbRadRelatMtx = computeRadSkyCoverRelation(skyCov, dirRad, difRad, glbRad)
+    dirIllRelatMtx, difIllRelatMtx, glbIllRelatMtx = computeRadSkyCoverRelation(skyCov, dirIll, difIll, glbIll)
+    
+    #Grab all of the data from the NCDC file.
+    modelYear, dbTemp, dewPoint, relHumid, windSpeed, windDir, barPress, cloudCov, visibility, ceilingHeight = getNCDC(NCDCDataFile, patchMissingVals, lb_comfortModels)
+    
+    if patchMissingVals == True:
+        #Compute radiation and illuminance values for the new weather file using the sky cover from the NCDCDataFile and the relational matrices.
+        dirRad = computeFromCloudCov(cloudCov, dirRadRelatMtx)
+        difRad = computeFromCloudCov(cloudCov, difRadRelatMtx)
+        glbRad = computeFromCloudCov(cloudCov, glbRadRelatMtx)
+        dirIll = computeFromCloudCov(cloudCov, dirIllRelatMtx)
+        difIll = computeFromCloudCov(cloudCov, difIllRelatMtx)
+        glbIll = computeFromCloudCov(cloudCov, glbIllRelatMtx)
+    
+    #Write all of the AMY data into a final EPW.
+    amyEpwFile = writeEPW(originalEPW, AMYfilename, modelYear, dbTemp, dewPoint, relHumid, windSpeed, windDir, barPress, cloudCov, visibility, ceilingHeight, dirRad, difRad, glbRad, dirIll, difIll, glbIll)
     
     
-    return None
+    return amyEpwFile
 
 
 #If Honeybee or Ladybug is not flying or is an older version, give a warning.
