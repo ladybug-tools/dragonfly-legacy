@@ -52,12 +52,12 @@ except: pass
 w = gh.GH_RuntimeMessageLevel.Warning
 
 
-def ncdc2epw(NCDC_File):
+def ncdc2epw(NCDC_File, lb_comfortModels):
     #Types of Data to Pull from the file.
     modelYear = []
     dbTemp = []
     dewPoint = []
-    RH = []
+    relHumid = []
     windSpeed = []
     windDir = []
     barPress = []
@@ -85,9 +85,10 @@ def ncdc2epw(NCDC_File):
                         if hourFloat > lasthour+1:
                             while lasthour+1 < hourFloat:
                                 modelYear.append(float(line.split(',')[2]))
-                                dbTemp.append(float(line.split(',')[20]))
-                                dewPoint.append(float(line.split(',')[22]))
-                                #RH.append(float(line.split(',')[8]))
+                                if float(line.split(',')[12]) > 900: dbTemp.append(dbTemp[-1])
+                                else: dbTemp.append(float(line.split(',')[20]))
+                                if float(line.split(',')[22]) > 900: dewPoint.append(dewPoint[-1])
+                                else: dewPoint.append(float(line.split(',')[22]))
                                 barPress.append(float(line.split(',')[24]))
                                 windSpeed.append(float(line.split(',')[10]))
                                 windDir.append(float(line.split(',')[7]))
@@ -105,9 +106,10 @@ def ncdc2epw(NCDC_File):
                         elif lasthour != 23:
                             while lasthour-24 < hourFloat-1:
                                 modelYear.append(float(line.split(',')[2]))
-                                dbTemp.append(float(line.split(',')[20]))
-                                dewPoint.append(float(line.split(',')[22]))
-                                #RH.append(float(line.split(',')[8]))
+                                if float(line.split(',')[12]) > 900: dbTemp.append(dbTemp[-1])
+                                else: dbTemp.append(float(line.split(',')[20]))
+                                if float(line.split(',')[22]) > 900: dewPoint.append(dewPoint[-1])
+                                else: dewPoint.append(float(line.split(',')[22]))
                                 barPress.append(float(line.split(',')[24]))
                                 windSpeed.append(float(line.split(',')[10]))
                                 windDir.append(float(line.split(',')[7]))
@@ -124,9 +126,10 @@ def ncdc2epw(NCDC_File):
                 except: pass
                 
                 modelYear.append(float(line.split(',')[2]))
-                dbTemp.append(float(line.split(',')[20]))
-                dewPoint.append(float(line.split(',')[22]))
-                #RH.append(float(line.split(',')[8]))
+                if float(line.split(',')[12]) > 900: dbTemp.append(dbTemp[-1])
+                else: dbTemp.append(float(line.split(',')[20]))
+                if float(line.split(',')[22]) > 900: dewPoint.append(dewPoint[-1])
+                else: dewPoint.append(float(line.split(',')[22]))
                 barPress.append(float(line.split(',')[24]))
                 windSpeed.append(float(line.split(',')[10]))
                 windDir.append(float(line.split(',')[7]))
@@ -148,15 +151,17 @@ def ncdc2epw(NCDC_File):
         barpressNew.append(float(val)*100)
     
     #Compute relative humidity from dry bulb and dew point.
-    #calcRelHumidFromDryBulbDewPt(temperature, dewPt)
-    
+    for count, temp in enumerate(dbTemp):
+        RH = lb_comfortModels.calcRelHumidFromDryBulbDewPt(temp, dewPoint[count])
+        if RH > 100: relHumid.append(100)
+        else: relHumid.append(RH)
     
     return dewPoint
 
 
-def main(NCDCDataFile, originalEPW):
+def main(NCDCDataFile, originalEPW, lb_preparation, lb_comfortModels):
     
-    data = ncdc2epw(NCDCDataFile)
+    data = ncdc2epw(NCDCDataFile, lb_comfortModels)
     
     
     return None
@@ -174,6 +179,8 @@ else:
     try:
         if not sc.sticky['ladybug_release'].isCompatible(ghenv.Component): initCheck = False
         if sc.sticky['ladybug_release'].isInputMissing(ghenv.Component): initCheck = False
+        lb_preparation = sc.sticky["ladybug_Preparation"]()
+        lb_comfortModels = sc.sticky["ladybug_ComfortModels"]()
     except:
         initCheck = False
         warning = "You need a newer version of Ladybug to use this compoent." + \
@@ -184,5 +191,5 @@ else:
 
 
 if _runIt and initCheck:
-    epwFile = main(_NCDCDataFile, _originalEPW)
+    epwFile = main(_NCDCDataFile, _originalEPW, lb_preparation, lb_comfortModels)
 
