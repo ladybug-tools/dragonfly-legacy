@@ -76,7 +76,7 @@ Provided by Dragonfly 0.0.01
 
 ghenv.Component.Name = "Dragonfly_UWG City from Typologies"
 ghenv.Component.NickName = 'UWGCityFromTypology'
-ghenv.Component.Message = 'VER 0.0.01\nNOV_22_2015'
+ghenv.Component.Message = 'VER 0.0.01\nFEB_03_2016'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "2 | GenerateUrbanClimate"
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
@@ -101,13 +101,19 @@ def checkTheInputs(df_textGen, df_UWGGeo):
         print warning
         ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
     else:
-        for typology in _buildingTypologies:
-            if typology.startswith('  <typology'): pass
-            else: checkData1 = False
-        if checkData1 == False:
-            warning = "The input to the _buildingTypologies does not appear to be a valid UWG Building Typology \n generated with either the 'Dragonfly_Building Typology from HBZone' or the 'Dragonfly_Building Typology from Parameters' component."
+        try:
+            for typology in _buildingTypologies:
+                if typology.startswith('  <typology'): pass
+                else: checkData1 = False
+            if checkData1 == False:
+                warning = "The input to the _buildingTypologies does not appear to be a valid UWG Building Typology \n generated with either the 'Dragonfly_Building Typology from HBZone' or the 'Dragonfly_Building Typology from Parameters' component."
+                print warning
+                ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+        except:
+            checkData1 = False
+            warning = "Null value connected for _buildingTypologies."
             print warning
-            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Error, warning)
     
     #Check the typologyRatios_ and be sure that the length of the list matches the length of the _buildingTypologies list.
     checkData2 = False
