@@ -48,7 +48,7 @@ import Grasshopper.Kernel as gh
 
 ghenv.Component.Name = "Dragonfly_AMY from NCDC Data"
 ghenv.Component.NickName = 'AMYfromNCDC'
-ghenv.Component.Message = 'VER 0.0.01\nNOV_30_2015'
+ghenv.Component.Message = 'VER 0.0.01\nMAR_06_2016'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "3 | GenerateEPW"
 #compatibleLBVersion = VER 0.0.59\nNOV_30_2015
@@ -128,7 +128,7 @@ def computeFromCloudCov(cloudCov, relatMtx):
     return finalDataList
 
 
-def getNCDC(NCDC_File, patchMissingVals, lb_comfortModels):
+def getNCDC(NCDC_File, patchMissingVals, lb_preparation, lb_comfortModels):
     #Types of Data to Pull from the file.
     modelYear = []
     dbTemp = []
@@ -158,58 +158,60 @@ def getNCDC(NCDC_File, patchMissingVals, lb_comfortModels):
             date = day+hour
             
             if date not in dateList:
-                try:
-                    lasthour = int(hourList[-1])
-                    hourFloat = int(hour)
-                    if hourFloat != lasthour+1:
-                        if hourFloat > lasthour+1:
-                            while lasthour+1 < hourFloat:
-                                modelYear.append(''.join(list(splitLine[2])[:4]))
-                                if float(splitLine[20]) > 900 and patchMissingVals: dbTemp.append(dbTemp[-1])
-                                else: dbTemp.append(float(splitLine[20]))
-                                if float(splitLine[22]) > 900 and patchMissingVals: dewPoint.append(dewPoint[-1])
-                                else: dewPoint.append(float(splitLine[22]))
-                                if float(splitLine[24]) > 9000 and patchMissingVals: barPress.append(barPress[-1])
-                                else: barPress.append(float(splitLine[24]))
-                                if float(splitLine[10]) > 900 and patchMissingVals: windSpeed.append(windSpeed[-1])
-                                else: windSpeed.append(float(splitLine[10]))
-                                if float(splitLine[7]) > 900 and patchMissingVals: windDir.append(windDir[-1])
-                                else: windDir.append(float(splitLine[7]))
-                                if splitLine[12] == '99999' and patchMissingVals: ceilingHeight.append(ceilingHeight[-1])
-                                else: ceilingHeight.append(float(splitLine[12]))
-                                if splitLine[16] == '99999' or splitLine[16] == '      ' and patchMissingVals:visibility.append(visibility[-1])
-                                else: visibility.append(float(splitLine[16]))
-                                if splitLine[590] == '99' and patchMissingVals: cloudCov.append(cloudCov[-1])
-                                else: cloudCov.append(percentSkyCovList[int(splitLine[590])])
-                                
-                                hourList.append(str(lasthour))
-                                dateList.append(date)
-                                
-                                lasthour += 1
-                        elif lasthour != 23:
-                            while lasthour-24 < hourFloat-1:
-                                modelYear.append(''.join(list(splitLine[2])[:4]))
-                                if float(splitLine[20]) > 900 and patchMissingVals: dbTemp.append(dbTemp[-1])
-                                else: dbTemp.append(float(splitLine[20]))
-                                if float(splitLine[22]) > 900 and patchMissingVals: dewPoint.append(dewPoint[-1])
-                                else: dewPoint.append(float(splitLine[22]))
-                                if float(splitLine[24]) > 9000 and patchMissingVals: barPress.append(barPress[-1])
-                                else: barPress.append(float(splitLine[24]))
-                                if float(splitLine[10]) > 900 and patchMissingVals: windSpeed.append(windSpeed[-1])
-                                else: windSpeed.append(float(splitLine[10]))
-                                if float(splitLine[7]) > 900 and patchMissingVals: windDir.append(windDir[-1])
-                                else: windDir.append(float(splitLine[7]))
-                                if splitLine[12] == '99999' and patchMissingVals: ceilingHeight.append(ceilingHeight[-1])
-                                else: ceilingHeight.append(float(splitLine[12]))
-                                if splitLine[16] == '99999' or splitLine[16] == '      ' and patchMissingVals: visibility.append(visibility[-1])
-                                else: visibility.append(float(splitLine[16]))
-                                if splitLine[590] == '99' and patchMissingVals: cloudCov.append(cloudCov[-1])
-                                else: cloudCov.append(percentSkyCovList[int(splitLine[590])])
-                                hourList.append(str(lasthour))
-                                dateList.append(date)
-                                
-                                lasthour += 1
-                except: pass
+                try: lasthour = int(hourList[-1])
+                except: lasthour = 0
+                hourFloat = int(hour)
+                
+                if hourFloat != lasthour+1 and lnum != 2:
+                    if hourFloat > lasthour+1:
+                        while lasthour+1 < hourFloat:
+                            
+                            modelYear.append(''.join(list(splitLine[2])[:4]))
+                            if float(splitLine[20]) > 900 and patchMissingVals: dbTemp.append(dbTemp[-1])
+                            else: dbTemp.append(float(splitLine[20]))
+                            if float(splitLine[22]) > 900 and patchMissingVals: dewPoint.append(dewPoint[-1])
+                            else: dewPoint.append(float(splitLine[22]))
+                            if float(splitLine[24]) > 9000 and patchMissingVals: barPress.append(barPress[-1])
+                            else: barPress.append(float(splitLine[24]))
+                            if float(splitLine[10]) > 900 and patchMissingVals:  windSpeed.append(float(splitLine[10]))
+                            else:windSpeed.append(windSpeed[-1])
+                            if float(splitLine[7]) > 900 and patchMissingVals: windDir.append(windDir[-1])
+                            else: windDir.append(float(splitLine[7]))
+                            if splitLine[12] == '99999' and patchMissingVals: ceilingHeight.append(ceilingHeight[-1])
+                            else: ceilingHeight.append(float(splitLine[12]))
+                            if splitLine[16] == '99999' or splitLine[16] == '      ' and patchMissingVals:visibility.append(visibility[-1])
+                            else: visibility.append(float(splitLine[16]))
+                            if splitLine[590] == '99' and patchMissingVals: cloudCov.append(cloudCov[-1])
+                            else: cloudCov.append(percentSkyCovList[int(splitLine[590])])
+                            
+                            hourList.append(str(lasthour))
+                            dateList.append(date)
+                            
+                            lasthour += 1
+                    elif lasthour != 23:
+                        while lasthour-24 < hourFloat-1:
+                            modelYear.append(''.join(list(splitLine[2])[:4]))
+                            if float(splitLine[20]) > 900 and patchMissingVals: dbTemp.append(dbTemp[-1])
+                            else: dbTemp.append(float(splitLine[20]))
+                            if float(splitLine[22]) > 900 and patchMissingVals: dewPoint.append(dewPoint[-1])
+                            else: dewPoint.append(float(splitLine[22]))
+                            if float(splitLine[24]) > 9000 and patchMissingVals: barPress.append(barPress[-1])
+                            else: barPress.append(float(splitLine[24]))
+                            if float(splitLine[10]) > 900 and patchMissingVals: windSpeed.append(float(splitLine[10]))
+                            else: windSpeed.append(float(splitLine[10]))
+                            if float(splitLine[7]) > 900 and patchMissingVals: windDir.append(windDir[-1])
+                            else: windDir.append(float(splitLine[7]))
+                            if splitLine[12] == '99999' and patchMissingVals: ceilingHeight.append(ceilingHeight[-1])
+                            else: ceilingHeight.append(float(splitLine[12]))
+                            if splitLine[16] == '99999' or splitLine[16] == '      ' and patchMissingVals: visibility.append(visibility[-1])
+                            else: visibility.append(float(splitLine[16]))
+                            if splitLine[590] == '99' and patchMissingVals: cloudCov.append(cloudCov[-1])
+                            else: cloudCov.append(percentSkyCovList[int(splitLine[590])])
+                            hourList.append(str(lasthour))
+                            dateList.append(date)
+                            
+                            lasthour += 1
+                
                 
                 modelYear.append(''.join(list(splitLine[2])[:4]))
                 if float(splitLine[20]) > 900 and patchMissingVals: dbTemp.append(dbTemp[-1])
@@ -218,19 +220,49 @@ def getNCDC(NCDC_File, patchMissingVals, lb_comfortModels):
                 else: dewPoint.append(float(splitLine[22]))
                 if float(splitLine[24]) > 9000 and patchMissingVals: barPress.append(barPress[-1])
                 else: barPress.append(float(splitLine[24]))
-                if float(splitLine[10]) > 900 and patchMissingVals: windSpeed.append(windSpeed[-1])
+                if float(splitLine[10]) > 900 and patchMissingVals:
+                    if lnum != 2: windSpeed.append(float(splitLine[10]))
+                    else: windSpeed.append(0)
                 else: windSpeed.append(float(splitLine[10]))
-                if float(splitLine[7]) > 900 and patchMissingVals: windDir.append(windDir[-1])
+                if float(splitLine[7]) > 900 and patchMissingVals:
+                    if lnum != 2: windDir.append(windDir[-1])
+                    else: windDir.append(0)
                 else: windDir.append(float(splitLine[7]))
-                if splitLine[12] == '99999' and patchMissingVals: ceilingHeight.append(ceilingHeight[-1])
+                if splitLine[12] == '99999' and patchMissingVals:
+                    if lnum != 2: ceilingHeight.append(ceilingHeight[-1])
+                    else: ceilingHeight.append(0)
                 else: ceilingHeight.append(float(splitLine[12]))
                 if splitLine[16] == '99999' or splitLine[16] == '      ' and patchMissingVals: visibility.append(visibility[-1])
                 else: visibility.append(float(splitLine[16]))
-                if splitLine[590] == '99' and patchMissingVals: cloudCov.append(cloudCov[-1])
+                if splitLine[590] == '99' and patchMissingVals:
+                    if lnum != 2: cloudCov.append(cloudCov[-1])
+                    else: cloudCov.append(0)
                 else: cloudCov.append(percentSkyCovList[int(splitLine[590])])
+                
+                
                 
                 hourList.append(hour)
                 dateList.append(date)
+                
+                #Final bit of code to make sure that everything sopt of the EPW is being filled in.
+                hourForLB = int(date[-2:])
+                dayForLB = int(date[-4:-2])
+                monthForLB = int(date[-6:-4])
+                HOYFromLB = lb_preparation.date2Hour(monthForLB, dayForLB, hourForLB)
+                
+                if HOYFromLB > len(hourList):
+                    while len(hourList) < HOYFromLB:
+                        modelYear.append(dbTemp[-1])
+                        dbTemp.append(modelYear[-1])
+                        dewPoint.append(dewPoint[-1])
+                        barPress.append(barPress[-1])
+                        windSpeed.append(windSpeed[-1])
+                        windDir.append(windDir[-1])
+                        cloudCov.append(cloudCov[-1])
+                        visibility.append(visibility[-1])
+                        ceilingHeight.append(ceilingHeight[-1])
+                        hourList.append(hour)
+                        dateList.append(date)
     
     NCDCFile.close()
     
@@ -251,6 +283,19 @@ def getNCDC(NCDC_File, patchMissingVals, lb_comfortModels):
             else: relHumid.append(RH)
         else:
             relHumid.append(999)
+    
+    if len(hourList) < 8760:
+        for count in range(8760-len(hourList)):
+            modelYear.append(dbTemp[-1])
+            dbTemp.append(modelYear[-1])
+            dewPoint.append(dewPoint[-1])
+            relHumid.append(relHumid[-1])
+            windSpeed.append(windSpeed[-1])
+            windDir.append(windDir[-1])
+            barpressNew.append(barpressNew[-1])
+            cloudCov.append(cloudCov[-1])
+            visibility.append(visibility[-1])
+            ceilingHeight.append(ceilingHeight[-1])
     
     return modelYear, dbTemp, dewPoint, relHumid, windSpeed, windDir, barpressNew, cloudCov, visibility, ceilingHeight
 
@@ -344,7 +389,7 @@ def main(NCDCDataFile, originalEPW, lb_preparation, lb_comfortModels):
     dirIllRelatMtx, difIllRelatMtx, glbIllRelatMtx = computeRadSkyCoverRelation(skyCov, dirIll, difIll, glbIll)
     
     #Grab all of the data from the NCDC file.
-    modelYear, dbTemp, dewPoint, relHumid, windSpeed, windDir, barPress, cloudCov, visibility, ceilingHeight = getNCDC(NCDCDataFile, patchMissingVals, lb_comfortModels)
+    modelYear, dbTemp, dewPoint, relHumid, windSpeed, windDir, barPress, cloudCov, visibility, ceilingHeight = getNCDC(NCDCDataFile, patchMissingVals, lb_preparation, lb_comfortModels)
     
     if patchMissingVals == True:
         #Compute radiation and illuminance values for the new weather file using the sky cover from the NCDCDataFile and the relational matrices.
