@@ -48,7 +48,7 @@ import Grasshopper.Kernel as gh
 
 ghenv.Component.Name = "Dragonfly_AMY from NCDC Data"
 ghenv.Component.NickName = 'AMYfromNCDC'
-ghenv.Component.Message = 'VER 0.0.01\nMAR_06_2016'
+ghenv.Component.Message = 'VER 0.0.01\nMAR_07_2016'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "3 | GenerateEPW"
 #compatibleLBVersion = VER 0.0.59\nNOV_30_2015
@@ -211,6 +211,30 @@ def getNCDC(NCDC_File, patchMissingVals, lb_preparation, lb_comfortModels):
                             dateList.append(date)
                             
                             lasthour += 1
+                    elif lasthour == 23:
+                        lasthour = -1
+                        while lasthour < hourFloat-1:
+                            modelYear.append(''.join(list(splitLine[2])[:4]))
+                            if float(splitLine[20]) > 900 and patchMissingVals: dbTemp.append(dbTemp[-1])
+                            else: dbTemp.append(float(splitLine[20]))
+                            if float(splitLine[22]) > 900 and patchMissingVals: dewPoint.append(dewPoint[-1])
+                            else: dewPoint.append(float(splitLine[22]))
+                            if float(splitLine[24]) > 9000 and patchMissingVals: barPress.append(barPress[-1])
+                            else: barPress.append(float(splitLine[24]))
+                            if float(splitLine[10]) > 900 and patchMissingVals: windSpeed.append(float(splitLine[10]))
+                            else: windSpeed.append(float(splitLine[10]))
+                            if float(splitLine[7]) > 900 and patchMissingVals: windDir.append(windDir[-1])
+                            else: windDir.append(float(splitLine[7]))
+                            if splitLine[12] == '99999' and patchMissingVals: ceilingHeight.append(ceilingHeight[-1])
+                            else: ceilingHeight.append(float(splitLine[12]))
+                            if splitLine[16] == '99999' or splitLine[16] == '      ' and patchMissingVals: visibility.append(visibility[-1])
+                            else: visibility.append(float(splitLine[16]))
+                            if splitLine[590] == '99' and patchMissingVals: cloudCov.append(cloudCov[-1])
+                            else: cloudCov.append(percentSkyCovList[int(splitLine[590])])
+                            hourList.append(str(lasthour))
+                            dateList.append(date)
+                            
+                            lasthour += 1
                 
                 
                 modelYear.append(''.join(list(splitLine[2])[:4]))
@@ -252,6 +276,8 @@ def getNCDC(NCDC_File, patchMissingVals, lb_preparation, lb_comfortModels):
                 
                 if HOYFromLB > len(hourList):
                     while len(hourList) < HOYFromLB:
+                        print lasthour
+                        print'something wrong with :' + str(monthForLB) + ',' + str(dayForLB) + ',' + str(hourForLB)
                         modelYear.append(dbTemp[-1])
                         dbTemp.append(modelYear[-1])
                         dewPoint.append(dewPoint[-1])
@@ -263,6 +289,7 @@ def getNCDC(NCDC_File, patchMissingVals, lb_preparation, lb_comfortModels):
                         ceilingHeight.append(ceilingHeight[-1])
                         hourList.append(hour)
                         dateList.append(date)
+                        hourForLB +=1
     
     NCDCFile.close()
     
