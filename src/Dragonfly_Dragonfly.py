@@ -46,7 +46,7 @@ Provided by Dragonfly 0.0.01
 
 ghenv.Component.Name = "Dragonfly_Dragonfly"
 ghenv.Component.NickName = 'Dragonfly'
-ghenv.Component.Message = 'VER 0.0.01\nNOV_22_2015'
+ghenv.Component.Message = 'VER 0.0.01\nAPR_29_2016'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "0 | Dragonfly"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -501,21 +501,18 @@ class UWGTextGeneration(object):
             '        <emissivity>0.9</emissivity>\n' + \
             '        <materials name="ASHRAE 90.1-2010 EXTWALL METAL">\n' + \
             '          <names>\n' + \
-            '            <item>Metal Siding</item>\n' + \
             '            <item>Metal Building Wall Insulation</item>\n' + \
             '            <item>1/2IN Gypsum</item>\n' + \
             '          </names>\n' + \
             '          <thermalConductivity>\n' + \
-            '            <item>44.9599999999999</item>\n' + \
             '            <item>0.049</item>\n' + \
             '            <item>' + str(self.wallConductByClimate[climateZone]) + '</item>\n' + \
             '          </thermalConductivity>\n' + \
             '          <volumetricHeatCapacity>\n' + \
-            '            <item>3152432.6</item>\n' + \
             '            <item>221752.0</item>\n' + \
             '            <item>651467.000000</item>\n' + \
             '          </volumetricHeatCapacity>\n' + \
-            '          <thickness>[0.0015, 0.0815632376352, 0.012699999999999999]</thickness>\n' + \
+            '          <thickness>[0.0815632376352, 0.012699999999999999]</thickness>\n' + \
             '        </materials>\n' + \
             '        <vegetationCoverage>' + str(wallVeg) + '</vegetationCoverage>\n' + \
             '        <inclination>0</inclination>\n' + \
@@ -728,10 +725,11 @@ class UWGTextGeneration(object):
         for count, matName in enumerate(materials):
             values, comments, UValue_SI, UValue_IP = hb_EPMaterialAUX.decomposeMaterial(matName.upper(), ghenv.Component)
             if values[0] == 'Material':
-                #Typical EP Opaque Material.
-                conductivities.append(values[3])
-                heatCapacities.append(float(values[4]) * float(values[5]))
-                thicknesses.append(float(values[2]))
+                if float(values[2]) >= 0.01:
+                    #Typical EP Opaque Material.
+                    conductivities.append(values[3])
+                    heatCapacities.append(float(values[4]) * float(values[5]))
+                    thicknesses.append(float(values[2]))
                 
                 #If it's the outer-most construction, grab it's albedo and emissivity.
                 if count == 0:
