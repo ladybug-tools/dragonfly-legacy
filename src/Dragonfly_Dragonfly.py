@@ -46,7 +46,7 @@ Provided by Dragonfly 0.0.01
 
 ghenv.Component.Name = "Dragonfly_Dragonfly"
 ghenv.Component.NickName = 'Dragonfly'
-ghenv.Component.Message = 'VER 0.0.01\nAPR_29_2016'
+ghenv.Component.Message = 'VER 0.0.01\nAUG_12_2016'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "0 | Dragonfly"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -991,7 +991,7 @@ if checkIn.letItFly:
                 try:
                     ## download File
                     print 'Downloading UWG to ', sc.sticky["Dragonfly_DefaultFolder"]
-                    updatedLink = "https://github.com/hansukyang/UWG_Matlab/blob/master/UWGEngine/UWG.zip?raw=true"
+                    updatedLink = "https://github.com/hansukyang/UWG_Matlab/blob/master/ArchivedCodes/UWG.zip?raw=true"
                     localFilePath = sc.sticky["Dragonfly_DefaultFolder"] + 'UWG.zip'
                     client = System.Net.WebClient()
                     client.DownloadFile(updatedLink, localFilePath)
@@ -1001,7 +1001,7 @@ if checkIn.letItFly:
                 except:
                     msg1 = "Dragonfly failed to download the Urban Weather Generator (UWG) folder in the background.\n" + \
                          "Download the following file and unzip it into the C:\ drive of your system:"
-                    msg2 = "https://github.com/hansukyang/UWG_Matlab/blob/master/UWGEngine/for_testing.zip?raw=true"
+                    msg2 = "https://github.com/hansukyang/UWG_Matlab/blob/master/ArchivedCodes/UWG.zip?raw=true"
                     
                     ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg1)
                     ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg2)
