@@ -54,7 +54,7 @@ Provided by Dragonfly 0.0.01
 
 ghenv.Component.Name = "Dragonfly_Import LANDSAT Image"
 ghenv.Component.NickName = 'ImportLANDSATImg'
-ghenv.Component.Message = 'VER 0.0.01\nNOV_22_2015'
+ghenv.Component.Message = 'VER 0.0.01\nOCT_29_2016'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "1 | VisualizeSatelliteData"
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
@@ -216,7 +216,7 @@ def main(img, toFromX, toFromY, radianceMin, radianceMax, cellGridSize, sampleSi
     geoTiffPts = []
     
     #Read the legendParameters.
-    lowB, highB, numSeg, customColors, legendBasePoint, legendScale, legendFont, legendFontSize, legendBold = lb_preparation.readLegendParameters(legendPar_, False)
+    lowB, highB, numSeg, customColors, legendBasePoint, legendScale, legendFont, legendFontSize, legendBold, decimalPlaces, removeLessThan = lb_preparation.readLegendParameters(legendPar_, False)
     legendTitle = 'C'
     
     #Set the constants before running the for loop.
