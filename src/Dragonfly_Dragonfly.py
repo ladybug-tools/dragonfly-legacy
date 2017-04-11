@@ -46,7 +46,7 @@ Provided by Dragonfly 0.0.01
 
 ghenv.Component.Name = "Dragonfly_Dragonfly"
 ghenv.Component.NickName = 'Dragonfly'
-ghenv.Component.Message = 'VER 0.0.01\nAUG_12_2016'
+ghenv.Component.Message = 'VER 0.0.01\nAPR_10_2017'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "0 | Dragonfly"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -991,17 +991,18 @@ if checkIn.letItFly:
                 try:
                     ## download File
                     print 'Downloading UWG to ', sc.sticky["Dragonfly_DefaultFolder"]
-                    updatedLink = "https://github.com/hansukyang/UWG_Matlab/blob/master/ArchivedCodes/UWG.zip?raw=true"
+                    updatedLink = "https://github.com/hansukyang/UWG_Matlab/raw/master/ArchivedCodes/UWG.zip"
                     localFilePath = sc.sticky["Dragonfly_DefaultFolder"] + 'UWG.zip'
                     client = System.Net.WebClient()
                     client.DownloadFile(updatedLink, localFilePath)
                     #Unzip the file
                     unzip(localFilePath, sc.sticky["Dragonfly_DefaultFolder"])
+                    os.rename('C:\\ladybug\\UWG\\UWGEngine_mcr\\META\\','C:\\ladybug\\UWG\\UWGEngine_mcr\\.META\\')
                     folders.UWGPath = sc.sticky["Dragonfly_DefaultFolder"] + "\\UWG\\"
                 except:
                     msg1 = "Dragonfly failed to download the Urban Weather Generator (UWG) folder in the background.\n" + \
                          "Download the following file and unzip it into the C:\ drive of your system:"
-                    msg2 = "https://github.com/hansukyang/UWG_Matlab/blob/master/ArchivedCodes/UWG.zip?raw=true"
+                    msg2 = "https://github.com/hansukyang/UWG_Matlab/raw/master/ArchivedCodes/UWG.zip"
                     
                     ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg1)
                     ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg2)
@@ -1015,7 +1016,7 @@ if checkIn.letItFly:
             msg3 = "Dragonfly cannot find the correct version of the Matlab Runtime Compiler v9.0 (MRC 9.0) in your system. \n" + \
             "You won't be able to morph EPW files to account for urban heat island effects without this application. \n" + \
             "You can download an installer for the the Matlab Runtime Compiler from this link on the UWG github:"
-            msg4 = "https://github.com/hansukyang/UWG_Matlab/blob/master/UWGEngine/for_redistribution/UWGEngine.exe?raw=true"
+            msg4 = "https://www.mathworks.com/supportfiles/downloads/R2015b/deployment_files/R2015b/installers/win64/MCR_R2015b_win64_installer.exe"
             
             ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg3)
             ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg4)
