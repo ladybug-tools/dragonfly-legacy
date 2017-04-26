@@ -37,7 +37,7 @@ Provided by Dragonfly 0.0.01
 
 ghenv.Component.Name = "Dragonfly_Default Commerical Typology"
 ghenv.Component.NickName = 'CommercialTypology'
-ghenv.Component.Message = 'VER 0.0.01\nNOV_22_2015'
+ghenv.Component.Message = 'VER 0.0.01\nAPR_25_2017'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "2 | GenerateUrbanClimate"
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
@@ -74,8 +74,8 @@ def main(flr2Flr, glzRatio, climateZone, df_textGen):
     #Check the roof and vegetated wall fraction.
     if roofVegFraction_ != None:
         roofVegFraction = roofVegFraction_
-        if roofVegFraction_ < 1 or roofVegFraction_ > 8:
-            warning = "roofVegFraction_ must be between 1 (warmest) and 8 (coldest)."
+        if roofVegFraction_ < 0 or roofVegFraction_ > 1:
+            warning = "roofVegFraction_ must be between 0 (warmest) and 1 (coldest)."
             print warning
             ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
             return -1
@@ -83,8 +83,8 @@ def main(flr2Flr, glzRatio, climateZone, df_textGen):
     
     if wallVegFraction_ != None:
         wallVegFraction = wallVegFraction_
-        if wallVegFraction_ < 1 or wallVegFraction_ > 8:
-            warning = "wallVegFraction_ must be between 1 (warmest) and 8 (coldest)."
+        if wallVegFraction_ < 0 or wallVegFraction_ > 1:
+            warning = "wallVegFraction_ must be between 0 (warmest) and 1 (coldest)."
             print warning
             ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
             return -1
