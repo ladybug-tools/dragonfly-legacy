@@ -1,4 +1,4 @@
-##Instructions for Installing Dragonfly##
+## Instructions for Installing Dragonfly
 
 1. Make sure that you have both Ladybug and Honeybee installed by following the instructions [here](https://github.com/mostaphaRoudsari/ladybug/blob/master/resources/Installation_Instructions.md).
 
