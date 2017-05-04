@@ -32,16 +32,28 @@ Use this component to import a LADNSAT image that has been downloaded from GloVi
 Provided by Dragonfly 0.0.01
     Args:
         _landsatImgFolder: The file path to the folder on your computer into which the LANDSAT image has been decompressed.
+        dataType_: An integer from 0 to 10 representing the type of data that you would like to import into Grasshopper from the LANDSAT image.  Choose from the following options:
+            0 - Temperature (degrees Celcius)
+            1 - True Color (RGB)
+            2 - Albedo (Broad Spectrum Reflectivity)
+            3 - Vegetation Index (NDVI)
+            4 - Band 1 Radiance (Red)
+            5 - Band 2 Radiance (Green)
+            6 - Band 3 Radiance (Blue)
+            7 - Band 4 Radiance (Near Infrared)
+            8 - Band 5 Radiance (Far Infrared 1)
+            9 - Band 6 Radiance (Thermal Infrared)
+            10 - Band 7 Radiance (Far Infrared 2)
         latitude_: A number representing the latitude at which you would like to center the LANDSAT image imported to the Rhino scene.  It is helpful to take the latitudefrom the location of an EPW file imported with Ladybug or from a site that you have looked up in Google.  If no value is input here, the latitude will be set to the center of the image.
         longitude_: A number representing the longitude at which you would like to center the LANDSAT image imported to the Rhino scene.  It is helpful to take the longitude from the location of an EPW file imported with Ladybug or from a site that you have looked up in Google.  If no value is input here, the longitude will be set to the center of the image.
-        imageWidth_: A number representing the width of the portion of the LANDSAT image that you would like to import in meters.  If no value is input here, the default will be set to 2 kilometers (2000 meters).
-        imageHeight_: A number representing the height of the portion of the LANDSAT image that you would like to import in meters.  If no value is input here, the default will be set to 2 kilometers (2000 meters).
+        imageWidth_: A number representing the width of the portion of the LANDSAT image that you would like to import in kilometers.  If no value is input here, the default will be set to 2 kilometers.
+        imageHeight_: A number representing the height of the portion of the LANDSAT image that you would like to import in kilometers.  If no value is input here, the default will be set to 2 kilometers.
         sampleSize_: An integer representing the number of pixels to skip with each sampling.  Set this to a high number like 32 to allow the component to run quickly and zoom out to the entire LANDSAT image scene.  If no value is input here, every single pixel within the given latitude, longitude imageHeight and imageWidth will be sampled, assuming a sample size of 1.
         legendPar_: Optional legend parameters from the 'Ladybug Legend Parameters' component.
         _runIt: Set to 'True' to run the component and import the LANDSAT image.
     Returns:
         readMe!: ...
-        temperatures: Temperature values for for each of the imported pixels in degrees Celcius.
+        values: Values for for each of the imported pixels.  For thermal images, this is temperature in degrees Celcius.  For 
         geoTiffPts: A list of points with one point for each pixel imported from the LANDSAT image.  Connect this to the 'G' of a native grasshopper 'Custom Preview' component to preview the points colored with the imported values.
         ptColors: A list of colors one color for each pixel imported from the LANDSAT image.  Connect this to the 'S' of a native grasshopper 'Custom Preview' component to preview the points colored with the imported values.
         ---------------: ...
@@ -54,7 +66,7 @@ Provided by Dragonfly 0.0.01
 
 ghenv.Component.Name = "Dragonfly_Import LANDSAT Image"
 ghenv.Component.NickName = 'ImportLANDSATImg'
-ghenv.Component.Message = 'VER 0.0.01\nOCT_29_2016'
+ghenv.Component.Message = 'VER 0.0.01\nMAY_01_2017'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "1 | VisualizeSatelliteData"
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
@@ -178,7 +190,7 @@ def checkTheInputs():
             #If there is not connected imageWidth and imageHeight, set the default to 2000 meters.
             #If there is a connected width or height, check to be sure that we are not requesting anything outside the scene.
             if imageWidth_ == None: offsetX = int(1000/cellGridSize)
-            else: offsetX = int((imageWidth_/2)/cellGridSize)
+            else: offsetX = int(((imageWidth_*1000)/2)/cellGridSize)
             toFromX = [centerCellX-offsetX, centerCellX+offsetX]
             if toFromX[0] < 0:
                 toFromX[0] = 0
@@ -190,7 +202,7 @@ def checkTheInputs():
                 print warning
             
             if imageHeight_ == None: offsetY = int(1000/cellGridSize)
-            else: offsetY = int((imageHeight_/2)/cellGridSize)
+            else: offsetY = int(((imageHeight_*1000)/2)/cellGridSize)
             toFromY = [centerCellY-offsetY, centerCellY+offsetY]
             if toFromY[0] < 0:
                 toFromY[0] = 0
@@ -247,7 +259,7 @@ def main(img, toFromX, toFromY, radianceMin, radianceMax, cellGridSize, sampleSi
     sceneRect = rc.Geometry.Rectangle3d(rc.Geometry.Plane.WorldXY, (toFromX[1]-toFromX[0])*cellGridSize, (toFromY[1]-toFromY[0])*cellGridSize)
     sceneCrv = sceneRect.ToNurbsCurve()
     lb_visualization.calculateBB([sceneCrv], True)
-    legendSrfs, legendText, legendTextCrv, textPt, textSize = lb_visualization.createLegend(temperatureValues, lowB, highB, numSeg, legendTitle, lb_visualization.BoundingBoxPar, legendBasePoint, legendScale, legendFont, legendFontSize, legendBold)
+    legendSrfs, legendText, legendTextCrv, textPt, textSize = lb_visualization.createLegend(temperatureValues, lowB, highB, numSeg, legendTitle, lb_visualization.BoundingBoxPar, legendBasePoint, legendScale, legendFont, legendFontSize, legendBold, decimalPlaces, removeLessThan)
     legendColors = lb_visualization.gradientColor(legendText[:-1], lowB, highB, customColors)
     legendSrfs = lb_visualization.colorMesh(legendColors, legendSrfs)
     legend.append(legendSrfs)
@@ -290,3 +302,6 @@ if initCheck == True and _landsatImgFolder:
     
     if checkData == True and _runIt == True:
         temperatures, geoTiffPts, ptColors, legend, legendBasePt = main(img, toFromX, toFromY, radianceMin, radianceMax, cellGridSize, sampleSize)
+
+#Hide unwanted outputs
+ghenv.Component.Params.Output[6].Hidden = True
