@@ -1,7 +1,7 @@
 
 Dragonfly for Grasshopper
 ========================================
-Dragonfly allows users to import several satellite image datasets into Rhino/Grasshopper and warp climate files based on either this satellite data, urban morphology parameters, or future climate change scenarios.  The Dragonfly project intends to make many large-scale climate variables accessible to the visual scripting interface of Grasshopper as well as the 3D visualization interface of Rhino.
+Dragonfly allows users to model and estimate large-scale climate phenomena like urban heat island, climate change scnarios, and the inlfuence of climate factors like elevation above sea level.  This is accomplished with the help of several urban thermodynaic engines including the Urban Weather Generator and CitySim.  Dragonfly also links to several datasets like the results of the Hadley Global Circulation Model (for climate change projections) and several satellite image datasets (such as LANDSAT and MODIS).  The Dragonfly project intends to make many large-scale climate variables accessible to the visual scripting interface of Grasshopper as well as the 3D visualization interface of Rhino.
 
 You need to have [Ladybug](https://github.com/mostaphaRoudsari/Ladybug) installed in order to run Dragonfly.
 
