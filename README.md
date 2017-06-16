@@ -40,6 +40,6 @@ Contributors(a-z):
 [Mostapha Roudsari](https://github.com/mostapharoudsari)
 
 
-So many thanks to the [Urban Microclimate Group at MIT][http://urbanmicroclimate.scripts.mit.edu/index.php] and the [Urban Weather Gnerator Project][https://github.com/hansukyang/UWG_Matlab].
+So many thanks to the [Urban Microclimate Group at MIT](http://urbanmicroclimate.scripts.mit.edu/index.php) and the [Urban Weather Gnerator Project](https://github.com/hansukyang/UWG_Matlab).
 
 Special thanks is also due to the IPCC and the LANDSAT, ASTER, SRTM and GPM projects at NASA!
