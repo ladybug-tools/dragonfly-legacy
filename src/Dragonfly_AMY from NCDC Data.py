@@ -48,7 +48,7 @@ import Grasshopper.Kernel as gh
 
 ghenv.Component.Name = "Dragonfly_AMY from NCDC Data"
 ghenv.Component.NickName = 'AMYfromNCDC'
-ghenv.Component.Message = 'VER 0.0.01\nMAR_07_2016'
+ghenv.Component.Message = 'VER 0.0.01\nSEP_13_2017'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "3 | GenerateEPW"
 #compatibleLBVersion = VER 0.0.59\nNOV_30_2015
