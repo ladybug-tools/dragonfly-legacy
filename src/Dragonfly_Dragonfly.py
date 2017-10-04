@@ -46,7 +46,7 @@ Provided by Dragonfly 0.0.01
 
 ghenv.Component.Name = "Dragonfly_Dragonfly"
 ghenv.Component.NickName = 'Dragonfly'
-ghenv.Component.Message = 'VER 0.0.01\nSEP_13_2017'
+ghenv.Component.Message = 'VER 0.0.01\nOCT_03_2017'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "0 | Dragonfly"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -997,7 +997,7 @@ if checkIn.letItFly:
                     client.DownloadFile(updatedLink, localFilePath)
                     #Unzip the file
                     unzip(localFilePath, sc.sticky["Dragonfly_DefaultFolder"])
-                    os.rename('C:\\ladybug\\UWG\\UWGEngine_mcr\\META\\','C:\\ladybug\\UWG\\UWGEngine_mcr\\.META\\')
+                    os.rename(sc.sticky["Dragonfly_DefaultFolder"] + 'UWG\\UWGEngine_mcr\\META\\', sc.sticky["Dragonfly_DefaultFolder"] + 'UWG\\UWGEngine_mcr\\.META\\')
                     folders.UWGPath = sc.sticky["Dragonfly_DefaultFolder"] + "\\UWG\\"
                 except:
                     msg1 = "Dragonfly failed to download the Urban Weather Generator (UWG) folder in the background.\n" + \
