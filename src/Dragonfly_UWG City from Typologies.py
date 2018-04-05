@@ -76,7 +76,7 @@ Provided by Dragonfly 0.0.01
 
 ghenv.Component.Name = "Dragonfly_UWG City from Typologies"
 ghenv.Component.NickName = 'UWGCityFromTypology'
-ghenv.Component.Message = 'VER 0.0.01\nSEP_13_2017'
+ghenv.Component.Message = 'VER 0.0.01\nAPR_05_2018'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "2 | GenerateUrbanClimate"
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
@@ -375,7 +375,7 @@ def checkTheInputs(df_textGen, df_UWGGeo):
         pavementConstrString = pavementConstrStringSplit[0] + str(totalGrassCoverage) + pavementConstrStringSplit[-1]
         
         #With all of the ground breps accounted for, compute the siteCoverageRatio.
-        totalTerrainArea = totalBuiltArea + totalPavedArea + totalGrassCoverage
+        totalTerrainArea = totalBuiltArea + totalPavedArea + totalGrassArea
         siteCoverageRatio = totalBuiltArea / totalTerrainArea
         
         #Project the tree breps into the XYPlane and extract their area.
