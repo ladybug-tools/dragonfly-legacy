@@ -46,7 +46,7 @@ Provided by Dragonfly 0.0.01
 
 ghenv.Component.Name = "Dragonfly_Dragonfly"
 ghenv.Component.NickName = 'Dragonfly'
-ghenv.Component.Message = 'VER 0.0.01\nOCT_03_2017'
+ghenv.Component.Message = 'VER 0.0.01\nAPR_26_2018'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "0 | Dragonfly"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -984,21 +984,21 @@ if checkIn.letItFly:
         folders = df_findFolders()
         sc.sticky["dragonfly_folders"] = {}
         if folders.UWGPath == None:
-            if os.path.isdir(sc.sticky["Dragonfly_DefaultFolder"] + "\\UWG\\"):
-                folders.UWGPath = sc.sticky["Dragonfly_DefaultFolder"] + "\\UWG\\"
+            if os.path.isdir("C:\\ladybug" + "\\UWG\\"):
+                folders.UWGPath = "C:\\ladybug" + "\\UWG\\"
             else:
                 # Try to download these files in the background.
                 try:
                     ## download File
-                    print 'Downloading UWG to ', sc.sticky["Dragonfly_DefaultFolder"]
+                    print 'Downloading UWG to ', "C:\\ladybug\\UWG\\"
                     updatedLink = "https://github.com/hansukyang/UWG_Matlab/raw/master/ArchivedCodes/UWG.zip"
-                    localFilePath = sc.sticky["Dragonfly_DefaultFolder"] + 'UWG.zip'
+                    localFilePath = "C:\\ladybug" + 'UWG.zip'
                     client = System.Net.WebClient()
                     client.DownloadFile(updatedLink, localFilePath)
                     #Unzip the file
-                    unzip(localFilePath, sc.sticky["Dragonfly_DefaultFolder"])
-                    os.rename(sc.sticky["Dragonfly_DefaultFolder"] + 'UWG\\UWGEngine_mcr\\META\\', sc.sticky["Dragonfly_DefaultFolder"] + 'UWG\\UWGEngine_mcr\\.META\\')
-                    folders.UWGPath = sc.sticky["Dragonfly_DefaultFolder"] + "\\UWG\\"
+                    unzip(localFilePath, "C:\\ladybug")
+                    os.rename("C:\\ladybug" + '\\UWG\\UWGEngine_mcr\\META\\', "C:\\ladybug" + '\\UWG\\UWGEngine_mcr\\.META\\')
+                    folders.UWGPath = "C:\\ladybug" + "\\UWG\\"
                 except:
                     msg1 = "Dragonfly failed to download the Urban Weather Generator (UWG) folder in the background.\n" + \
                          "Download the following file and unzip it into the C:\ drive of your system:"

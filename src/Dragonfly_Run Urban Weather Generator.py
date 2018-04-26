@@ -53,7 +53,7 @@ Provided by Dragonfly 0.0.01
 
 ghenv.Component.Name = "Dragonfly_Run Urban Weather Generator"
 ghenv.Component.NickName = 'RunUWG'
-ghenv.Component.Message = 'VER 0.0.01\nAPR_11_2017'
+ghenv.Component.Message = 'VER 0.0.01\nAPR_26_2018'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "2 | GenerateUrbanClimate"
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
@@ -181,7 +181,7 @@ def checkTheInputs(df_textGen, lb_preparation):
     return checkData, workingDir, xmlFileName, _epwFile, epwSiteParString, tempHeight, windHeight, boundLayerPar_, analysisPeriodStr, stHOY, analysisPeriod, untouchablePar
 
 
-def writeBatchFile(workingDir, xmlFileName, epwFileAddress, newEPWFileName, UWGDirectory = 'C:\\UWG', runInBackground = False):
+def writeBatchFile(workingDir, xmlFileName, epwFileAddress, newEPWFileName, UWGDirectory = 'C:\\ladybug\\UWG', runInBackground = False):
     
     workingDrive = workingDir[:2]
     
