@@ -1,4 +1,4 @@
-# Dragonfly: A Plugin for Climate Modeling (GPL) started by Chris Mackeu
+# Dragonfly: A Plugin for Climate Modeling (GPL) started by Chris Mackey <chris@ladybug.tools> 
 # This file is part of Dragonfly.
 #
 # You should have received a copy of the GNU General Public License
@@ -16,11 +16,12 @@ _
 For a full list of publications on the Urban Weather Generator, please see this page of the MIT Urban Microclimate Group:
 http://urbanmicroclimate.scripts.mit.edu/publications.php
 -
-Provided by Dragonfly 0.0.01
+Provided by Dragonfly 0.0.02
     Args:
         _epwFile: An .epw file path on your system as a text string.  This is the rural or airport file that will be morphed to reflect the climate conditions within an urban canyon.
         _UWGCity: A list of parameters from one of the 'Dragonfly_UWG Parameters' components.  This list describes describes the characteristics of the urban street canyon for which an epw file will be produced.
-        analysisPeriod_: An optional analysis period from the 'Ladybug_Analysis Period' component.  If no Analysis period is given, the Urban Weather Generator will be run for the enitre year.
+        _analysisPeriod_: An optional analysis period from the 'Ladybug_Analysis Period' component.  If no Analysis period is given, the Urban Weather Generator will be run for the enitre year.
+        _simTimestep_: A number representing the timestep at which the simulation is run in seconds.  The default is set to 300 seconds (5 minutes).  Note that all restuls are still reported on an hour-by-hour basis in the otuput EPW and this only changes how the calculation is run in the UWG.
         --------------------: ...
         epwSitePar_: An optional list of Reference EPW Site Parameters from the "Dragonfly_Reference EPW Site Par" component.
         boundLayerPar_: Optional Boundary Layer Parameters from the "Dragonfly_Boundary Layer Par" component.
@@ -32,14 +33,16 @@ Provided by Dragonfly 0.0.01
         _xmlFileName_: An optional text string which will be used to name your XML and morphed EPW files.  Change this to aviod over-writing results of previous runs of the Urban Weather Generator.
     Returns:
         readMe!: ...
-        xmlText: The text written into the XML file.
-        xmlFileAddress: The file path of the XML file that has been generated on your machine.
+        ---------------: ...
+        uwgFileAddress: The file path of the .uwg file that has been generated on your machine.
         epwFileAddress: The file path of the morphed EPW file that has been generated on your machine.  This only happens when you set "runUWG_" to "True."
+        ---------------: ...
+        uwgText: The text written into the .uwg file.
 """
 
 ghenv.Component.Name = "Dragonfly_Run Urban Weather Generator"
 ghenv.Component.NickName = 'RunUWG'
-ghenv.Component.Message = 'VER 0.0.01\nOCT_29_2016'
+ghenv.Component.Message = 'VER 0.0.02\nAPR_29_2018'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "01::UWG"
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
