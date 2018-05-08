@@ -58,15 +58,12 @@ import Rhino as rc
 import scriptcontext as sc
 import Grasshopper.Kernel as gh
 import math
-import shutil
-import sys
 import os
-import System.Threading.Tasks as tasks
 import System
-import time
-from itertools import chain
+System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12
 import datetime
 import zipfile
+import copy
 
 PI = math.pi
 rc.Runtime.HostUtils.DisplayOleAlerts(False)
@@ -238,8 +235,21 @@ class df_findFolders(object):
 
 class UWGGeometry(object):
     
+    def __init(self):
+        self.groundProjection = rc.Geometry.Transform.PlanarProjection(rc.Geometry.Plane.WorldXY)
     
+    # function to get the center point and normal of surfaces.
     def getSrfCenPtandNormal(self, surface):
+        """Extracts the center point and normal from a surface.
+        
+        Args:
+            surface: A rhino surface to extract points from.
+        Returns:
+            centerPt: The center point of the surface.
+            normalVector: The normal of the surface.
+        
+        """
+        
         brepFace = surface.Faces[0]
         if brepFace.IsPlanar and brepFace.IsSurface:
             u_domain = brepFace.Domain(0)
@@ -257,14 +267,31 @@ class UWGGeometry(object):
         
         return centerPt, normalVector
     
-    # Make a function that attempts to extract the building footprint surfaces.
-    def separateBrepSrfs(self, brep, maxRoofAngle, maxFloorAngle):
+    def separateBrepSrfs(self, brep, maxRoofAngle=45, maxFloorAngle=60):
+        """Separates the surfaces of a brep into those facing up, down and sideways
+        
+        Args:
+            brep: A closed rhino brep representing a building.
+            maxRoofAngle: The roof normal angle from the positive Z axis (in degrees) beyond 
+                which a surface is no longer considered a roof. Default is 45.
+            maxFloorAngle: The floor normal angle from the negative Z axis (in degrees) beyond 
+                which a surface is no longer considered a floor. Default is 60.
+        
+        Returns:
+            down: The brep surfaces facing down.
+            up: The brep surfaces facing up.
+            side: The brep surfaces facing to the side.
+            sideNormals: The normals of the surfaces facing to the side.
+            roofNormals: The normals of the surfaces facing upwards.
+            bottomNormVectors: The normals of the surfaces facing down.
+            bottomCentPts: The genter points of the surfaces facing down.
+        """
+        
         up = []
         down = []
         side = []
-        topNormVectors = []
-        topCentPts = []
-        allNormVectors = []
+        bottomNormVectors = []
+        bottomCentPts = []
         roofNormals = []
         sideNormals = []
         for i in range(brep.Faces.Count):
@@ -275,7 +302,6 @@ class UWGGeometry(object):
             #Get the angle to the Z-axis
             if findNormal:
                 normal = findNormal[1]
-                allNormVectors.append(normal)
                 angle2Z = math.degrees(rc.Geometry.Vector3d.VectorAngle(normal, rc.Geometry.Vector3d.ZAxis))
             else:
                 angle2Z = 0
@@ -285,13 +311,356 @@ class UWGGeometry(object):
                 roofNormals.append((90 - angle2Z)/90)
             elif  180 - maxFloorAngle < angle2Z < 180 + maxFloorAngle:
                 down.append(surface)
-                topNormVectors.append(normal)
-                topCentPts.append(findNormal[0])
+                bottomNormVectors.append(normal)
+                bottomCentPts.append(findNormal[0])
             else:
                 side.append(surface)
                 sideNormals.append((90 - angle2Z)/90)
         
-        return down, up, side, sideNormals, roofNormals, topNormVectors, topCentPts, allNormVectors
+        return down, up, side, sideNormals, roofNormals, bottomNormVectors, bottomCentPts
+    
+    def unionAllBreps(self, bldgBreps):
+        """Unioned breps into one so that correct facade areas can be computed.
+        
+        Args:
+            bldgBreps: A list of closed rhino brep representing a building.
+        
+        Returns:
+            result: The building breps after being unioned.
+        """
+        
+        result = []
+        for i in range(0, len(bldgBreps), 2):
+            try:
+                x = bldgBreps[i]
+                y = bldgBreps[i + 1]
+                x.Faces.SplitKinkyFaces(rc.RhinoMath.DefaultAngleTolerance, False)
+                y.Faces.SplitKinkyFaces(rc.RhinoMath.DefaultAngleTolerance, False)
+                a = rc.Geometry.Brep.CreateBooleanUnion([x, y], sc.doc.ModelAbsoluteTolerance)
+                if a == None:
+                    a = [bldgBreps[i], bldgBreps[i + 1]]
+            except:
+                a = [bldgBreps[i]]
+            
+            if a:
+                result.extend(a)
+        
+        return result
+    
+    def calculateBldgFootprint(self, bldgBrep, maxFloorAngle=60):
+        """Extracts building footprint and footprint area
+        
+        Args:
+            bldgBrep: A closed rhino brep representing a building.
+            maxFloorAngle: The floor normal angle from the negative Z axis (in degrees) beyond 
+                which a surface is no longer considered a floor. Default is 60.
+        
+        Returns:
+            footprintArea: The footprint area of the building.
+            footprintBrep: A Brep representing the footprint of the building.
+        """
+        
+        # separate out the surfaces of the building brep.
+        footPrintBreps, upSrfs, sideSrfs, sideNormals, roofNormals, bottomNormVectors, bottomCentPts = \
+            self.separateBrepSrfs(bldgBrep, 45, maxFloorAngle)
+        
+        # check to see if there are any building breps that self-intersect once they are projected into the XYPlane. 
+        # if so, the building cantilevers over itslef and we have to use an alternative method to get the footprint.
+        meshedBrep = rc.Geometry.Mesh.CreateFromBrep(bldgBrep, rc.Geometry.MeshingParameters.Coarse)
+        selfIntersect = False
+        for count, normal in enumerate(bottomNormVectors):
+            srfRay = rc.Geometry.Ray3d(bottomCentPts[count], normal)
+            for mesh in meshedBrep:
+                intersectTest = rc.Geometry.Intersect.Intersection.MeshRay(mesh, srfRay)
+                if intersectTest <= sc.doc.ModelAbsoluteTolerance: pass
+                else: selfIntersect = True
+        
+        if selfIntersect == True:
+            # Use any downward-facing surfaces that we can identify as part of the building footprint.
+            # Boolean them together to get the projected area.
+            groundBreps = []
+            for srf in footPrintBreps:
+                srf.Transform(self.groundProjection)
+                groundBreps.append(srf)
+            booleanSrf = rc.Geometry.Brep.CreateBooleanUnion(groundBreps, sc.doc.ModelAbsoluteTolerance)[0]
+            footprintBrep = booleanSrf
+            footprintArea = rc.Geometry.AreaMassProperties.Compute(booleanSrf).Area
+        else:
+            #Project the whole building brep into the X/Y plane and take half its area.
+            brepCopy = copy.deepcopy(bldgBrep)
+            brepCopy.Transform(self.groundProjection)
+            footprintBrep = brepCopy
+            footprintArea = rc.Geometry.AreaMassProperties.Compute(brepCopy).Area/2
+        
+        return footprintArea, footprintBrep
+    
+    def extractBldgHeight(self, bldgBrep):
+        """Extracts building height
+        
+        Args:
+            bldgBrep: A closed rhino brep representing a building.
+        
+        Returns:
+            bldgHeight: The height of the building.
+        """
+        
+        bldgBBox = rc.Geometry.Brep.GetBoundingBox(bldgBrep, rc.Geometry.Plane.WorldXY)
+        bldgHeight = bldgBBox.Diagonal[2]
+        
+        return bldgHeight
+    
+    def extractBldgFacades(self, bldgBreps, maxRoofAngle=45, maxFloorAngle=60):
+        """Extracts building facades and facade area
+        
+        Args:
+            bldgBrep: A closed rhino brep representing a building.
+            maxRoofAngle: The roof normal angle from the positive Z axis (in degrees) beyond 
+                which a surface is no longer considered a roof. Default is 45.
+            maxFloorAngle: The floor normal angle from the negative Z axis (in degrees) beyond 
+                which a surface is no longer considered a floor. Default is 60.
+        
+        Returns:
+            facadeArea: The footprint area of the building.
+            facadeBreps: A list if breps representing the facades of the building.
+        """
+        
+        facadeAreas = []
+        facadeBreps = []
+        
+        for bldgBrep in bldgBreps:
+            # separate out the surfaces of the building brep.
+            footPrintBreps, upSrfs, sideSrfs, sideNormals, roofNormals, bottomNormVectors, bottomCentPts = \
+                self.separateBrepSrfs(bldgBrep, maxRoofAngle, maxFloorAngle)
+            
+            # calculate the facade area
+            facadeBreps.extend(sideSrfs)
+            fArea = 0
+            for srf in sideSrfs:
+                fArea += rc.Geometry.AreaMassProperties.Compute(srf).Area
+        
+        facadeArea = sum(facadeAreas)
+        
+        return facadeArea, facadeBreps
+    
+    def calculateTypologyGeoParams(self, bldgBreps, maxRoofAngle=45, maxFloorAngle=60):
+        """Extracts building footprint and footprint area
+        
+        Args:
+            bldgBreps: A list of closed rhino brep representing buildings of the same typology.
+            maxRoofAngle: The roof normal angle from the positive Z axis (in degrees) beyond 
+                which a surface is no longer considered a roof. Default is 45.
+            maxFloorAngle: The floor normal angle from the negative Z axis (in degrees) beyond 
+                which a surface is no longer considered a floor. Default is 60.
+        
+        Returns:
+            avgBldgHeight: The average height of the buildings in the typology
+            footprintArea: The footprint area of the buildings in this typology.
+            facadeArea: The facade are of the buildings in this typology.
+            footprintBreps: A list of breps representing the footprints of the buildings.
+            facadeBreps: A list of breps representing the exposed facade surfaces of the typology.
+        """
+        
+        bldgHeights = []
+        footprintAreas = []
+        footprintBreps = []
+        
+        for bldgBrep in bldgBreps:
+            # get the building height
+            bldgHeights.append(self.extractBldgHeight(bldgBrep))
+            
+            # get the footprint area
+            ftpA, ftpBrep = self.calculateBldgFootprint(bldgBreps, maxFloorAngle)
+            footprintAreas.append(ftpA)
+            footprintBreps.append(ftpBrep)
+        
+        # get the area-weighted hieght of the buildings and total footprint area
+        footprintArea = sum(footprintAreas)
+        footprintWeights = [y/footprintArea for y in footprintAreas]
+        avgBldgHeight = sum([x*footprintWeights[i] for x,i in enumerate(bldgHeights)])
+        
+        # compute the facade area of all of the building breps after they have been boolean unioned.
+        unionedBreps = self.unionAllBreps(bldgBreps)
+        facadeArea, facadeBreps = self.extractBldgFacades(bldgBreps, maxRoofAngle, maxFloorAngle)
+        
+        return avgBldgHeight, footprintArea, facadeArea, footprintBreps, facadeBreps
+
+
+class BuildingTypology(object):
+    """Represents a group of buildings of the same typology in an urban area.
+    
+    Attributes:
+        average_height: The average height of the buildings of this typology in meters.
+        footprint_area: The footprint area of the buildings of this typology in square meteres.
+        facade_area: The facade area of the buildings of this typology in square meters.
+        bldg_program: A text string representing one of the 16 DOE building program types to be 
+            used as a template for this typology.  Choose from the following options:
+                FullServiceRestaurant
+                Hospital
+                LargeHotel
+                LargeOffice
+                MediumOffice
+                MidRiseApartment
+                OutPatient
+                PrimarySchool
+                QuickServiceRestaurant
+                SecondarySchool
+                SmallHotel
+                SmallOffice
+                StandAloneRetail
+                StripMall
+                SuperMarket
+                Warehouse
+        bldg_age: A text string that sets the age of the buildings represented by this typology.  
+            This is used to determine what constructions make up the walls, roofs, and windows based on international building codes over the last several decades.  Choose from the following options:
+                Pre1980s
+                1980sPresent
+                NewConstruction
+        glz_ratio: An optional number from 0 to 1 that represents the fraction of the walls of the building typology that are glazed.
+            If none, a default of 0.4 is used
+        roof_albedo: An optional number from 0 to 1 that represents the albedo (or reflectivity) of the roof.
+            If none, a default of 0.5 will be used.
+        roof_veg_fraction: An optional number from 0 to 1 that represents the fraction of the roof that is vegetated.
+            If none, a default of 0 is used.
+    """
+    
+    def __init__(self, average_height, footprint_area, facade_area, bldg_program, 
+                bldg_age, glz_ratio=None, roof_albedo=None, roof_veg_fraction=None):
+        """Initialize a dragonfly building typology"""
+        
+        # critical geometry parameters that all typologies must have.
+        self.average_height = float(average_height)
+        self.footprint_area = float(footprint_area)
+        self.facade_area = float(facade_area)
+        
+        # optional parameters with default values.
+        if glz_ratio is not None:
+            if self.inRange(glz_ratio, 0, 1):
+                self.glz_ratio = float(glz_ratio)
+            else:
+                raise ValueError(
+                    "glz_ratio must be between 0 and 1. Current value is {}".format(str(glz_ratio))
+                )
+        else:
+            self.glz_ratio = 0.4
+        if roof_albedo is not None:
+            if self.inRange(float(roof_albedo), 0, 1):
+                self.roof_albedo = float(roof_albedo)
+            else:
+                raise ValueError(
+                    "roof_albedo must be between 0 and 1. Current value is {}".format(str(roof_albedo))
+                )
+        else:
+            self.roof_albedo = 0.5
+        if roof_veg_fraction is not None:
+            if self.inRange(float(roof_veg_fraction), 0, 1):
+                self.roof_veg_fraction = float(roof_veg_fraction)
+            else:
+                raise ValueError(
+                    "roof_veg_fraction must be between 0 and 1. Current value is {}".format(str(roof_veg_fraction))
+                )
+        else:
+            self.roof_veg_fraction = 0
+        
+        # dictionary of building ages.
+        self.ageDict = {
+            'PRE1980S': 'Pre1980s',
+            '1980SPRESENT': '1980sPresent',
+            'NEWCONSTRUCTION': 'NewConstruction',
+            
+            '0': 'Pre1980s',
+            '1': '1980sPresent',
+            '2': 'NewConstruction',
+            
+            "Pre-1980's": 'Pre1980s',
+            "1980's-Present": '1980sPresent',
+            'New Construction': 'NewConstruction'
+        }
+        
+        if str(bldg_age).upper() in self.ageDict.keys():
+            self.bldg_age = self.ageDict[str(bldg_age).upper()]
+        else:
+            raise ValueError(
+                "bldg_age {} not recognized.".format(str(bldg_age))
+            )
+        
+        # dictionary of building programs.
+        self.programsDict = {
+            'FULLSERVICERESTAURANT': 'FullServiceRestaurant',
+            'HOSPITAL': 'Hospital',
+            'LARGEHOTEL': 'LargeHotel',
+            'LARGEOFFICE': 'LargeOffice',
+            'MEDIUMOFFICE': 'MediumOffice',
+            'MIDRISEAPARTMENT': 'MidRiseApartment',
+            'OUTPATIENT': 'OutPatient',
+            'PRIMARYSCHOOL': 'PrimarySchool',
+            'QUICKSERVICERESTAURANT': 'QuickServiceRestaurant',
+            'SECONDARYSCHOOL': 'SecondarySchool',
+            'SMALLHOTEL': 'SmallHotel',
+            'SMALLOFFICE': 'SmallOffice',
+            'STANDALONERETAIL': 'StandAloneRetail',
+            'STRIPMALL': 'StripMall',
+            'SUPERMARKET': 'SuperMarket',
+            'WAREHOUSE': 'Warehouse',
+            
+            'FULL SERVICE RESTAURANT': 'FullServiceRestaurant',
+            'LARGE HOTEL': 'LargeHotel',
+            'LARGE OFFICE': 'LargeOffice',
+            'MEDIUM OFFICE': 'MediumOffice',
+            'MIDRISE APARTMENT': 'MidRiseApartment',
+            'OUT PATIENT': 'OutPatient',
+            'PRIMARY SCHOOL': 'PrimarySchool',
+            'QUICK SERVICE RESTAURANT': 'QuickServiceRestaurant',
+            'SECONDARY SCHOOL': 'SecondarySchool',
+            'SMALL HOTEL': 'SmallHotel',
+            'SMALL OFFICE': 'SmallOffice',
+            'STANDALONE RETAIL': 'StandAloneRetail',
+            'STRIP MALL': 'StripMall',
+            
+            '0': 'LargeOffice',
+            '1': 'StandAloneRetail',
+            '2': 'MidRiseApartment',
+            '3': 'PrimarySchool',
+            '4': 'SecondarySchool',
+            '5': 'SmallHotel',
+            '6': 'LargeHotel',
+            '7': 'Hospital',
+            '8': 'OutPatient',
+            '9': 'Warehouse',
+            '10': 'SuperMarket',
+            '11': 'FullServiceRestaurant',
+            '12': 'QuickServiceRestaurant',
+            
+            'Office': 'LargeOffice',
+            'Retail': 'StandAloneRetail'
+        }
+        
+        if str(bldg_program).upper() in self.programsDict.keys():
+            self.bldg_program = self.programsDict[str(bldg_program).upper()]
+        else:
+            raise ValueError(
+                "bldg_program {} not recognized.".format(str(bldg_program))
+            )
+    
+    def __str__(self):
+        return 'Building Typology: ' + self.bldg_program + \
+               '\nAverage Height: ' + str(self.average_height) + " m" + \
+               '\nFootprint Area: ' + str(self.footprint_area) + " m2" + \
+               '\nFacade Area: ' + str(self.facade_area) + " m2" + \
+               '\n-------------------------------------'
+    
+    @classmethod
+    def from_geometry(cls, bldg_breps, bldg_program, bldg_age, glz_ratio=None, 
+        roof_albedo=None, roof_veg_fraction=None):
+        geometryLib = UWGGeometry
+        avgBldgHeight, footprintArea, facadeArea, footprintBreps, facadeBreps = UWGGeometry.calculateTypologyGeoParams(bldg_breps)
+        
+        return cls(avgBldgHeight, footprintArea, facadeArea, bldg_program, bldg_age, glz_ratio, roof_albedo, roof_veg_fraction)
+    
+    def inRange(val, low, high):
+        if val <= high and val >= low:
+            return True
+        else:
+            return False
 
 
 
@@ -392,7 +761,6 @@ if checkIn.letItFly:
         sc.sticky["dragonfly_folders"]["UWGPath"] = folders.UWGPath
         sc.sticky["dragonfly_folders"]["matlabPath"] = folders.matlabPath
         sc.sticky["dragonfly_UWGGeometry"] = UWGGeometry
-        sc.sticky["dragonfly_UWGText"] = UWGTextGeneration
         
         
         print "Hi " + os.getenv("USERNAME")+ "!\n" + \
