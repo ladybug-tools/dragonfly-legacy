@@ -48,7 +48,7 @@ Provided by Dragonfly 0.0.02
 
 ghenv.Component.Name = "Dragonfly_UWG Building Typology"
 ghenv.Component.NickName = 'BldgTypology'
-ghenv.Component.Message = 'VER 0.0.02\nAPR_29_2018'
+ghenv.Component.Message = 'VER 0.0.02\nMAY_08_2018'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "01::UWG"
 #compatibleDFVersion = VER 0.0.02\nAPR_29_2018
@@ -75,5 +75,7 @@ else:
         ghenv.Component.AddRuntimeMessage(w, warning)
 
 if _runIt == True:
-    buildingTypology = df_BuildingTypology.from_geometry(_bldgGeo, _bldgProgram, _bldgAge, _window2Wall_, _roofAlbedo_, roofVegFract_)
+    buildingTypology, bldgFootprints, facadeBreps = df_BuildingTypology.from_geometry(_bldgGeo, 
+        _bldgProgram, _bldgAge, _window2Wall_, _roofAlbedo_, roofVegFract_)
+    
     print buildingTypology

@@ -46,7 +46,7 @@ Provided by Dragonfly 0.0.02
 
 ghenv.Component.Name = "Dragonfly_Dragonfly"
 ghenv.Component.NickName = 'Dragonfly'
-ghenv.Component.Message = 'VER 0.0.02\nAPR_29_2018'
+ghenv.Component.Message = 'VER 0.0.02\nMAY_08_2018'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "0 | Dragonfly"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -247,7 +247,22 @@ class df_findFolders(object):
 class UWGGeometry(object):
     
     def __init__(self):
+        # transform to project things into the XY plane
         self.groundProjection = rc.Geometry.Transform.PlanarProjection(rc.Geometry.Plane.WorldXY)
+        
+        # unit conversions
+        units = sc.doc.ModelUnitSystem
+        if `units` == 'Rhino.UnitSystem.Meters': self.linearConversionFac = 1.00
+        elif `units` == 'Rhino.UnitSystem.Centimeters': self.linearConversionFac = 0.01
+        elif `units` == 'Rhino.UnitSystem.Millimeters': self.linearConversionFac = 0.001
+        elif `units` == 'Rhino.UnitSystem.Feet': self.linearConversionFac = 0.305
+        elif `units` == 'Rhino.UnitSystem.Inches': self.linearConversionFac = 0.0254
+        else:
+            self.linearConversionFac = 1.00
+            print "Your're Kidding me! Which units are you using?"+ `units`+'?'
+            print 'Please use Meters, Centimeters, Millimeters, Inches or Feet'
+        
+        self.areaConversionFac = math.pow(self.linearConversionFac, 2)
     
     # function to get the center point and normal of surfaces.
     def getSrfCenPtandNormal(self, surface):
@@ -340,21 +355,7 @@ class UWGGeometry(object):
             result: The building breps after being unioned.
         """
         
-        result = []
-        for i in range(0, len(bldgBreps), 2):
-            try:
-                x = bldgBreps[i]
-                y = bldgBreps[i + 1]
-                x.Faces.SplitKinkyFaces(rc.RhinoMath.DefaultAngleTolerance, False)
-                y.Faces.SplitKinkyFaces(rc.RhinoMath.DefaultAngleTolerance, False)
-                a = rc.Geometry.Brep.CreateBooleanUnion([x, y], sc.doc.ModelAbsoluteTolerance)
-                if a == None:
-                    a = [bldgBreps[i], bldgBreps[i + 1]]
-            except:
-                a = [bldgBreps[i]]
-            
-            if a:
-                result.extend(a)
+        result = rc.Geometry.Brep.CreateBooleanUnion(bldgBreps, sc.doc.ModelAbsoluteTolerance)
         
         return result
     
@@ -493,6 +494,11 @@ class UWGGeometry(object):
         # compute the facade area of all of the building breps after they have been boolean unioned.
         unionedBreps = self.unionAllBreps(bldgBreps)
         facadeArea, facadeBreps = self.extractBldgFacades(unionedBreps, maxRoofAngle, maxFloorAngle)
+        #facadeArea, facadeBreps = self.extractBldgFacades(bldgBreps, maxRoofAngle, maxFloorAngle)
+        
+        avgBldgHeight = avgBldgHeight * self.linearConversionFac
+        footprintArea = footprintArea * self.areaConversionFac
+        facadeArea = facadeArea * self.areaConversionFac
         
         return avgBldgHeight, footprintArea, facadeArea, footprintBreps, facadeBreps
 
@@ -659,7 +665,9 @@ class BuildingTypology(object):
         geometryLib = UWGGeometry()
         avgBldgHeight, footprintArea, facadeArea, footprintBreps, facadeBreps = geometryLib.calculateTypologyGeoParams(bldg_breps)
         
-        return cls(avgBldgHeight, footprintArea, facadeArea, bldg_program, bldg_age, glz_ratio, roof_albedo, roof_veg_fraction)
+        typology = cls(avgBldgHeight, footprintArea, facadeArea, bldg_program, bldg_age, glz_ratio, roof_albedo, roof_veg_fraction)
+        
+        return typology, footprintBreps, facadeBreps
     
     @property
     def average_height(self):
