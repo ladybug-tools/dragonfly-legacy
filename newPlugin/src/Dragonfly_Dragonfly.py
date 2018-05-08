@@ -166,8 +166,6 @@ class CheckIn():
 
 checkIn = CheckIn(defaultFolder_)
 
-
-
 class versionCheck(object):
     
     def __init__(self):
@@ -191,7 +189,7 @@ class versionCheck(object):
     def isCompatible(self, LBComponent):
         code = LBComponent.Code
         # find the version that is supposed to be flying
-        try: version = code.split("compatibleLBVersion")[1].split("=")[1].split("\n")[0].strip()
+        try: version = code.split("compatibleDFVersion")[1].split("=")[1].split("\n")[0].strip()
         except: self.giveWarning(LBComponent)
         
         desiredVersion = self.getVersion(version)
@@ -209,6 +207,19 @@ class versionCheck(object):
                      "into canvas and try again."
         w = gh.GH_RuntimeMessageLevel.Warning
         GHComponent.AddRuntimeMessage(w, warningMsg)
+    
+    def isInputMissing(self, GHComponent):
+        isInputMissing = False
+        
+        for param in GHComponent.Params.Input:
+            if param.NickName.startswith("_") and \
+                not param.NickName.endswith("_") and \
+                not param.VolatileDataCount:
+                    warning = "Input parameter %s failed to collect data!"%param.NickName
+                    GHComponent.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+                    isInputMissing = True
+        
+        return isInputMissing
 
 
 class df_findFolders(object):
@@ -235,7 +246,7 @@ class df_findFolders(object):
 
 class UWGGeometry(object):
     
-    def __init(self):
+    def __init__(self):
         self.groundProjection = rc.Geometry.Transform.PlanarProjection(rc.Geometry.Plane.WorldXY)
     
     # function to get the center point and normal of surfaces.
@@ -437,6 +448,7 @@ class UWGGeometry(object):
             fArea = 0
             for srf in sideSrfs:
                 fArea += rc.Geometry.AreaMassProperties.Compute(srf).Area
+            facadeAreas.append(fArea)
         
         facadeArea = sum(facadeAreas)
         
@@ -469,18 +481,18 @@ class UWGGeometry(object):
             bldgHeights.append(self.extractBldgHeight(bldgBrep))
             
             # get the footprint area
-            ftpA, ftpBrep = self.calculateBldgFootprint(bldgBreps, maxFloorAngle)
+            ftpA, ftpBrep = self.calculateBldgFootprint(bldgBrep, maxFloorAngle)
             footprintAreas.append(ftpA)
             footprintBreps.append(ftpBrep)
         
         # get the area-weighted hieght of the buildings and total footprint area
         footprintArea = sum(footprintAreas)
-        footprintWeights = [y/footprintArea for y in footprintAreas]
-        avgBldgHeight = sum([x*footprintWeights[i] for x,i in enumerate(bldgHeights)])
+        footprintWeights = [(y/footprintArea) for y in footprintAreas]
+        avgBldgHeight = sum([x*footprintWeights[i] for i,x in enumerate(bldgHeights)])
         
         # compute the facade area of all of the building breps after they have been boolean unioned.
         unionedBreps = self.unionAllBreps(bldgBreps)
-        facadeArea, facadeBreps = self.extractBldgFacades(bldgBreps, maxRoofAngle, maxFloorAngle)
+        facadeArea, facadeBreps = self.extractBldgFacades(unionedBreps, maxRoofAngle, maxFloorAngle)
         
         return avgBldgHeight, footprintArea, facadeArea, footprintBreps, facadeBreps
 
@@ -528,38 +540,38 @@ class BuildingTypology(object):
         """Initialize a dragonfly building typology"""
         
         # critical geometry parameters that all typologies must have.
-        self.average_height = float(average_height)
-        self.footprint_area = float(footprint_area)
-        self.facade_area = float(facade_area)
+        self._average_height = float(average_height)
+        self._footprint_area = float(footprint_area)
+        self._facade_area = float(facade_area)
         
         # optional parameters with default values.
         if glz_ratio is not None:
             if self.inRange(glz_ratio, 0, 1):
-                self.glz_ratio = float(glz_ratio)
+                self._glz_ratio = float(glz_ratio)
             else:
                 raise ValueError(
                     "glz_ratio must be between 0 and 1. Current value is {}".format(str(glz_ratio))
                 )
         else:
-            self.glz_ratio = 0.4
+            self._glz_ratio = 0.4
         if roof_albedo is not None:
             if self.inRange(float(roof_albedo), 0, 1):
-                self.roof_albedo = float(roof_albedo)
+                self._roof_albedo = float(roof_albedo)
             else:
                 raise ValueError(
                     "roof_albedo must be between 0 and 1. Current value is {}".format(str(roof_albedo))
                 )
         else:
-            self.roof_albedo = 0.5
+            self._roof_albedo = 0.5
         if roof_veg_fraction is not None:
             if self.inRange(float(roof_veg_fraction), 0, 1):
-                self.roof_veg_fraction = float(roof_veg_fraction)
+                self._roof_veg_fraction = float(roof_veg_fraction)
             else:
                 raise ValueError(
                     "roof_veg_fraction must be between 0 and 1. Current value is {}".format(str(roof_veg_fraction))
                 )
         else:
-            self.roof_veg_fraction = 0
+            self._roof_veg_fraction = 0
         
         # dictionary of building ages.
         self.ageDict = {
@@ -577,7 +589,7 @@ class BuildingTypology(object):
         }
         
         if str(bldg_age).upper() in self.ageDict.keys():
-            self.bldg_age = self.ageDict[str(bldg_age).upper()]
+            self._bldg_age = self.ageDict[str(bldg_age).upper()]
         else:
             raise ValueError(
                 "bldg_age {} not recognized.".format(str(bldg_age))
@@ -635,26 +647,66 @@ class BuildingTypology(object):
         }
         
         if str(bldg_program).upper() in self.programsDict.keys():
-            self.bldg_program = self.programsDict[str(bldg_program).upper()]
+            self._bldg_program = self.programsDict[str(bldg_program).upper()]
         else:
             raise ValueError(
                 "bldg_program {} not recognized.".format(str(bldg_program))
             )
     
-    def __str__(self):
-        return 'Building Typology: ' + self.bldg_program + \
-               '\nAverage Height: ' + str(self.average_height) + " m" + \
-               '\nFootprint Area: ' + str(self.footprint_area) + " m2" + \
-               '\nFacade Area: ' + str(self.facade_area) + " m2" + \
-               '\n-------------------------------------'
-    
     @classmethod
     def from_geometry(cls, bldg_breps, bldg_program, bldg_age, glz_ratio=None, 
         roof_albedo=None, roof_veg_fraction=None):
-        geometryLib = UWGGeometry
-        avgBldgHeight, footprintArea, facadeArea, footprintBreps, facadeBreps = UWGGeometry.calculateTypologyGeoParams(bldg_breps)
+        geometryLib = UWGGeometry()
+        avgBldgHeight, footprintArea, facadeArea, footprintBreps, facadeBreps = geometryLib.calculateTypologyGeoParams(bldg_breps)
         
         return cls(avgBldgHeight, footprintArea, facadeArea, bldg_program, bldg_age, glz_ratio, roof_albedo, roof_veg_fraction)
+    
+    @property
+    def average_height(self):
+        """Return the average height of the building typology in meters."""
+        return self._average_height
+    
+    @property
+    def footprint_area(self):
+        """Return the footprint of the buildings in the typology in square meters."""
+        return self._footprint_area
+    
+    @property
+    def facade_area(self):
+        """Return the facade area of the buildings in the typology in square meters."""
+        return self._facade_area
+    
+    @property
+    def bldg_program(self):
+        """Return the program of the buildings in the typology."""
+        return self._bldg_program
+    
+    @property
+    def bldg_age(self):
+        """Return the construction time of buildings in the typology."""
+        return self._bldg_age
+    
+    @property
+    def glz_ratio(self):
+        """Return the glazing ratio of the buildings in the typology."""
+        return self._glz_ratio
+    
+    @property
+    def roof_albedo(self):
+        """Return the roof albedo of the buildings in the typology."""
+        return self._roof_albedo
+    
+    @property
+    def roof_veg_fraction(self):
+        """Return the roof vegetation fraction of the buildings in the typology."""
+        return self._roof_veg_fraction
+    
+    def __str__(self):
+        return 'Building Typology: ' + self._bldg_program + ", " + self._bldg_age + \
+               '\nAverage Height: ' + str(int(self._average_height)) + " m" + \
+               '\nFootprint Area: ' + str(int(self._footprint_area)) + " m2" + \
+               '\nFacade Area: ' + str(int(self._facade_area)) + " m2" + \
+               '\n-------------------------------------'
     
     def inRange(val, low, high):
         if val <= high and val >= low:
@@ -761,7 +813,7 @@ if checkIn.letItFly:
         sc.sticky["dragonfly_folders"]["UWGPath"] = folders.UWGPath
         sc.sticky["dragonfly_folders"]["matlabPath"] = folders.matlabPath
         sc.sticky["dragonfly_UWGGeometry"] = UWGGeometry
-        
+        sc.sticky["dragonfly_BuildingTypology"] = BuildingTypology
         
         print "Hi " + os.getenv("USERNAME")+ "!\n" + \
               "Dragonfly is Flying! Vviiiiiiizzz...\n\n" + \

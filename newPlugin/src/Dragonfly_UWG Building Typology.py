@@ -51,4 +51,29 @@ ghenv.Component.NickName = 'BldgTypology'
 ghenv.Component.Message = 'VER 0.0.02\nAPR_29_2018'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "01::UWG"
+#compatibleDFVersion = VER 0.0.02\nAPR_29_2018
 ghenv.Component.AdditionalHelpFromDocStrings = "2"
+
+import scriptcontext as sc
+
+#Dragonfly check.
+if not sc.sticky.has_key('dragonfly_release') == True:
+    initCheck = False
+    print "You should first let Drafgonfly fly..."
+    ghenv.Component.AddRuntimeMessage(w, "You should first let Drafgonfly fly...")
+else:
+    try:
+        if not sc.sticky['dragonfly_release'].isCompatible(ghenv.Component): initCheck = False
+        if sc.sticky['dragonfly_release'].isInputMissing(ghenv.Component): initCheck = False
+        df_BuildingTypology = sc.sticky["dragonfly_BuildingTypology"]
+    except:
+        initCheck = False
+        warning = "You need a newer version of Drafgonfly to use this compoent." + \
+        "Use updateDrafgonfly component to update userObjects.\n" + \
+        "If you have already updated userObjects drag Drafgonfly_Drafgonfly component " + \
+        "into canvas and try again."
+        ghenv.Component.AddRuntimeMessage(w, warning)
+
+if _runIt == True:
+    buildingTypology = df_BuildingTypology.from_geometry(_bldgGeo, _bldgProgram, _bldgAge, _window2Wall_, _roofAlbedo_, roofVegFract_)
+    print buildingTypology
