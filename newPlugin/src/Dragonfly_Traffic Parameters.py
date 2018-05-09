@@ -36,5 +36,32 @@ ghenv.Component.NickName = 'trafficPar'
 ghenv.Component.Message = 'VER 0.0.01\nAPR_29_2018'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "01::UWG"
+#compatibleDFVersion = VER 0.0.02\nMAY_08_2018
 ghenv.Component.AdditionalHelpFromDocStrings = "4"
 
+import scriptcontext as sc
+
+#Dragonfly check.
+initCheck = True
+if not sc.sticky.has_key('dragonfly_release') == True:
+    initCheck = False
+    print "You should first let Drafgonfly fly..."
+    ghenv.Component.AddRuntimeMessage(w, "You should first let Drafgonfly fly...")
+else:
+    try:
+        if not sc.sticky['dragonfly_release'].isCompatible(ghenv.Component): initCheck = False
+        if sc.sticky['dragonfly_release'].isInputMissing(ghenv.Component): initCheck = False
+        df_TrafficPar = sc.sticky["dragonfly_TrafficPar"]
+    except:
+        initCheck = False
+        warning = "You need a newer version of Drafgonfly to use this compoent." + \
+        "Use updateDrafgonfly component to update userObjects.\n" + \
+        "If you have already updated userObjects drag Drafgonfly_Drafgonfly component " + \
+        "into canvas and try again."
+        ghenv.Component.AddRuntimeMessage(w, warning)
+
+if initCheck == True:
+    trafficPar = df_TrafficPar(_sensibleHeat, latentHeat_, _weekdaySched_, 
+        _saturdaySched_, _sundaySched_)
+    
+    print trafficPar

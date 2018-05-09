@@ -51,12 +51,13 @@ ghenv.Component.NickName = 'BldgTypology'
 ghenv.Component.Message = 'VER 0.0.02\nMAY_08_2018'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "01::UWG"
-#compatibleDFVersion = VER 0.0.02\nAPR_29_2018
+#compatibleDFVersion = VER 0.0.02\nMAY_08_2018
 ghenv.Component.AdditionalHelpFromDocStrings = "2"
 
 import scriptcontext as sc
 
 #Dragonfly check.
+initCheck = True
 if not sc.sticky.has_key('dragonfly_release') == True:
     initCheck = False
     print "You should first let Drafgonfly fly..."
@@ -74,7 +75,7 @@ else:
         "into canvas and try again."
         ghenv.Component.AddRuntimeMessage(w, warning)
 
-if _runIt == True:
+if initCheck == True and _runIt == True:
     buildingTypology, bldgFootprints, facadeBreps = df_BuildingTypology.from_geometry(_bldgGeo, 
         _bldgProgram, _bldgAge, _window2Wall_, _roofAlbedo_, roofVegFract_)
     

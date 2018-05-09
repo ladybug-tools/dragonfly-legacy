@@ -355,9 +355,10 @@ class UWGGeometry(object):
             result: The building breps after being unioned.
         """
         
-        result = rc.Geometry.Brep.CreateBooleanUnion(bldgBreps, sc.doc.ModelAbsoluteTolerance)
-        
-        return result
+        try:
+            return rc.Geometry.Brep.CreateBooleanUnion(bldgBreps, sc.doc.ModelAbsoluteTolerance)
+        except:
+            return bldgBreps
     
     def calculateBldgFootprint(self, bldgBrep, maxFloorAngle=60):
         """Extracts building footprint and footprint area
@@ -503,7 +504,7 @@ class UWGGeometry(object):
         return avgBldgHeight, footprintArea, facadeArea, footprintBreps, facadeBreps
 
 
-class BuildingTypology(object):
+class DFTypology(object):
     """Represents a group of buildings of the same typology in an urban area.
     
     Attributes:
@@ -709,7 +710,12 @@ class BuildingTypology(object):
         """Return the roof vegetation fraction of the buildings in the typology."""
         return self._roof_veg_fraction
     
-    def __str__(self):
+    @property
+    def isDFTypology(self):
+        """Return True for DFTypology."""
+        return True
+    
+    def __repr__(self):
         return 'Building Typology: ' + self._bldg_program + ", " + self._bldg_age + \
                '\nAverage Height: ' + str(int(self._average_height)) + " m" + \
                '\nFootprint Area: ' + str(int(self._footprint_area)) + " m2" + \
@@ -721,6 +727,108 @@ class BuildingTypology(object):
             return True
         else:
             return False
+
+class DFTrafficPar(object):
+    """Represents the traffic within an urban area.
+    
+    Attributes:
+        sensible_heat: A number representing the maximum sensible anthropogenic heat flux of the urban area 
+            in watts per square meter. This input is required.
+        latent_heat:  A number representing the maximum latent anthropogenic heat flux of the urban area 
+            in watts per square meter. Default is set to 0.
+        weekday_schedule: A list of 24 fractional values that will be multiplied by the sensible_heat
+            and latent_heat to produce hourly values for heat on the weekday of the simulation.  The default is
+            a typical traffic schedule for a commerical area.
+        saturday_schedule: A list of 24 fractional values that will be multiplied by the sensible_heat
+            and latent_heat to produce hourly values for heat on Saturdays of the simulation.  The default is
+            a typical traffic schedule for a commerical area.
+        sunday_schedule: A list of 24 fractional values that will be multiplied by the sensible_heat
+            and latent_heat to produce hourly values for heat on Sundays of the simulation.  The default is
+            a typical traffic schedule for a commerical area.
+    """
+    
+    def __init__(self, sensible_heat, latent_heat=None, weekday_schedule=[], 
+                saturday_schedule=[], sunday_schedule=[]):
+        """Initialize dragonfly traffic parameters"""
+        
+        self._sensible_heat = float(sensible_heat)
+        
+        if latent_heat is not None:
+            self._latent_heat = latent_heat
+        else:
+            self._latent_heat = 0
+        
+        if weekday_schedule != []:
+            print weekday_schedule
+            self._weekday_schedule = self.checkSchedule(weekday_schedule)
+        else:
+            self._weekday_schedule = [0.2,0.2,0.2,0.2,0.2,0.4,0.7,0.9,0.9,0.6,0.6, \
+                0.6,0.6,0.6,0.7,0.8,0.9,0.9,0.8,0.8,0.7,0.3,0.2,0.2]
+        
+        if saturday_schedule != []:
+            self._saturday_schedule = self.checkSchedule(saturday_schedule)
+        else:
+            self._saturday_schedule = [0.2,0.2,0.2,0.2,0.2,0.3,0.5,0.5,0.5,0.5,0.5, \
+                0.5,0.5,0.5,0.6,0.7,0.7,0.7,0.7,0.5,0.4,0.3,0.2,0.2]
+        
+        if sunday_schedule != []:
+            self._sunday_schedule = self.checkSchedule(sunday_schedule)
+        else:
+            self._sunday_schedule = [0.2,0.2,0.2,0.2,0.2,0.3,0.4,0.4,0.4,0.4,0.4,0.4, \
+                0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.3,0.3,0.2,0.2]
+    
+    @property
+    def sensible_heat(self):
+        """Return the max sensible heat flux of the traffic."""
+        return self._sensible_heat
+    
+    @property
+    def latent_heat(self):
+        """Return the max latent heat of the traffic."""
+        return self._latent_heat
+    
+    @property
+    def weekday_schedule(self):
+        """Return the weekday traffic schedule as a list."""
+        return self._weekday_schedule
+    
+    @property
+    def saturday_schedule(self):
+        """Return the Saturday traffic schedule as a list."""
+        return self._saturday_schedule
+    
+    @property
+    def sunday_schedule(self):
+        """Return the Sunday traffic schedule as a list."""
+        return self._sunday_schedule
+    
+    @property
+    def isTrafficPar(self):
+        """Return True for isTrafficPAr."""
+        return True
+    
+    def __repr__(self):
+        return 'Traffic Parameters: ' + \
+               '\nSensible Heat: ' + str(self._sensible_heat) + \
+               '\nLAtent Heat: ' + str(self._latent_heat) + \
+               '\n-------------------------------------'
+    
+    def checkSchedule(self, schedule):
+        if len(schedule) is 24:
+            return [fixRange(x,0,1) for x in schedule]
+        else:
+            raise Exception(
+                "Current schedule has length " + str(len(schedule)) + \
+                ". Schedules must be lists of 24 values."
+            )
+    
+    def fixRange(self, val, low, high):
+        if val > high:
+            return high
+        elif val < low:
+            return low
+        else:
+            return float(val)
 
 
 
@@ -821,7 +929,8 @@ if checkIn.letItFly:
         sc.sticky["dragonfly_folders"]["UWGPath"] = folders.UWGPath
         sc.sticky["dragonfly_folders"]["matlabPath"] = folders.matlabPath
         sc.sticky["dragonfly_UWGGeometry"] = UWGGeometry
-        sc.sticky["dragonfly_BuildingTypology"] = BuildingTypology
+        sc.sticky["dragonfly_BuildingTypology"] = DFTypology
+        sc.sticky["dragonfly_TrafficPar"] = DFTrafficPar
         
         print "Hi " + os.getenv("USERNAME")+ "!\n" + \
               "Dragonfly is Flying! Vviiiiiiizzz...\n\n" + \
