@@ -48,20 +48,21 @@ Provided by Dragonfly 0.0.02
 
 ghenv.Component.Name = "Dragonfly_UWG Building Typology"
 ghenv.Component.NickName = 'BldgTypology'
-ghenv.Component.Message = 'VER 0.0.02\nMAY_08_2018'
+ghenv.Component.Message = 'VER 0.0.02\nMAY_09_2018'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "01::UWG"
 #compatibleDFVersion = VER 0.0.02\nMAY_08_2018
 ghenv.Component.AdditionalHelpFromDocStrings = "2"
 
 import scriptcontext as sc
+import Grasshopper.Kernel as gh
 
 #Dragonfly check.
 initCheck = True
 if not sc.sticky.has_key('dragonfly_release') == True:
     initCheck = False
     print "You should first let Drafgonfly fly..."
-    ghenv.Component.AddRuntimeMessage(w, "You should first let Drafgonfly fly...")
+    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, "You should first let Drafgonfly fly...")
 else:
     try:
         if not sc.sticky['dragonfly_release'].isCompatible(ghenv.Component): initCheck = False
@@ -73,7 +74,7 @@ else:
         "Use updateDrafgonfly component to update userObjects.\n" + \
         "If you have already updated userObjects drag Drafgonfly_Drafgonfly component " + \
         "into canvas and try again."
-        ghenv.Component.AddRuntimeMessage(w, warning)
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
 
 if initCheck == True and _runIt == True:
     buildingTypology, bldgFootprints, facadeBreps = df_BuildingTypology.from_geometry(_bldgGeo, 

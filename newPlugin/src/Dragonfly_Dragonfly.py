@@ -46,7 +46,7 @@ Provided by Dragonfly 0.0.02
 
 ghenv.Component.Name = "Dragonfly_Dragonfly"
 ghenv.Component.NickName = 'Dragonfly'
-ghenv.Component.Message = 'VER 0.0.02\nMAY_08_2018'
+ghenv.Component.Message = 'VER 0.0.02\nMAY_09_2018'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "0 | Dragonfly"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -722,7 +722,7 @@ class DFTypology(object):
                '\nFacade Area: ' + str(int(self._facade_area)) + " m2" + \
                '\n-------------------------------------'
     
-    def inRange(val, low, high):
+    def inRange(self, val, low, high):
         if val <= high and val >= low:
             return True
         else:
@@ -804,13 +804,13 @@ class DFTrafficPar(object):
     
     @property
     def isTrafficPar(self):
-        """Return True for isTrafficPAr."""
+        """Return True for isTrafficPar."""
         return True
     
     def __repr__(self):
         return 'Traffic Parameters: ' + \
                '\nSensible Heat: ' + str(self._sensible_heat) + \
-               '\nLAtent Heat: ' + str(self._latent_heat) + \
+               '\nLatent Heat: ' + str(self._latent_heat) + \
                '\n-------------------------------------'
     
     def checkSchedule(self, schedule):
@@ -830,6 +830,120 @@ class DFTrafficPar(object):
         else:
             return float(val)
 
+class DFVegetationPar(object):
+    """Represents the behaviour of vegetation within an urban area.
+    
+    Attributes:
+        vegetation_start_month: An integer from 1 to 12 that represents the month at which 
+            vegetation begins to affect the urban climate.  The default is set to 0, which will 
+            automatically determine the vegetation start month by analyzing the epw to see which 
+            months have an average monthly temperature above 10 C.
+        vegetation_end_month: An integer from 1 to 12 that represents the last month at which 
+            vegetation affect the urban climate.  The default is set to 0, which will 
+            automatically determine the vegetation end month by analyzing the epw to see which 
+            months have an average monthly temperature above 10 C.
+        vegetation_albedo: A number between 0 and 1 that represents the ratio of reflected radiation 
+            from vegetated surfaces to incident radiation upon them.  If no value is input here, the 
+            UWG will assume a typical vegetation albedo of 0.25.
+        tree_latent_fraction: A number between 0 and 1 that represents the the fraction of absorbed 
+            solar energy by trees that is given off as latent heat (evapotranspiration). This affects 
+            the moisture balance and temperature in the urban area.  If no value is input here, a typical 
+            value of 0.7 will be assumed.
+        grass_latent_fraction: A number between 0 and 1 that represents the the fraction of absorbed solar 
+            energy by grass that is given off as latent heat (evapotranspiration). This affects the 
+            moisture balance and temperature in the urban area.  If no value is input here, a typical 
+            value of 0.6 will be assumed.
+    """
+    
+    def __init__(self, vegetation_start_month=None, vegetation_end_month=None, vegetation_albedo=None, 
+                tree_latent_fraction=None, grass_latent_fraction=None):
+        """Initialize dragonfly vegetation parameters"""
+        if vegetation_start_month is not None:
+            self._vegetation_start_month = int(self.inRange(vegetation_start_month, 0, 12, '_vegetation_start_month'))
+        else:
+            self._vegetation_start_month = 0
+        
+        if vegetation_end_month is not None:
+            self._vegetation_end_month = int(self.inRange(vegetation_end_month, 0, 12, '_vegetation_end_month'))
+        else:
+            self._vegetation_end_month = 0
+        
+        if vegetation_albedo is not None:
+            self._vegetation_albedo = self.inRange(vegetation_albedo, 0, 1, '_vegetation_albedo')
+        else:
+            self._vegetation_albedo = 0.25
+        
+        if tree_latent_fraction is not None:
+            self._tree_latent_fraction = self.inRange(tree_latent_fraction, 0, 1, '_tree_latent_fraction')
+        else:
+            self._tree_latent_fraction = 0.7
+        
+        if grass_latent_fraction is not None:
+            self._grass_latent_fraction = self.inRange(grass_latent_fraction, 0, 1, '_grass_latent_fraction')
+        else:
+            self._grass_latent_fraction = 0.6
+        
+        # dictionary of months for start and end month
+        self.monthsDict = {
+            0: 'Autocalc',
+            1: 'Jan',
+            2: 'Feb',
+            3: 'Mar',
+            4: 'Apr',
+            5: 'May',
+            6: 'Jun',
+            7: 'Jul',
+            8: 'Aug',
+            9: 'Sep',
+            10: 'Oct',
+            11: 'Nov',
+            12: 'Dec' 
+            }
+    
+    @property
+    def vegetation_start_month(self):
+        """Return the vegetation start month."""
+        return self._vegetation_start_month
+    
+    @property
+    def vegetation_end_month(self):
+        """Return the vegetation end month."""
+        return self._vegetation_end_month
+    
+    @property
+    def vegetation_albedo(self):
+        """Return the vegetation albedo."""
+        return self._vegetation_albedo
+    
+    @property
+    def tree_latent_fraction(self):
+        """Return the tree latent fraction."""
+        return self._tree_latent_fraction
+    
+    @property
+    def grass_latent_fraction(self):
+        """Return the grass latent fraction."""
+        return self._grass_latent_fraction
+    
+    @property
+    def isVegetationPar(self):
+        """Return True for isVegetationPar."""
+        return True
+    
+    def __repr__(self):
+        return 'Vegetation Parameters: ' + \
+               '\nVegetation Time: ' + self.monthsDict[self._vegetation_start_month] + ' - ' + self.monthsDict[self._vegetation_end_month] +\
+               '\nAlbedo: ' + str(self._vegetation_albedo) + \
+               '\nTree | Grass Latent: ' + str(self._tree_latent_fraction) + ' | ' + str(self._grass_latent_fraction) + \
+               '\n-------------------------------------'
+    
+    def inRange(self, val, low, high, paramName='parameter'):
+        if val <= high and val >= low:
+            return val
+        else:
+            raise ValueError(
+                    "{} must be between {} and {}. Current value is {}".format(paramName, str(low), str(high), str(val))
+                )
 
 
 try:
@@ -931,6 +1045,7 @@ if checkIn.letItFly:
         sc.sticky["dragonfly_UWGGeometry"] = UWGGeometry
         sc.sticky["dragonfly_BuildingTypology"] = DFTypology
         sc.sticky["dragonfly_TrafficPar"] = DFTrafficPar
+        sc.sticky["dragonfly_VegetationPar"] = DFVegetationPar
         
         print "Hi " + os.getenv("USERNAME")+ "!\n" + \
               "Dragonfly is Flying! Vviiiiiiizzz...\n\n" + \
