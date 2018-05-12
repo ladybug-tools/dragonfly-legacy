@@ -46,7 +46,7 @@ Provided by Dragonfly 0.0.02
 
 ghenv.Component.Name = "Dragonfly_Dragonfly"
 ghenv.Component.NickName = 'Dragonfly'
-ghenv.Component.Message = 'VER 0.0.02\nMAY_09_2018'
+ghenv.Component.Message = 'VER 0.0.02\nMAY_12_2018'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "0 | Dragonfly"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -57,6 +57,7 @@ import rhinoscriptsyntax as rs
 import Rhino as rc
 import scriptcontext as sc
 import Grasshopper.Kernel as gh
+import Grasshopper
 import math
 import os
 import System
@@ -108,27 +109,70 @@ class CheckIn():
         
         #set up default pass
         if not self.folderIsSetByUser:
-            if os.path.exists("c:\\ladybug\\") and os.access(os.path.dirname("c:\\ladybug\\"), os.F_OK):
-                # folder already exists so it is all fine
-                sc.sticky["Dragonfly_DefaultFolder"] = "c:\\ladybug\\"
-            elif os.access(os.path.dirname("c:\\"), os.F_OK):
-                #the folder does not exists but write privileges are given so it is fine
-                sc.sticky["Dragonfly_DefaultFolder"] = "c:\\ladybug\\"
+            # Differenciate on platform used
+            # If windows
+            # Normally would use sys.platform but it will return 'cli' since
+            # this is IronPython.
+            # The shortcoming of os.name is that it returns "posix" for both
+            # Mac and Linux, here we don't care (and anyways, rhino isn't on linux)
+            if os.name =='nt':
+                if os.path.exists("c:\\ladybug\\") and os.access(os.path.dirname("c:\\ladybug\\"), os.F_OK):
+                    # folder already exists so it is all fine
+                    sc.sticky["Dragonfly_DefaultFolder"] = "c:\\ladybug\\"
+                elif os.access(os.path.dirname("c:\\"), os.F_OK):
+                    #the folder does not exists but write privileges are given so it is fine
+                    sc.sticky["Dragonfly_DefaultFolder"] = "c:\\ladybug\\"
+                else:
+                    # let's use the user folder
+                    username = os.getenv("USERNAME")
+                    # make sure username doesn't have space
+                    if (" " in username):
+                        msg = "User name on this system: " + username + " has white space." + \
+                              " Default fodelr cannot be set.\nUse defaultFolder_ to set the path to another folder and try again!" + \
+                              "\nDragonfly failed to fly! :("
+                        print msg
+                        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+                        sc.sticky["Dragonfly_DefaultFolder"] = ""
+                        self.letItFly = False
+                        return
+                    sc.sticky["Dragonfly_DefaultFolder"] = os.path.join("C:\\Users\\", username, "AppData\\Roaming\\Ladybug\\")
+            # If macOS
+            elif os.name == 'posix':
+                default_path = os.path.expanduser('~/ladybug/')
+                # folder already exists and there is write privileges, or
+                # there's write privileges for the parent folder
+                if (os.path.exists(default_path) and  os.access(os.path.dirname(default_path), os.F_OK)) or (os.access(os.path.expanduser('~'), os.F_OK)):
+                    sc.sticky["Dragonfly_DefaultFolder"] = default_path
+                else:
+                     # let's use the Rhino AppData folder
+                    try:
+                        appdata = rc.RhinoApp.GetDataDirectory(True, False)
+                    except AttributeError:
+                        appdata = False
+                    assert appdata, 'Failed to set up the folder.\n' \
+                        'Try to set it up manually using defaultFolder_ input.'
+                    sc.sticky["Dragonfly_DefaultFolder"] = os.path.join(appdata, "ladybug/")
             else:
-                # let's use the user folder
-                username = os.getenv("USERNAME")
-                # make sure username doesn't have space
-                if (" " in username):
-                    msg = "User name on this system: " + username + " has white space." + \
-                          " Default fodelr cannot be set.\nUse defaultFolder_ to set the path to another folder and try again!" + \
-                          "\nDragonfly failed to fly! :("
-                    print msg
-                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
-                    sc.sticky["Dragonfly_DefaultFolder"] = ""
-                    self.letItFly = False
-                    return
-                
-                sc.sticky["Dragonfly_DefaultFolder"] = os.path.join("C:\\Users\\", username, "AppData\\Roaming\\Ladybug\\")
+                raise PlatformError("Unsupported platform {}. Isn't Rhino only available for Windows and Mac?".format(sys.platform))
+        
+        self.updateCategoryIcon()
+    
+    def updateCategoryIcon(self):
+        try:
+            url = "https://raw.githubusercontent.com/chriswmackey/Dragonfly/master/resources/icon_16_16.png"
+            icon = os.path.join(sc.sticky["Dragonfly_DefaultFolder"], "DF_icon_16_16.png")
+            if not os.path.isfile(icon):
+                client = System.Net.WebClient()
+                client.DownloadFile(url, icon)
+            
+            iconBitmap = System.Drawing.Bitmap(icon)
+            Grasshopper.Instances.ComponentServer.AddCategoryIcon("Dragonfly", iconBitmap)
+        except:
+            pass
+            
+        Grasshopper.Instances.ComponentServer.AddCategoryShortName("Dragonfly", "DF")
+        Grasshopper.Instances.ComponentServer.AddCategorySymbolName("Dragonfly", "D")
+        Grasshopper.Kernel.GH_ComponentServer.UpdateRibbonUI() #Reload the Ribbon
     
     def getComponentVersion(self):
         monthDict = {'JAN':'01', 'FEB':'02', 'MAR':'03', 'APR':'04', 'MAY':'05', 'JUN':'06',
@@ -859,27 +903,27 @@ class DFVegetationPar(object):
                 tree_latent_fraction=None, grass_latent_fraction=None):
         """Initialize dragonfly vegetation parameters"""
         if vegetation_start_month is not None:
-            self._vegetation_start_month = int(self.inRange(vegetation_start_month, 0, 12, '_vegetation_start_month'))
+            self._vegetation_start_month = self.inRange(int(vegetation_start_month), 0, 12, 'vegetation_start_month')
         else:
             self._vegetation_start_month = 0
         
         if vegetation_end_month is not None:
-            self._vegetation_end_month = int(self.inRange(vegetation_end_month, 0, 12, '_vegetation_end_month'))
+            self._vegetation_end_month = self.inRange(int(vegetation_end_month), 0, 12, 'vegetation_end_month')
         else:
             self._vegetation_end_month = 0
         
         if vegetation_albedo is not None:
-            self._vegetation_albedo = self.inRange(vegetation_albedo, 0, 1, '_vegetation_albedo')
+            self._vegetation_albedo = self.inRange(float(vegetation_albedo), 0, 1, 'vegetation_albedo')
         else:
             self._vegetation_albedo = 0.25
         
         if tree_latent_fraction is not None:
-            self._tree_latent_fraction = self.inRange(tree_latent_fraction, 0, 1, '_tree_latent_fraction')
+            self._tree_latent_fraction = self.inRange(float(tree_latent_fraction), 0, 1, 'tree_latent_fraction')
         else:
             self._tree_latent_fraction = 0.7
         
         if grass_latent_fraction is not None:
-            self._grass_latent_fraction = self.inRange(grass_latent_fraction, 0, 1, '_grass_latent_fraction')
+            self._grass_latent_fraction = self.inRange(float(grass_latent_fraction), 0, 1, 'grass_latent_fraction')
         else:
             self._grass_latent_fraction = 0.6
         
@@ -944,6 +988,83 @@ class DFVegetationPar(object):
             raise ValueError(
                     "{} must be between {} and {}. Current value is {}".format(paramName, str(low), str(high), str(val))
                 )
+
+class DFPavementPar(object):
+    """Represents the makeup of pavement within the urban area.
+    
+    Attributes:
+        albedo: A number between 0 and 1 that represents the surface albedo (or reflectivity) 
+            of the pavement.  The default is set to 0.1, which is typical of fresh asphalt.
+        thickness: A number that represents the thickness of the pavement material in meters (m).  
+            The default is set to 0.5 meters.
+        conductivity: A number representing the conductivity of the pavement material in W/m-K.  
+            The default is set to 1 W/m-K, which is typical of asphalt.
+        volumetric_heat_capacity: A number representing the volumetric heat capacity of 
+            the pavement material in J/m3-K.  This is the number of joules needed to raise 
+            one cubic meter of the material by 1 degree Kelvin.  The default is set to 
+            1,600,000 J/m3-K, which is typical of asphalt.
+    """
+    
+    def __init__(self, albedo=None, thickness=None, conductivity=None, volumetric_heat_capacity=None):
+        """Initialize dragonfly pavement parameters"""
+        if albedo is not None:
+            self._albedo = self.inRange(float(albedo), 0, 1, 'albedo')
+        else:
+            self._albedo = 0.1
+        if thickness is not None:
+            self._thickness = float(thickness)
+        else:
+            self._thickness = 0.5
+        if conductivity is not None:
+            self._conductivity = float(conductivity)
+        else:
+            self._conductivity = 1
+        if volumetric_heat_capacity is not None:
+            self._volumetric_heat_capacity = float(volumetric_heat_capacity)
+        else:
+            self._volumetric_heat_capacity = 1600000
+    
+    @property
+    def albedo(self):
+        """Return the albedo."""
+        return self._albedo
+    
+    @property
+    def thickness(self):
+        """Return the thickness."""
+        return self._thickness
+    
+    @property
+    def conductivity(self):
+        """Return the conductivity."""
+        return self._conductivity
+    
+    @property
+    def volumetric_heat_capacity(self):
+        """Return the volumetric heat capacity."""
+        return self._volumetric_heat_capacity
+    
+    @property
+    def isPavementPar(self):
+        """Return True for isPavementPar."""
+        return True
+    
+    def __repr__(self):
+        return 'Pavement Parameters: ' + \
+               '\nAlbedo: ' + str(self._albedo) + \
+               '\nThickness: ' + str(self._thickness) + \
+               '\nConductivity: ' + str(self._conductivity) + \
+               '\nVol Heat Capacity: ' + str(self._volumetric_heat_capacity) + \
+               '\n-------------------------------------'
+    
+    def inRange(self, val, low, high, paramName='parameter'):
+        if val <= high and val >= low:
+            return val
+        else:
+            raise ValueError(
+                    "{} must be between {} and {}. Current value is {}".format(paramName, str(low), str(high), str(val))
+                )
+
 
 
 try:
@@ -1046,8 +1167,15 @@ if checkIn.letItFly:
         sc.sticky["dragonfly_BuildingTypology"] = DFTypology
         sc.sticky["dragonfly_TrafficPar"] = DFTrafficPar
         sc.sticky["dragonfly_VegetationPar"] = DFVegetationPar
+        sc.sticky["dragonfly_PavementPar"] = DFPavementPar
         
         print "Hi " + os.getenv("USERNAME")+ "!\n" + \
               "Dragonfly is Flying! Vviiiiiiizzz...\n\n" + \
               "Default path is set to: " + sc.sticky["Dragonfly_DefaultFolder"] + "\n" + \
               "UWGEngine path is set to: " + sc.sticky["dragonfly_folders"]["UWGPath"]
+        
+        # push ladybug component to back
+        ghenv.Component.OnPingDocument().SelectAll()
+        ghenv.Component.Attributes.Selected = False
+        ghenv.Component.OnPingDocument().BringSelectionToTop()
+        ghenv.Component.OnPingDocument().DeselectAll()
