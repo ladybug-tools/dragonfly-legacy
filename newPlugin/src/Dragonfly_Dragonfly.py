@@ -1243,7 +1243,6 @@ class DFVegetation(object):
         return 'Vegetation: ' + vegType + \
                '\n  Area: ' + str(int(self._area)) + " m2"
 
-
 class DFTrafficPar(object):
     """Represents the traffic within an urban area.
     
@@ -1369,7 +1368,7 @@ class DFVegetationPar(object):
         grass_latent_fraction: A number between 0 and 1 that represents the the fraction of absorbed solar 
             energy by grass that is given off as latent heat (evapotranspiration). This affects the 
             moisture balance and temperature in the urban area.  If no value is input here, a typical 
-            value of 0.6 will be assumed.
+            value of 0.5 will be assumed.
     """
     
     def __init__(self, vegetation_start_month=None, vegetation_end_month=None, vegetation_albedo=None, 
@@ -1401,7 +1400,7 @@ class DFVegetationPar(object):
         if grass_latent_fraction is not None:
             self._grass_latent_fraction = self.genChecks.in_range(float(grass_latent_fraction), 0, 1, 'grass_latent_fraction')
         else:
-            self._grass_latent_fraction = 0.6
+            self._grass_latent_fraction = 0.5
         
         # dictionary of months for start and end month
         self.monthsDict = {
