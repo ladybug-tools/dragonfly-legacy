@@ -29,7 +29,8 @@ Provided by Dragonfly 0.0.02
         ----------------: ...
         UWGCity: A city that can be plugged into the "Dragonfly_Run Urban Weather Generator" component.
         ----------------: ...
-        treeFootprints: If tree breps are connected, this is the tree geometry as projected into the world XY plane.  This is used to determine the tree coverage of the pavement.
+        treeFootprints: If tree breps are connected, this is the tree geometry as projected into the world XY plane.  This is used to determine the tree coverage.
+        grassFootprints: If grass breps are connected, this is the tree geometry as projected into the world XY plane.  This is used to determine the grass coverage.
         terrainSrf: The terrian brep projected into the world XY plane.  The area of this surface is used to determine all other geometric parameters.
 """
 
@@ -56,12 +57,29 @@ else:
     if sc.sticky['dragonfly_release'].isInputMissing(ghenv.Component): initCheck = False
     df_City = sc.sticky["dragonfly_City"]
     df_Terrain = sc.sticky["dragonfly_Terrain"]
+    df_Vegetation = sc.sticky["dragonfly_Vegetation"]
 
 if initCheck == True and _runIt == True:
-    terrain, terrainSrf = df_Terrain.fromGeometry(_terrainBrep)
+    terrain, terrainSrf = df_Terrain.from_geometry(_terrainBrep)
+    
+    tCover = 0
+    if treesOrCoverage_ != []:
+        try:
+            tCover = float(treesOrCoverage_[0])
+        except:
+            treeObj, treeFootprints = df_Vegetation.from_geometry(treesOrCoverage_, True)
+            tCover = treeObj.computeCoverage(terrain)
+    
+    gCover = 0
+    if grassOrCoverage_ != []:
+        try:
+            gCover = float(grassOrCoverage_[0])
+        except:
+            grassObj, grassFootprints = df_Vegetation.from_geometry(grassOrCoverage_, False)
+            gCover = grassObj.computeCoverage(terrain)
     
     UWGCity = df_City.from_typologies(_buildingTypologies, terrain,
-        _trafficPar, treesOrCoverage_, grassOrCoverage_, vegetationPar_, pavementPar_)
+        _trafficPar, tCover, gCover, vegetationPar_, pavementPar_)
     
     print UWGCity
 

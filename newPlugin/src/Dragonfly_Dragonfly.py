@@ -403,7 +403,7 @@ class UWGGeometry(object):
         except:
             return bldgBreps
     
-    def calculateSurfaceFootprints(self, srfBreps):
+    def calculateFootprints(self, srfBreps, solid=False):
         """Extracts the footprint and area of a surface in the XY plane
         
         Args:
@@ -411,7 +411,7 @@ class UWGGeometry(object):
         
         Returns:
             footprintArea: The footprint area of the surfaces in the XY plane.
-            footprintBrep: The srfBreps projected into the XY plane.
+            footprintBreps: The srfBreps projected into the XY plane.
         """
         footprintArea = 0
         footprintBreps = []
@@ -420,13 +420,16 @@ class UWGGeometry(object):
             brepCopy = copy.deepcopy(srfBrep)
             brepCopy.Transform(self.groundProjection)
             footprintBreps.append(brepCopy)
-            footprintArea += rc.Geometry.AreaMassProperties.Compute(brepCopy).Area
+            if solid == True:
+                footprintArea += (rc.Geometry.AreaMassProperties.Compute(brepCopy).Area/2)
+            else:
+                footprintArea += rc.Geometry.AreaMassProperties.Compute(brepCopy).Area
         
         footprintArea = footprintArea * self.areaConversionFac
         
         return footprintArea, footprintBreps
     
-    def calculateSolidFootprint(self, bldgBrep, maxFloorAngle=60):
+    def calculateBldgFootprint(self, bldgBrep, maxFloorAngle=60):
         """Extracts building footprint and footprint area
         
         Args:
@@ -549,7 +552,7 @@ class UWGGeometry(object):
             bldgHeights.append(self.extractBldgHeight(bldgBrep))
             
             # get the footprint area
-            ftpA, ftpBrep = self.calculateSolidFootprint(bldgBrep, maxFloorAngle)
+            ftpA, ftpBrep = self.calculateBldgFootprint(bldgBrep, maxFloorAngle)
             footprintAreas.append(ftpA)
             footprintBreps.append(ftpBrep)
         
@@ -974,7 +977,22 @@ class DFCity(object):
     @classmethod
     def from_typologies(cls, typologies, terrian, traffic_parameters, tree_coverage_ratio=None, 
         grass_coverage_ratio=None, vegetation_parameters=None, pavement_parameters=None):
-        """Initialize a city from a list of building typologies"""
+        """Initialize a city from a list of building typologies
+        Args:
+            typologies: A list of dragonfly Typology objects.
+            terrian: A dragonfly Terrain object.
+            traffic_parameters: A dragonfly TrafficPar object that defines the traffic within an urban area.
+            tree_coverage_ratio: An number from 0 to 1 that defines the fraction of the entire urban area 
+                (including both pavement and roofs) that is covered by trees.  The default is set to 0.
+            grass_coverage_ratio: An number from 0 to 1 that defines the fraction of the entire urban area 
+                (including both pavement and roofs) that is covered by grass/vegetation.  The default is set to 0.
+            vegetation_parameters: A dragonfly VegetationPar object that defines the behaviour of vegetation within an urban area.
+            pavement_parameters: A dragonfly PavementPar object that defines the makeup of pavement within the urban area.
+        
+        Returns:
+            city: The dragonfly city object
+        """
+        
         genChecks = GeneralChecks()
         utilities = Utilities()
         
@@ -1120,7 +1138,7 @@ class DFTerrain(object):
             self._characteristic_length = math.sqrt(self._area/math.pi)
     
     @classmethod
-    def fromGeometry(cls, terrainSrfs):
+    def from_geometry(cls, terrainSrfs):
         """Initialize a dragonfly terrain surface from a list of terrain breps
         Args:
             terrainSrfs: A list of Rhino surfaces representing the terrian.
@@ -1130,7 +1148,7 @@ class DFTerrain(object):
             surfaceBreps: The srfBreps representing the terrain (projected into the XY plane).
         """
         geometryLib = UWGGeometry()
-        surfaceArea, surfaceBreps = geometryLib.calculateSurfaceFootprints(terrainSrfs)
+        surfaceArea, surfaceBreps = geometryLib.calculateFootprints(terrainSrfs)
         terrain = cls(surfaceArea)
         
         return terrain, surfaceBreps
@@ -1154,6 +1172,77 @@ class DFTerrain(object):
         return 'Terrain Surface: ' + \
                '\n  Area: ' + str(int(self._area)) + " m2" + \
                '\n  Radius: ' + str(int(self._characteristic_length)) + " m"
+
+class DFVegetation(object):
+    """Represents vegetation (either grass or trees) within an urban area.
+    
+    Attributes:
+        area: The area of the urban terrain covered by the vegetation in square meters 
+            (projected into the XY plane).
+        is_trees: A boolean value that denotes whether the vegetation object represents 
+            trees (True) or grass (False).
+    """
+    
+    def __init__(self, area, is_trees=False):
+        """Initialize a dragonfly vegetation object"""
+        self._area = float(area)
+        self._is_trees = bool(is_trees)
+    
+    @classmethod
+    def from_geometry(cls, veg_breps, is_trees=False):
+        """Initialize a dragonfly tree object from a list of closed tree breps
+        Args:
+            veg_breps: A list of closed Rhino breps representing the tree canopy.
+            is_trees: A boolean value that denotes whether the vegetation object 
+                represents trees (True) or grass (False).
+        
+        Returns:
+            vegetation: The dragonfly vegetation object.
+            projected_breps: The veg_breps projected into the XY plane.
+        """
+        geometryLib = UWGGeometry()
+        surfaceArea, projected_breps = geometryLib.calculateFootprints(veg_breps, is_trees)
+        vegetation = cls(surfaceArea, is_trees)
+        
+        return vegetation, projected_breps
+    
+    @property
+    def area(self):
+        """Return the area of the vegetation in the XY plane."""
+        return self._area
+    
+    @property
+    def is_trees(self):
+        """Return a true/false value depending on whether the vegetation represents trees/grass."""
+        return self._is_trees
+    
+    @property
+    def isDFVegetation(self):
+        """Return True for DFDFVegetation."""
+        return True
+    
+    def computeCoverage(self, terrain):
+        """Initialize a dragonfly tree object from a list of closed tree breps
+        Args:
+            terrain: A dragonfly terrin object with which to compute coverage.
+        
+        Returns:
+            coverage: A number between 0 and 1 representing the fraction of 
+                the terrain covered by the vegetation.
+        """
+        genChecks = GeneralChecks()
+        if hasattr(terrain, 'isDFTerrain'):
+            coverage = genChecks.in_range((self._area/terrain.area), 0, 1, 'vegetation_coverage')
+        else:
+            genChecks.make_type_error('terrian', 'Terrain')
+        
+        return coverage
+    
+    def __repr__(self):
+        vegType = 'Trees' if self._is_trees else 'Grass'
+        return 'Vegetation: ' + vegType + \
+               '\n  Area: ' + str(int(self._area)) + " m2"
+
 
 class DFTrafficPar(object):
     """Represents the traffic within an urban area.
@@ -1539,6 +1628,7 @@ if checkIn.letItFly:
         sc.sticky["dragonfly_BuildingTypology"] = DFTypology
         sc.sticky["dragonfly_City"] = DFCity
         sc.sticky["dragonfly_Terrain"] = DFTerrain
+        sc.sticky["dragonfly_Vegetation"] = DFVegetation
         sc.sticky["dragonfly_TrafficPar"] = DFTrafficPar
         sc.sticky["dragonfly_VegetationPar"] = DFVegetationPar
         sc.sticky["dragonfly_PavementPar"] = DFPavementPar
