@@ -46,7 +46,7 @@ Provided by Dragonfly 0.0.02
 
 ghenv.Component.Name = "Dragonfly_Dragonfly"
 ghenv.Component.NickName = 'Dragonfly'
-ghenv.Component.Message = 'VER 0.0.02\nMAY_12_2018'
+ghenv.Component.Message = 'VER 0.0.02\nMAY_13_2018'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "0 | Dragonfly"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -613,6 +613,23 @@ class GeneralChecks(object):
         raise TypeError (
                 "{} are not a valid dragonfly {} object.".format(inputName, objectName)
             )
+    
+    def checkSchedule(self, schedule):
+        if len(schedule) == 24:
+            return [self.fixRange(x,0,1) for x in schedule]
+        else:
+            raise Exception(
+                "Current schedule has length " + str(len(schedule)) + \
+                ". Schedules must be lists of 24 values."
+            )
+    
+    def fixRange(self, val, low, high):
+        if val > high:
+            return high
+        elif val < low:
+            return low
+        else:
+            return float(val)
 
 class DFBuildingTypes(object):
     
@@ -1117,7 +1134,6 @@ class DFCity(object):
                '\n  ------------------------' + \
                '\n  Building Typologies: ' + typologyList
 
-
 class DFTerrain(object):
     """Represents the terrain on which an urban area sits.
     
@@ -1266,7 +1282,7 @@ class DFTrafficPar(object):
                 saturday_schedule=[], sunday_schedule=[]):
         """Initialize dragonfly traffic parameters"""
         # get dependencies
-        self.genChecks = GeneralChecks()
+        genChecks = GeneralChecks()
         
         self._sensible_heat = float(sensible_heat)
         
@@ -1277,19 +1293,19 @@ class DFTrafficPar(object):
         
         if weekday_schedule != []:
             print weekday_schedule
-            self._weekday_schedule = self.checkSchedule(weekday_schedule)
+            self._weekday_schedule = genChecks.checkSchedule(weekday_schedule)
         else:
             self._weekday_schedule = [0.2,0.2,0.2,0.2,0.2,0.4,0.7,0.9,0.9,0.6,0.6, \
                 0.6,0.6,0.6,0.7,0.8,0.9,0.9,0.8,0.8,0.7,0.3,0.2,0.2]
         
         if saturday_schedule != []:
-            self._saturday_schedule = self.checkSchedule(saturday_schedule)
+            self._saturday_schedule = genChecks.checkSchedule(saturday_schedule)
         else:
             self._saturday_schedule = [0.2,0.2,0.2,0.2,0.2,0.3,0.5,0.5,0.5,0.5,0.5, \
                 0.5,0.5,0.5,0.6,0.7,0.7,0.7,0.7,0.5,0.4,0.3,0.2,0.2]
         
         if sunday_schedule != []:
-            self._sunday_schedule = self.checkSchedule(sunday_schedule)
+            self._sunday_schedule = genChecks.checkSchedule(sunday_schedule)
         else:
             self._sunday_schedule = [0.2,0.2,0.2,0.2,0.2,0.3,0.4,0.4,0.4,0.4,0.4,0.4, \
                 0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.3,0.3,0.2,0.2]
@@ -1328,23 +1344,6 @@ class DFTrafficPar(object):
         return 'Traffic Parameters: ' + \
                '\n  Sensible Heat: ' + str(self._sensible_heat) + \
                '\n  Latent Heat: ' + str(self._latent_heat)
-    
-    def checkSchedule(self, schedule):
-        if len(schedule) is 24:
-            return [fixRange(x,0,1) for x in schedule]
-        else:
-            raise Exception(
-                "Current schedule has length " + str(len(schedule)) + \
-                ". Schedules must be lists of 24 values."
-            )
-    
-    def fixRange(self, val, low, high):
-        if val > high:
-            return high
-        elif val < low:
-            return low
-        else:
-            return float(val)
 
 class DFVegetationPar(object):
     """Represents the behaviour of vegetation within an urban area.
@@ -1375,30 +1374,30 @@ class DFVegetationPar(object):
                 tree_latent_fraction=None, grass_latent_fraction=None):
         """Initialize dragonfly vegetation parameters"""
         # get dependencies
-        self.genChecks = GeneralChecks()
+        genChecks = GeneralChecks()
         
         if vegetation_start_month is not None:
-            self._vegetation_start_month = self.genChecks.in_range(int(vegetation_start_month), 0, 12, 'vegetation_start_month')
+            self._vegetation_start_month = genChecks.in_range(int(vegetation_start_month), 0, 12, 'vegetation_start_month')
         else:
             self._vegetation_start_month = 0
         
         if vegetation_end_month is not None:
-            self._vegetation_end_month = self.genChecks.in_range(int(vegetation_end_month), 0, 12, 'vegetation_end_month')
+            self._vegetation_end_month = genChecks.in_range(int(vegetation_end_month), 0, 12, 'vegetation_end_month')
         else:
             self._vegetation_end_month = 0
         
         if vegetation_albedo is not None:
-            self._vegetation_albedo = self.genChecks.in_range(float(vegetation_albedo), 0, 1, 'vegetation_albedo')
+            self._vegetation_albedo = genChecks.in_range(float(vegetation_albedo), 0, 1, 'vegetation_albedo')
         else:
             self._vegetation_albedo = 0.25
         
         if tree_latent_fraction is not None:
-            self._tree_latent_fraction = self.genChecks.in_range(float(tree_latent_fraction), 0, 1, 'tree_latent_fraction')
+            self._tree_latent_fraction = genChecks.in_range(float(tree_latent_fraction), 0, 1, 'tree_latent_fraction')
         else:
             self._tree_latent_fraction = 0.7
         
         if grass_latent_fraction is not None:
-            self._grass_latent_fraction = self.genChecks.in_range(float(grass_latent_fraction), 0, 1, 'grass_latent_fraction')
+            self._grass_latent_fraction = genChecks.in_range(float(grass_latent_fraction), 0, 1, 'grass_latent_fraction')
         else:
             self._grass_latent_fraction = 0.5
         
@@ -1474,10 +1473,10 @@ class DFPavementPar(object):
     def __init__(self, albedo=None, thickness=None, conductivity=None, volumetric_heat_capacity=None):
         """Initialize dragonfly pavement parameters"""
         # get dependencies
-        self.genChecks = GeneralChecks()
+        genChecks = GeneralChecks()
         
         if albedo is not None:
-            self._albedo = self.genChecks.in_range(float(albedo), 0, 1, 'albedo')
+            self._albedo = genChecks.in_range(float(albedo), 0, 1, 'albedo')
         else:
             self._albedo = 0.1
         if thickness is not None:
@@ -1525,7 +1524,160 @@ class DFPavementPar(object):
                '\n  Conductivity: ' + str(self._conductivity) + \
                '\n  Vol Heat Capacity: ' + str(self._volumetric_heat_capacity)
 
+class RefEPWSitePar(object):
+    """Represents the properties of the reference site where the original EPW was recorded.
+    
+    Attributes:
+        average_obstacle_height: A number that represents the height in meters of objects that 
+            obstruct the view to the sky at the weather station site.  This includes both trees 
+            and buildings.  The default is set to 0.1 meters.
+        vegetation_coverage: A number between 0 and 1 that represents that fraction of the reference 
+            EPW site that is covered in grass. If nothing is input here, a defailt of 0.9 will be used.
+        temp_measure_height: A number that represents the height in meters at which temperature is 
+            measured on the weather station.  The default is set to 10 meters as this is the standard 
+            measurement height for US Department of Energy EPW files.
+        wind_measure_height: A number that represents the height in meters at which wind speed is 
+            measured on the weather station.  The default is set to 10 meters as this is the standard 
+            measurement height for US Department of Energy EPW files.
+    """
+    
+    def __init__(self, average_obstacle_height=None, vegetation_coverage=None, temp_measure_height=None, wind_measure_height=None):
+        """Initialize RefEPWSitePar parameters"""
+        # get dependencies
+        genChecks = GeneralChecks()
+        
+        if average_obstacle_height is not None:
+            self._average_obstacle_height = float(average_obstacle_height)
+        else:
+            self._average_obstacle_height = 0.1
+        if vegetation_coverage is not None:
+            self._vegetation_coverage = genChecks.in_range(float(vegetation_coverage), 0, 1, 'vegetation_coverage')
+        else:
+            self._vegetation_coverage = 0.9
+        if temp_measure_height is not None:
+            self._temp_measure_height = float(temp_measure_height)
+        else:
+            self._temp_measure_height = 10
+        if wind_measure_height is not None:
+            self._wind_measure_height = float(wind_measure_height)
+        else:
+            self._wind_measure_height = 10
+    
+    @property
+    def average_obstacle_height(self):
+        """Return the average obstacle height."""
+        return self._average_obstacle_height
+    
+    @property
+    def vegetation_coverage(self):
+        """Return the vegetation coverage."""
+        return self._vegetation_coverage
+    
+    @property
+    def temp_measure_height(self):
+        """Return the temperature measurement height."""
+        return self._temp_measure_height
+    
+    @property
+    def wind_measure_height(self):
+        """Return the wind measurement height."""
+        return self._wind_measure_height
+    
+    @property
+    def isRefEPWSitePar(self):
+        """Return True for isRefEPWSitePar."""
+        return True
+    
+    def __repr__(self):
+        return 'Reference EPW Site Parameters: ' + \
+               '\n  Obstacle Height: ' + str(self._average_obstacle_height) + ' m' + \
+               '\n  Vegetation Coverage: ' + str(self._vegetation_coverage) + \
+               '\n  Measurement Height (Temp | Wind): ' + str(self._temp_measure_height) + \
+                    ' m | ' + str(self._wind_measure_height) + ' m'
 
+class BoundaryLayerPar(object):
+    """Represents the properties of the urban boundary layer.
+    
+    Attributes:
+        day_boundary_layer_height: A number that represents the height in meters of the urban boundary layer 
+            during the daytime. This is the height to which the urban meterorological conditions are stable 
+            and representative of the overall urban area. Typically, this boundary layer height increases with 
+            the height of the buildings.  The default is set to 1000 meters.
+        night_boundary_layer_height: A number that represents the height in meters of the urban boundary layer 
+            during the nighttime. This is the height to which the urban meterorological conditions are stable 
+            and representative of the overall urban area. Typically, this boundary layer height increases with 
+            the height of the buildings.  The default is set to 80 meters.
+        inversion_height: A number that represents the height at which the vertical profile of potential 
+            temperature becomes stable. It is the height at which the profile of air temperature becomes 
+            stable. Can be determined by flying helium balloons equipped with temperature sensors and 
+            recording the air temperatures at different heights.  The default is set to 150 meters.
+        circulation_coefficient: A number that represents the circulation coefficient.  The default 
+            is 1.2 per Bueno, Bruno (2012).
+        exchange_coefficient: A number that represents the exchange coefficient.  The default is 
+            1.0 per Bueno, Bruno (2014).
+    """
+    
+    def __init__(self, day_boundary_layer_height=None, night_boundary_layer_height=None, 
+        inversion_height=None, circulation_coefficient=None, exchange_coefficient=None):
+        """Initialize Boundary Layer parameters"""
+        if day_boundary_layer_height is not None:
+            self._day_boundary_layer_height = float(day_boundary_layer_height)
+        else:
+            self._day_boundary_layer_height = 1000
+        if night_boundary_layer_height is not None:
+            self._night_boundary_layer_height = float(night_boundary_layer_height)
+        else:
+            self._night_boundary_layer_height = 80
+        if inversion_height is not None:
+            self._inversion_height = float(inversion_height)
+        else:
+            self._inversion_height = 150
+        if circulation_coefficient is not None:
+            self._circulation_coefficient = float(circulation_coefficient)
+        else:
+            self._circulation_coefficient = 1.2
+        if exchange_coefficient is not None:
+            self._exchange_coefficient = float(exchange_coefficient)
+        else:
+            self._exchange_coefficient = 1.0
+    
+    @property
+    def day_boundary_layer_height(self):
+        """Return the daytime boundary layer height."""
+        return self._day_boundary_layer_height
+    
+    @property
+    def night_boundary_layer_height(self):
+        """Return the nighttime boundary layer height."""
+        return self._night_boundary_layer_height
+    
+    @property
+    def inversion_height(self):
+        """Return the inversion height."""
+        return self._inversion_height
+    
+    @property
+    def circulation_coefficient(self):
+        """Return the circulation coefficient."""
+        return self._circulation_coefficient
+    
+    @property
+    def exchange_coefficient(self):
+        """Return the exchange coefficient."""
+        return self._exchange_coefficient
+    
+    @property
+    def isBoundaryLayerPar(self):
+        """Return True for isBoundaryLayerPar."""
+        return True
+    
+    def __repr__(self):
+        return 'Boundary Layer Parameters: ' + \
+               '\n  Boundary Height (Day | Night): ' + str(self._day_boundary_layer_height) + \
+                    ' m | ' + str(self._night_boundary_layer_height) + ' m' +\
+               '\n  Inversion Height: ' + str(self._inversion_height) + ' m' + \
+               '\n  Circulation Coefficient: ' + str(self._circulation_coefficient) + \
+               '\n  Exchange Coefficient: ' + str(self._exchange_coefficient)
 
 try:
     checkIn.checkForUpdates(True)
@@ -1631,7 +1783,8 @@ if checkIn.letItFly:
         sc.sticky["dragonfly_TrafficPar"] = DFTrafficPar
         sc.sticky["dragonfly_VegetationPar"] = DFVegetationPar
         sc.sticky["dragonfly_PavementPar"] = DFPavementPar
-        
+        sc.sticky["dragonfly_RefEpwPar"] = RefEPWSitePar
+        sc.sticky["dragonfly_BoundaryLayerPar"] = BoundaryLayerPar
         
         print "Hi " + os.getenv("USERNAME")+ "!\n" + \
               "Dragonfly is Flying! Vviiiiiiizzz...\n\n" + \

@@ -13,24 +13,36 @@ Use this component to generate refernce EPW site parameters that can be plugged 
 Provided by Dragonfly 0.0.02
     Args:
         avgObstacleHeight_: A number that represents the height in meters of objects that obstruct the view to the sky at the weather station site, such as trees and buildings.  The default is set to 0.1.
-        pavementConstr_: A text string representing the construction of the uban pavement.  This construction can be either from the OpenStudio Library (the "Honeybee_Call from EP Construction Library" component) or it can be a custom construction from the "Honeybee_EnergyPlus Construction" component.  If no construction is input here, a default construction for asphalt will be used for simulating all paved areas of the urban neighborhood.
-        vegetationCoverage_: A number between 0 and 1 that represents that fraction of the _pavementBrep that is covered in grass. If nothing is input here, it will be assumed that half of the EPW site is covered in grass.
-        inclinationAngle_: A number between 0 and 1 that that represents the dinensionless inclination angle of the ground surfaces of the reference site:
-            _
-            0 = Perfectly vertical surface  (like a wall)
-            0.5 = Sloped surfacece that is 45 degrees from the horizontal.
-            1 = Perfectly horizontal surface (like a flat roof)
-        tempMeasureHeight_: A number that represents the height in meters at which temperature is measured on the weather station.  The default is set to 10 meters as this is the standard measurement height for UD Department of Energy EPW files.
-        windMeasureHeight_: A number that represents the height in meters at which wind speed is measured on the weather station.  The default is set to 10 meters as this is the standard measurement height for UD Department of Energy EPW files.
+        vegetationCoverage_: A number between 0 and 1 that represents that fraction of the reference EPW site that is covered in grass. If nothing is input here, a defailt of 0.9 will be used.
+        tempMeasureHeight_: A number that represents the height in meters at which temperature is measured on the weather station.  The default is set to 10 meters as this is the standard measurement height for US Department of Energy EPW files.
+        windMeasureHeight_: A number that represents the height in meters at which wind speed is measured on the weather station.  The default is set to 10 meters as this is the standard measurement height for US Department of Energy EPW files.
     Returns:
-        pavementPar: A list of refernce EPW site parameters that can be plugged into the "Dragonfly_Run Urban Weather Generator" component.
+        epwSitePar: Refernce EPW site parameters that can be plugged into the "Dragonfly_Run Urban Weather Generator" component.
 """
 
 ghenv.Component.Name = "Dragonfly_Reference EPW Parameters"
 ghenv.Component.NickName = 'RefEPWPar'
-ghenv.Component.Message = 'VER 0.0.02\nAPR_29_2018'
+ghenv.Component.Message = 'VER 0.0.02\nMAY_13_2018'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "01::UWG"
+#compatibleDFVersion = VER 0.0.02\nMAY_13_2018
 ghenv.Component.AdditionalHelpFromDocStrings = "5"
 
+import scriptcontext as sc
+import Grasshopper.Kernel as gh
 
+#Dragonfly check.
+initCheck = True
+if not sc.sticky.has_key('dragonfly_release') == True:
+    initCheck = False
+    print "You should first let Drafgonfly fly..."
+    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, "You should first let Drafgonfly fly...")
+else:
+    if not sc.sticky['dragonfly_release'].isCompatible(ghenv.Component): initCheck = False
+    if sc.sticky['dragonfly_release'].isInputMissing(ghenv.Component): initCheck = False
+    df_RefEpwPar = sc.sticky["dragonfly_RefEpwPar"]
+
+if initCheck == True:
+    epwSitePar = df_RefEpwPar(avgObstacleHeight_, vegetationCoverage_, tempMeasureHeight_, 
+        windMeasureHeight_)
+    print epwSitePar
