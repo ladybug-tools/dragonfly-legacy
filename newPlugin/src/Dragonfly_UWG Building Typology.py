@@ -35,7 +35,6 @@ Provided by Dragonfly 0.0.02
             2 = New Construction
         _fract2Canyon_: A number between 0 and 1 that represents the fraction of the building's waste heat from air conditioning that gets rejected into the urban canyon (as opposed to through rooftop equipment or into a ground source loop).  The default is set to 0.5.
         _glzRatio_: A number between 0 and 1 that represents the fraction of the exterior wall surface occupied by windows.  If no value is input here, a default will be used that comes from the DoE building template connected to the _bldgProgram and _bldgAge.
-        roofVegFract_: A number between 0 and 1 that represents the fraction of the building's roof that is covered in vegetation (like a green roof or roof garden).  If no value is input here, it will be assumed that the roof has no vegetation.
         _runIt: Set to "True" to run the component and generate a building typology.
     Returns:
         readMe!: ...
@@ -51,7 +50,7 @@ ghenv.Component.NickName = 'BldgTypology'
 ghenv.Component.Message = 'VER 0.0.02\nMAY_12_2018'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "01::UWG"
-#compatibleDFVersion = VER 0.0.02\nMAY_08_2018
+#compatibleDFVersion = VER 0.0.02\nMAY_12_2018
 ghenv.Component.AdditionalHelpFromDocStrings = "2"
 
 import scriptcontext as sc
@@ -78,6 +77,6 @@ else:
 
 if initCheck == True and _runIt == True:
     buildingTypology, bldgFootprints, facadeBreps = df_BuildingTypology.from_geometry(_bldgGeo, 
-        _bldgProgram, _bldgAge, _fract2Canyon_, _glzRatio_, roofVegFract_)
+        _bldgProgram, _bldgAge, _fract2Canyon_, _glzRatio_)
     
     print buildingTypology
