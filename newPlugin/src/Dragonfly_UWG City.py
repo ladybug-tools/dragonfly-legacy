@@ -35,7 +35,7 @@ Provided by Dragonfly 0.0.02
 
 ghenv.Component.Name = "Dragonfly_UWG City"
 ghenv.Component.NickName = 'UWGcity'
-ghenv.Component.Message = 'VER 0.0.02\nAPR_29_2018'
+ghenv.Component.Message = 'VER 0.0.02\nMAY_12_2018'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "01::UWG"
 ghenv.Component.AdditionalHelpFromDocStrings = "2"

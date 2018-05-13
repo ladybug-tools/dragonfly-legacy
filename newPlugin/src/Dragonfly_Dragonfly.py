@@ -547,104 +547,31 @@ class UWGGeometry(object):
         
         return avgBldgHeight, footprintArea, facadeArea, footprintBreps, facadeBreps
 
-
-class DFTypology(object):
-    """Represents a group of buildings of the same typology in an urban area.
+class GeneralChecks(object):
     
-    Attributes:
-        average_height: The average height of the buildings of this typology in meters.
-        footprint_area: The footprint area of the buildings of this typology in square meteres.
-        facade_area: The facade area of the buildings of this typology in square meters.
-        bldg_program: A text string representing one of the 16 DOE building program types to be 
-            used as a template for this typology.  Choose from the following options:
-                FullServiceRestaurant
-                Hospital
-                LargeHotel
-                LargeOffice
-                MediumOffice
-                MidRiseApartment
-                OutPatient
-                PrimarySchool
-                QuickServiceRestaurant
-                SecondarySchool
-                SmallHotel
-                SmallOffice
-                StandAloneRetail
-                StripMall
-                SuperMarket
-                Warehouse
-        bldg_age: A text string that sets the age of the buildings represented by this typology.  
-            This is used to determine what constructions make up the walls, roofs, and windows based on international building codes over the last several decades.  Choose from the following options:
-                Pre1980s
-                1980sPresent
-                NewConstruction
-        glz_ratio: An optional number from 0 to 1 that represents the fraction of the walls of the building typology that are glazed.
-            If none, a default of 0.4 is used
-        roof_albedo: An optional number from 0 to 1 that represents the albedo (or reflectivity) of the roof.
-            If none, a default of 0.5 will be used.
-        roof_veg_fraction: An optional number from 0 to 1 that represents the fraction of the roof that is vegetated.
-            If none, a default of 0 is used.
-    """
+    def __init__(self):
+        """Class that contains general checks"""
     
-    def __init__(self, average_height, footprint_area, facade_area, bldg_program, 
-                bldg_age, glz_ratio=None, roof_albedo=None, roof_veg_fraction=None):
-        """Initialize a dragonfly building typology"""
-        
-        # critical geometry parameters that all typologies must have.
-        self._average_height = float(average_height)
-        self._footprint_area = float(footprint_area)
-        self._facade_area = float(facade_area)
-        
-        # optional parameters with default values.
-        if glz_ratio is not None:
-            if self.inRange(glz_ratio, 0, 1):
-                self._glz_ratio = float(glz_ratio)
-            else:
-                raise ValueError(
-                    "glz_ratio must be between 0 and 1. Current value is {}".format(str(glz_ratio))
-                )
-        else:
-            self._glz_ratio = 0.4
-        if roof_albedo is not None:
-            if self.inRange(float(roof_albedo), 0, 1):
-                self._roof_albedo = float(roof_albedo)
-            else:
-                raise ValueError(
-                    "roof_albedo must be between 0 and 1. Current value is {}".format(str(roof_albedo))
-                )
-        else:
-            self._roof_albedo = 0.5
-        if roof_veg_fraction is not None:
-            if self.inRange(float(roof_veg_fraction), 0, 1):
-                self._roof_veg_fraction = float(roof_veg_fraction)
-            else:
-                raise ValueError(
-                    "roof_veg_fraction must be between 0 and 1. Current value is {}".format(str(roof_veg_fraction))
-                )
-        else:
-            self._roof_veg_fraction = 0
-        
-        # dictionary of building ages.
-        self.ageDict = {
-            'PRE1980S': 'Pre1980s',
-            '1980SPRESENT': '1980sPresent',
-            'NEWCONSTRUCTION': 'NewConstruction',
-            
-            '0': 'Pre1980s',
-            '1': '1980sPresent',
-            '2': 'NewConstruction',
-            
-            "Pre-1980's": 'Pre1980s',
-            "1980's-Present": '1980sPresent',
-            'New Construction': 'NewConstruction'
-        }
-        
-        if str(bldg_age).upper() in self.ageDict.keys():
-            self._bldg_age = self.ageDict[str(bldg_age).upper()]
+    def in_range(self, val, low, high, paramName='parameter'):
+        if val <= high and val >= low:
+            return val
         else:
             raise ValueError(
-                "bldg_age {} not recognized.".format(str(bldg_age))
-            )
+                    "{} must be between {} and {}. Current value is {}".format(paramName, str(low), str(high), str(val))
+                )
+    
+    def length_match(self, list1, list2, list1Name='list1', list2Name='list2'):
+        if len(list1) == len(list2):
+            return True
+        else:
+            raise ValueError(
+                    "Length of {} : {} does not match the length of {} : {}".format(list1Name, str(len(list1)), list2Name, str(len(list1)))
+                )
+
+class DFBuildingTypes(object):
+    
+    def __init__(self):
+        """Class that contains all of the accepted building typologies and contruction years"""
         
         # dictionary of building programs.
         self.programsDict = {
@@ -697,20 +624,116 @@ class DFTypology(object):
             'Retail': 'StandAloneRetail'
         }
         
+        # dictionary of building ages.
+        self.ageDict = {
+            'PRE1980S': 'Pre1980s',
+            '1980SPRESENT': '1980sPresent',
+            'NEWCONSTRUCTION': 'NewConstruction',
+            
+            '0': 'Pre1980s',
+            '1': '1980sPresent',
+            '2': 'NewConstruction',
+            
+            "Pre-1980's": 'Pre1980s',
+            "1980's-Present": '1980sPresent',
+            'New Construction': 'NewConstruction'
+        }
+    
+    def check_program(self, bldg_program):
         if str(bldg_program).upper() in self.programsDict.keys():
-            self._bldg_program = self.programsDict[str(bldg_program).upper()]
+            return self.programsDict[str(bldg_program).upper()]
         else:
             raise ValueError(
-                "bldg_program {} not recognized.".format(str(bldg_program))
+                "Building Program {} not recognized.".format('"' + str(bldg_program) + '"')
             )
     
+    def check_age(self, bldg_age):
+        if str(bldg_age).upper() in self.ageDict.keys():
+            return self.ageDict[str(bldg_age).upper()]
+        else:
+            raise ValueError(
+                "Building Age {} not recognized.".format('"' + str(bldg_age) + '"')
+            )
+
+class DFTypology(object):
+    """Represents a group of buildings of the same typology in an urban area.
+    
+    Attributes:
+        average_height: The average height of the buildings of this typology in meters.
+        footprint_area: The footprint area of the buildings of this typology in square meteres.
+        facade_area: The facade area of the buildings of this typology in square meters.
+        bldg_program: A text string representing one of the 16 DOE building program types to be 
+            used as a template for this typology.  Choose from the following options:
+                FullServiceRestaurant
+                Hospital
+                LargeHotel
+                LargeOffice
+                MediumOffice
+                MidRiseApartment
+                OutPatient
+                PrimarySchool
+                QuickServiceRestaurant
+                SecondarySchool
+                SmallHotel
+                SmallOffice
+                StandAloneRetail
+                StripMall
+                SuperMarket
+                Warehouse
+        bldg_age: A text string that sets the age of the buildings represented by this typology.  
+            This is used to determine what constructions make up the walls, roofs, and windows 
+            based on international building codes over the last several decades.  Choose from 
+            the following options:
+                Pre1980s
+                1980sPresent
+                NewConstruction
+        fract_heat_to_canyon: A number from 0 to 1 that represents the fraction the building's waste 
+            heat from air conditioning that gets rejected into the urban canyon (as opposed to 
+            through rooftop equipment or into a ground source loop).  The default is set to 0.5.
+        glz_ratio: An optional number from 0 to 1 that represents the fraction of the walls of the building typology
+            that are glazed. If no value is input here, a default will be used that comes from the DoE building 
+            template from the bldg_program and bldg_age.
+        roof_veg_fraction: An optional number from 0 to 1 that represents the fraction of the roof that is vegetated.
+            If none, a default of 0 is used.
+    """
+    
+    def __init__(self, average_height, footprint_area, facade_area, bldg_program, 
+                bldg_age, fract_heat_to_canyon=None, glz_ratio=None, roof_veg_fraction=None):
+        """Initialize a dragonfly building typology"""
+        # get dependencies
+        self.bldgTypes = DFBuildingTypes()
+        self.genChecks = GeneralChecks()
+        
+        # critical geometry parameters that all typologies must have.
+        self._average_height = float(average_height)
+        self._footprint_area = float(footprint_area)
+        self._facade_area = float(facade_area)
+        
+        # critical program parameters that all typologies must have.
+        self._bldg_program = self.bldgTypes.check_program(bldg_program)
+        self._bldg_age = self.bldgTypes.check_age(bldg_age)
+        
+        # optional parameters with default values.
+        if glz_ratio is not None:
+            self._glz_ratio = self.genChecks.in_range(float(glz_ratio), 0, 1, 'glz_ratio')
+        else:
+            self._glz_ratio = 'Auto'
+        if fract_heat_to_canyon is not None:
+            self._fract_heat_to_canyon = self.genChecks.in_range(float(fract_heat_to_canyon), 0, 1, 'fract_heat_to_canyon')
+        else:
+            self._fract_heat_to_canyon = 0.5
+        if roof_veg_fraction is not None:
+            self._roof_veg_fraction = self.genChecks.in_range(float(roof_veg_fraction), 0, 1, 'roof_veg_fraction')
+        else:
+            self._roof_veg_fraction = 0
+    
     @classmethod
-    def from_geometry(cls, bldg_breps, bldg_program, bldg_age, glz_ratio=None, 
-        roof_albedo=None, roof_veg_fraction=None):
+    def from_geometry(cls, bldg_breps, bldg_program, bldg_age, fract_heat_to_canyon=None, 
+        glz_ratio=None, roof_veg_fraction=None):
         geometryLib = UWGGeometry()
         avgBldgHeight, footprintArea, facadeArea, footprintBreps, facadeBreps = geometryLib.calculateTypologyGeoParams(bldg_breps)
         
-        typology = cls(avgBldgHeight, footprintArea, facadeArea, bldg_program, bldg_age, glz_ratio, roof_albedo, roof_veg_fraction)
+        typology = cls(avgBldgHeight, footprintArea, facadeArea, bldg_program, bldg_age, fract_heat_to_canyon, glz_ratio, roof_veg_fraction)
         
         return typology, footprintBreps, facadeBreps
     
@@ -740,14 +763,14 @@ class DFTypology(object):
         return self._bldg_age
     
     @property
+    def fract_heat_to_canyon(self):
+        """Return the fraction of the building's heat that is rejected to the urban canyon."""
+        return self._fract_heat_to_canyon
+    
+    @property
     def glz_ratio(self):
         """Return the glazing ratio of the buildings in the typology."""
         return self._glz_ratio
-    
-    @property
-    def roof_albedo(self):
-        """Return the roof albedo of the buildings in the typology."""
-        return self._roof_albedo
     
     @property
     def roof_veg_fraction(self):
@@ -765,12 +788,92 @@ class DFTypology(object):
                '\nFootprint Area: ' + str(int(self._footprint_area)) + " m2" + \
                '\nFacade Area: ' + str(int(self._facade_area)) + " m2" + \
                '\n-------------------------------------'
+
+class DFCity(object):
+    """Represents a an entire uban area inclluding buildings, pavement, vegetation, and traffic.
     
-    def inRange(self, val, low, high):
-        if val <= high and val >= low:
-            return True
-        else:
-            return False
+    Attributes:
+        average_bldg_height: The average height of the buildings of the city in meters.
+        site_coverage_ratio: A number between 0 and 1 that represents the fraction of the city terrain 
+            the building footprints occupy.  It describes how close the buildings are to one another in the city.
+        facade_to_site_ratio: A number that represents the ratio of vertical urban surface area [walls] to 
+            the total terrain area of the city.  This value can be greater than 1.
+        bldg_types: A list of text strings that represent the building programs and building ages in the city separated by a 
+            comma (eg. MidRiseApartment,1980sPresent). Choose from the following 16 DOE building program types:
+                FullServiceRestaurant
+                Hospital
+                LargeHotel
+                LargeOffice
+                MediumOffice
+                MidRiseApartment
+                OutPatient
+                PrimarySchool
+                QuickServiceRestaurant
+                SecondarySchool
+                SmallHotel
+                SmallOffice
+                StandAloneRetail
+                StripMall
+                SuperMarket
+                Warehouse
+            ...and from the following building ages:
+                Pre1980s
+                1980sPresent
+                NewConstruction
+        bldg_type_ratios: A list of values with the same length as the bldg_types.  This list contains values between 0 and 1 
+            that represent the fraction of the urban area occupied by each of the buildings in the bldg_types.  The 
+            values in this list should sum to 1.
+        traffic_parameters: A dragonfly TrafficPar object that defines the traffic within an urban area.
+        tree_coverage_ratio: An number from 0 to 1 that defines the fraction of the entire urban area 
+            (including both pavement and roofs) that is covered by trees.  The default is set to 0.
+        grass_coverage_ratio: An number from 0 to 1 that defines the fraction of the entire urban area 
+            (including both pavement and roofs) that is covered by grass/vegetation.  The default is set to 0.
+        fract_heat_to_canyon: A number from 0 to 1 that represents the fraction the building's waste 
+            heat from air conditioning that gets rejected into the urban canyon (as opposed to 
+            through rooftop equipment or into a ground source loop).  The default is set to 0.5.
+        glz_ratios: A list of values with the same length as the bldg_types.  This list contains values between 0 and 1 
+            that represent the fraction of the walls in the city that are glazed. The default is to use a value that 
+            comes from the DoE building template from the bldg_program and bldg_age.
+        vegetation_parameters: A dragonfly VegetationPar object that defines the behaviour of vegetation within an urban area.
+        pavement_parameters: A dragonfly PavementPar object that defines the makeup of pavement within the urban area.
+        characteristic_length: A number representing the radius of a circle that encompasses the whole neighborhood in meters.
+            The default is set to 500 m, which was found to be the recomendation for a typical mid-density urban area.
+            Street, Michael A. (2013). Comparison of simplified models of urban climate for improved prediction of building 
+            energy use in cities. Thesis (S.M. in Building Technology)--Massachusetts Institute of Technology, Dept. of Architecture,
+            http://hdl.handle.net/1721.1/82284
+    """
+    
+    def __init__(self, average_bldg_height, site_coverage_ratio, facade_to_site_ratio, bldg_types, 
+                bldg_type_ratios, traffic_parameters, tree_coverage_ratio=None, grass_coverage_ratio=None, 
+                fract_heat_to_canyon=None, glz_ratios=None, vegetation_parameters=None,
+                pavement_parameters=None, characteristic_length=500):
+        """Initialize a dragonfly city"""
+        # get dependencies
+        self.bldgTypes = DFBuildingTypes()
+        self.genChecks = GeneralChecks()
+        
+        # critical geometry parameters that all cities must have.
+        self._average_bldg_height = float(average_bldg_height)
+        self._site_coverage_ratio = self.in_range(float(site_coverage_ratio), 0, 1, 'site_coverage_ratio')
+        self._facade_to_site_ratio = float(facade_to_site_ratio)
+        
+        # critical program parameters that all typologies must have.
+        for type in bldg_types:
+            try:
+                bldg_program, bldg_age = type.split(',')
+                _bldg_program = self.bldgTypes.check_program(bldg_program)
+                _bldg_age = self.bldgTypes.check_age(bldg_age)
+                self._bldg_types.append(_bldg_program + ',' + _bldg_age)
+            except:
+                raise Exception (
+                    "Building Type {} is not in the correct format of BuildingProgram,BuildingAge.".format('"' + str(type) + '"')
+                )
+        
+        bldg_type_ratios
+    
+    
+    
+    
 
 class DFTrafficPar(object):
     """Represents the traffic within an urban area.
@@ -794,6 +897,8 @@ class DFTrafficPar(object):
     def __init__(self, sensible_heat, latent_heat=None, weekday_schedule=[], 
                 saturday_schedule=[], sunday_schedule=[]):
         """Initialize dragonfly traffic parameters"""
+        # get dependencies
+        self.genChecks = GeneralChecks()
         
         self._sensible_heat = float(sensible_heat)
         
@@ -902,28 +1007,31 @@ class DFVegetationPar(object):
     def __init__(self, vegetation_start_month=None, vegetation_end_month=None, vegetation_albedo=None, 
                 tree_latent_fraction=None, grass_latent_fraction=None):
         """Initialize dragonfly vegetation parameters"""
+        # get dependencies
+        self.genChecks = GeneralChecks()
+        
         if vegetation_start_month is not None:
-            self._vegetation_start_month = self.inRange(int(vegetation_start_month), 0, 12, 'vegetation_start_month')
+            self._vegetation_start_month = self.genChecks.in_range(int(vegetation_start_month), 0, 12, 'vegetation_start_month')
         else:
             self._vegetation_start_month = 0
         
         if vegetation_end_month is not None:
-            self._vegetation_end_month = self.inRange(int(vegetation_end_month), 0, 12, 'vegetation_end_month')
+            self._vegetation_end_month = self.genChecks.in_range(int(vegetation_end_month), 0, 12, 'vegetation_end_month')
         else:
             self._vegetation_end_month = 0
         
         if vegetation_albedo is not None:
-            self._vegetation_albedo = self.inRange(float(vegetation_albedo), 0, 1, 'vegetation_albedo')
+            self._vegetation_albedo = self.genChecks.in_range(float(vegetation_albedo), 0, 1, 'vegetation_albedo')
         else:
             self._vegetation_albedo = 0.25
         
         if tree_latent_fraction is not None:
-            self._tree_latent_fraction = self.inRange(float(tree_latent_fraction), 0, 1, 'tree_latent_fraction')
+            self._tree_latent_fraction = self.genChecks.in_range(float(tree_latent_fraction), 0, 1, 'tree_latent_fraction')
         else:
             self._tree_latent_fraction = 0.7
         
         if grass_latent_fraction is not None:
-            self._grass_latent_fraction = self.inRange(float(grass_latent_fraction), 0, 1, 'grass_latent_fraction')
+            self._grass_latent_fraction = self.genChecks.in_range(float(grass_latent_fraction), 0, 1, 'grass_latent_fraction')
         else:
             self._grass_latent_fraction = 0.6
         
@@ -980,14 +1088,6 @@ class DFVegetationPar(object):
                '\nAlbedo: ' + str(self._vegetation_albedo) + \
                '\nTree | Grass Latent: ' + str(self._tree_latent_fraction) + ' | ' + str(self._grass_latent_fraction) + \
                '\n-------------------------------------'
-    
-    def inRange(self, val, low, high, paramName='parameter'):
-        if val <= high and val >= low:
-            return val
-        else:
-            raise ValueError(
-                    "{} must be between {} and {}. Current value is {}".format(paramName, str(low), str(high), str(val))
-                )
 
 class DFPavementPar(object):
     """Represents the makeup of pavement within the urban area.
@@ -1007,8 +1107,11 @@ class DFPavementPar(object):
     
     def __init__(self, albedo=None, thickness=None, conductivity=None, volumetric_heat_capacity=None):
         """Initialize dragonfly pavement parameters"""
+        # get dependencies
+        self.genChecks = GeneralChecks()
+        
         if albedo is not None:
-            self._albedo = self.inRange(float(albedo), 0, 1, 'albedo')
+            self._albedo = self.genChecks.in_range(float(albedo), 0, 1, 'albedo')
         else:
             self._albedo = 0.1
         if thickness is not None:
@@ -1056,14 +1159,6 @@ class DFPavementPar(object):
                '\nConductivity: ' + str(self._conductivity) + \
                '\nVol Heat Capacity: ' + str(self._volumetric_heat_capacity) + \
                '\n-------------------------------------'
-    
-    def inRange(self, val, low, high, paramName='parameter'):
-        if val <= high and val >= low:
-            return val
-        else:
-            raise ValueError(
-                    "{} must be between {} and {}. Current value is {}".format(paramName, str(low), str(high), str(val))
-                )
 
 
 
