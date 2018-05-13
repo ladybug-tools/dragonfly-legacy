@@ -63,17 +63,9 @@ if not sc.sticky.has_key('dragonfly_release') == True:
     print "You should first let Drafgonfly fly..."
     ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, "You should first let Drafgonfly fly...")
 else:
-    try:
-        if not sc.sticky['dragonfly_release'].isCompatible(ghenv.Component): initCheck = False
-        if sc.sticky['dragonfly_release'].isInputMissing(ghenv.Component): initCheck = False
-        df_BuildingTypology = sc.sticky["dragonfly_BuildingTypology"]
-    except:
-        initCheck = False
-        warning = "You need a newer version of Drafgonfly to use this compoent." + \
-        "Use updateDrafgonfly component to update userObjects.\n" + \
-        "If you have already updated userObjects drag Drafgonfly_Drafgonfly component " + \
-        "into canvas and try again."
-        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+    if not sc.sticky['dragonfly_release'].isCompatible(ghenv.Component): initCheck = False
+    if sc.sticky['dragonfly_release'].isInputMissing(ghenv.Component): initCheck = False
+    df_BuildingTypology = sc.sticky["dragonfly_BuildingTypology"]
 
 if initCheck == True and _runIt == True:
     buildingTypology, bldgFootprints, facadeBreps = df_BuildingTypology.from_geometry(_bldgGeo, 
