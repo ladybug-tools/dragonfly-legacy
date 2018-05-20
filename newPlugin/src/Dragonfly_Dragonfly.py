@@ -1294,7 +1294,8 @@ class DFTrafficPar(object):
     
     @sensible_heat.setter
     def sensible_heat(self, heat):
-        assert isinstance(heat, (float, int)), 'Sensible_heat must be a number got {}'.format(type(heat))
+        assert isinstance(heat, (float, int)), 'sensible_heat must be a number got {}'.format(type(heat))
+        assert (heat >= 0),"sensible_heat must be greater than 0"
         self._sensible_heat = heat
     
     @property
@@ -1423,10 +1424,10 @@ class DFVegetationPar(object):
         return self._vegetation_albedo
     
     @vegetation_albedo.setter
-    def vegetation_albedo(self, month):
-        if month is not None:
-            assert isinstance(month, (float, int)), 'vegetation_albedo must be a number got {}'.format(type(month))
-            self._vegetation_albedo = self.genChecks.in_range(int(month), 0, 12, 'vegetation_albedo')
+    def vegetation_albedo(self, a):
+        if a is not None:
+            assert isinstance(a, (float, int)), 'vegetation_albedo must be a number got {}'.format(type(a))
+            self._vegetation_albedo = self.genChecks.in_range(a, 0, 1, 'vegetation_albedo')
         else:
             self._vegetation_albedo = 0.25
     
@@ -1459,44 +1460,67 @@ class DFPavementPar(object):
     def __init__(self, albedo=None, thickness=None, conductivity=None, volumetric_heat_capacity=None):
         """Initialize dragonfly pavement parameters"""
         # get dependencies
-        genChecks = GeneralChecks()
+        self.genChecks = GeneralChecks()
         
-        if albedo is not None:
-            self._albedo = genChecks.in_range(float(albedo), 0, 1, 'albedo')
-        else:
-            self._albedo = 0.1
-        if thickness is not None:
-            self._thickness = float(thickness)
-        else:
-            self._thickness = 0.5
-        if conductivity is not None:
-            self._conductivity = float(conductivity)
-        else:
-            self._conductivity = 1
-        if volumetric_heat_capacity is not None:
-            self._volumetric_heat_capacity = float(volumetric_heat_capacity)
-        else:
-            self._volumetric_heat_capacity = 1600000
+        self.albedo = albedo
+        self.thickness = thickness
+        self.conductivity = conductivity
+        self.volumetric_heat_capacity = volumetric_heat_capacity
     
     @property
     def albedo(self):
-        """Return the albedo."""
+        """Get or set the road albedo."""
         return self._albedo
+    
+    @albedo.setter
+    def albedo(self, a):
+        if a is not None:
+            assert isinstance(a, (float, int)), 'albedo must be a number got {}'.format(type(a))
+            self._albedo = self.genChecks.in_range(a, 0, 1, 'albedo')
+        else:
+            self._albedo = 0.1
     
     @property
     def thickness(self):
-        """Return the thickness."""
+        """Get or set the road thickness."""
         return self._thickness
+    
+    @thickness.setter
+    def thickness(self, t):
+        if t is not None:
+            assert isinstance(t, (float, int)), 'thickness must be a number got {}'.format(type(t))
+            assert (t >= 0),"thickness must be greater than 0"
+            self._thickness = t
+        else:
+            self._thickness = 0.5
     
     @property
     def conductivity(self):
-        """Return the conductivity."""
+        """Get or set the road conductivity."""
         return self._conductivity
+    
+    @conductivity.setter
+    def conductivity(self, k):
+        if k is not None:
+            assert isinstance(k, (float, int)), 'conductivity must be a number got {}'.format(type(k))
+            assert (k >= 0),"conductivity must be greater than 0"
+            self._conductivity = k
+        else:
+            self._conductivity = 1
     
     @property
     def volumetric_heat_capacity(self):
-        """Return the volumetric heat capacity."""
+        """Get or set the volumetric heat capacity."""
         return self._volumetric_heat_capacity
+    
+    @volumetric_heat_capacity.setter
+    def volumetric_heat_capacity(self, x):
+        if x is not None:
+            assert isinstance(x, (float, int)), 'volumetric_heat_capacity must be a number got {}'.format(type(x))
+            assert (x >= 0),"volumetric_heat_capacity must be greater than 0"
+            self._volumetric_heat_capacity = x
+        else:
+            self._volumetric_heat_capacity = 1600000
     
     @property
     def isPavementPar(self):
