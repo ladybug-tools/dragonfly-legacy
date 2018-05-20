@@ -46,7 +46,7 @@ Provided by Dragonfly 0.0.02
 
 ghenv.Component.Name = "Dragonfly_Dragonfly"
 ghenv.Component.NickName = 'Dragonfly'
-ghenv.Component.Message = 'VER 0.0.02\nMAY_13_2018'
+ghenv.Component.Message = 'VER 0.0.02\nMAY_20_2018'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "0 | Dragonfly"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -1352,6 +1352,9 @@ class DFVegetationPar(object):
     """Represents the behaviour of vegetation within an urban area.
     
     Attributes:
+        vegetation_albedo: A number between 0 and 1 that represents the ratio of reflected radiation 
+            from vegetated surfaces to incident radiation upon them.  If no value is input here, the 
+            UWG will assume a typical vegetation albedo of 0.25.
         vegetation_start_month: An integer from 1 to 12 that represents the month at which 
             vegetation begins to affect the urban climate.  The default is set to 0, which will 
             automatically determine the vegetation start month by analyzing the epw to see which 
@@ -1360,49 +1363,16 @@ class DFVegetationPar(object):
             vegetation affect the urban climate.  The default is set to 0, which will 
             automatically determine the vegetation end month by analyzing the epw to see which 
             months have an average monthly temperature above 10 C.
-        vegetation_albedo: A number between 0 and 1 that represents the ratio of reflected radiation 
-            from vegetated surfaces to incident radiation upon them.  If no value is input here, the 
-            UWG will assume a typical vegetation albedo of 0.25.
-        tree_latent_fraction: A number between 0 and 1 that represents the the fraction of absorbed 
-            solar energy by trees that is given off as latent heat (evapotranspiration). This affects 
-            the moisture balance and temperature in the urban area.  If no value is input here, a typical 
-            value of 0.7 will be assumed.
-        grass_latent_fraction: A number between 0 and 1 that represents the the fraction of absorbed solar 
-            energy by grass that is given off as latent heat (evapotranspiration). This affects the 
-            moisture balance and temperature in the urban area.  If no value is input here, a typical 
-            value of 0.5 will be assumed.
     """
     
-    def __init__(self, vegetation_start_month=None, vegetation_end_month=None, vegetation_albedo=None, 
-                tree_latent_fraction=None, grass_latent_fraction=None):
+    def __init__(self, vegetation_albedo=None, vegetation_start_month=None, vegetation_end_month=None):
         """Initialize dragonfly vegetation parameters"""
         # get dependencies
-        genChecks = GeneralChecks()
+        self.genChecks = GeneralChecks()
         
-        if vegetation_start_month is not None:
-            self._vegetation_start_month = genChecks.in_range(int(vegetation_start_month), 0, 12, 'vegetation_start_month')
-        else:
-            self._vegetation_start_month = 0
-        
-        if vegetation_end_month is not None:
-            self._vegetation_end_month = genChecks.in_range(int(vegetation_end_month), 0, 12, 'vegetation_end_month')
-        else:
-            self._vegetation_end_month = 0
-        
-        if vegetation_albedo is not None:
-            self._vegetation_albedo = genChecks.in_range(float(vegetation_albedo), 0, 1, 'vegetation_albedo')
-        else:
-            self._vegetation_albedo = 0.25
-        
-        if tree_latent_fraction is not None:
-            self._tree_latent_fraction = genChecks.in_range(float(tree_latent_fraction), 0, 1, 'tree_latent_fraction')
-        else:
-            self._tree_latent_fraction = 0.7
-        
-        if grass_latent_fraction is not None:
-            self._grass_latent_fraction = genChecks.in_range(float(grass_latent_fraction), 0, 1, 'grass_latent_fraction')
-        else:
-            self._grass_latent_fraction = 0.5
+        self.vegetation_albedo = vegetation_albedo
+        self.vegetation_start_month = vegetation_start_month
+        self.vegetation_end_month = vegetation_end_month
         
         # dictionary of months for start and end month
         self.monthsDict = {
@@ -1423,28 +1393,42 @@ class DFVegetationPar(object):
     
     @property
     def vegetation_start_month(self):
-        """Return the vegetation start month."""
+        """Get or set the vegetation start month."""
         return self._vegetation_start_month
+    
+    @vegetation_start_month.setter
+    def vegetation_start_month(self, month):
+        if month is not None:
+            assert isinstance(month, (float, int)), 'vegetation_start_month must be a number got {}'.format(type(month))
+            self._vegetation_start_month = self.genChecks.in_range(int(month), 0, 12, 'vegetation_start_month')
+        else:
+            self._vegetation_start_month = 0
     
     @property
     def vegetation_end_month(self):
-        """Return the vegetation end month."""
+        """Get or set the vegetation end month."""
         return self._vegetation_end_month
+    
+    @vegetation_end_month.setter
+    def vegetation_end_month(self, month):
+        if month is not None:
+            assert isinstance(month, (float, int)), 'vegetation_end_month must be a number got {}'.format(type(month))
+            self._vegetation_end_month = self.genChecks.in_range(int(month), 0, 12, 'vegetation_end_month')
+        else:
+            self._vegetation_end_month = 0
     
     @property
     def vegetation_albedo(self):
-        """Return the vegetation albedo."""
+        """Get or set the vegetation albedo."""
         return self._vegetation_albedo
     
-    @property
-    def tree_latent_fraction(self):
-        """Return the tree latent fraction."""
-        return self._tree_latent_fraction
-    
-    @property
-    def grass_latent_fraction(self):
-        """Return the grass latent fraction."""
-        return self._grass_latent_fraction
+    @vegetation_albedo.setter
+    def vegetation_albedo(self, month):
+        if month is not None:
+            assert isinstance(month, (float, int)), 'vegetation_albedo must be a number got {}'.format(type(month))
+            self._vegetation_albedo = self.genChecks.in_range(int(month), 0, 12, 'vegetation_albedo')
+        else:
+            self._vegetation_albedo = 0.25
     
     @property
     def isVegetationPar(self):
@@ -1453,9 +1437,8 @@ class DFVegetationPar(object):
     
     def __repr__(self):
         return 'Vegetation Parameters: ' + \
-               '\n  Vegetation Time: ' + self.monthsDict[self._vegetation_start_month] + ' - ' + self.monthsDict[self._vegetation_end_month] +\
                '\n  Albedo: ' + str(self._vegetation_albedo) + \
-               '\n  Tree | Grass Latent: ' + str(self._tree_latent_fraction) + ' | ' + str(self._grass_latent_fraction)
+               '\n  Vegetation Time: ' + self.monthsDict[self._vegetation_start_month] + ' - ' + self.monthsDict[self._vegetation_end_month]
 
 class DFPavementPar(object):
     """Represents the makeup of pavement within the urban area.

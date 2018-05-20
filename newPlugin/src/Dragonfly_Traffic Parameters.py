@@ -31,10 +31,10 @@ Provided by Dragonfly 0.0.02
 
 ghenv.Component.Name = "Dragonfly_Traffic Parameters"
 ghenv.Component.NickName = 'trafficPar'
-ghenv.Component.Message = 'VER 0.0.01\nAPR_29_2018'
+ghenv.Component.Message = 'VER 0.0.01\nMAY_20_2018'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "01::UWG"
-#compatibleDFVersion = VER 0.0.02\nMAY_08_2018
+#compatibleDFVersion = VER 0.0.02\nMAY_20_2018
 ghenv.Component.AdditionalHelpFromDocStrings = "4"
 
 import scriptcontext as sc
