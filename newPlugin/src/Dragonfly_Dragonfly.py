@@ -616,11 +616,11 @@ class GeneralChecks(object):
     
     def checkSchedule(self, schedule):
         if len(schedule) == 24:
-            return [self.fixRange(x,0,1) for x in schedule]
+            return [self.in_range(x, 0, 1, 'schedule value') for x in schedule]
         else:
             raise Exception(
                 "Current schedule has length " + str(len(schedule)) + \
-                ". Schedules must be lists of 24 values."
+                ". Daily schedules must be lists of 24 values."
             )
     
     def fixRange(self, val, low, high):
@@ -1265,75 +1265,76 @@ class DFTrafficPar(object):
     Attributes:
         sensible_heat: A number representing the maximum sensible anthropogenic heat flux of the urban area 
             in watts per square meter. This input is required.
-        latent_heat:  A number representing the maximum latent anthropogenic heat flux of the urban area 
-            in watts per square meter. Default is set to 0.
         weekday_schedule: A list of 24 fractional values that will be multiplied by the sensible_heat
-            and latent_heat to produce hourly values for heat on the weekday of the simulation.  The default is
+            to produce hourly values for heat on the weekday of the simulation.  The default is
             a typical traffic schedule for a commerical area.
         saturday_schedule: A list of 24 fractional values that will be multiplied by the sensible_heat
-            and latent_heat to produce hourly values for heat on Saturdays of the simulation.  The default is
+            to produce hourly values for heat on Saturdays of the simulation.  The default is
             a typical traffic schedule for a commerical area.
         sunday_schedule: A list of 24 fractional values that will be multiplied by the sensible_heat
-            and latent_heat to produce hourly values for heat on Sundays of the simulation.  The default is
+            to produce hourly values for heat on Sundays of the simulation.  The default is
             a typical traffic schedule for a commerical area.
     """
     
-    def __init__(self, sensible_heat, latent_heat=None, weekday_schedule=[], 
+    def __init__(self, sensible_heat, weekday_schedule=[], 
                 saturday_schedule=[], sunday_schedule=[]):
         """Initialize dragonfly traffic parameters"""
         # get dependencies
-        genChecks = GeneralChecks()
+        self.genChecks = GeneralChecks()
         
-        self._sensible_heat = float(sensible_heat)
-        
-        if latent_heat is not None:
-            self._latent_heat = latent_heat
-        else:
-            self._latent_heat = 0
-        
-        if weekday_schedule != []:
-            print weekday_schedule
-            self._weekday_schedule = genChecks.checkSchedule(weekday_schedule)
-        else:
-            self._weekday_schedule = [0.2,0.2,0.2,0.2,0.2,0.4,0.7,0.9,0.9,0.6,0.6, \
-                0.6,0.6,0.6,0.7,0.8,0.9,0.9,0.8,0.8,0.7,0.3,0.2,0.2]
-        
-        if saturday_schedule != []:
-            self._saturday_schedule = genChecks.checkSchedule(saturday_schedule)
-        else:
-            self._saturday_schedule = [0.2,0.2,0.2,0.2,0.2,0.3,0.5,0.5,0.5,0.5,0.5, \
-                0.5,0.5,0.5,0.6,0.7,0.7,0.7,0.7,0.5,0.4,0.3,0.2,0.2]
-        
-        if sunday_schedule != []:
-            self._sunday_schedule = genChecks.checkSchedule(sunday_schedule)
-        else:
-            self._sunday_schedule = [0.2,0.2,0.2,0.2,0.2,0.3,0.4,0.4,0.4,0.4,0.4,0.4, \
-                0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.3,0.3,0.2,0.2]
+        self.sensible_heat = sensible_heat
+        self.weekday_schedule = weekday_schedule
+        self.saturday_schedule = saturday_schedule
+        self.sunday_schedule = sunday_schedule
     
     @property
     def sensible_heat(self):
-        """Return the max sensible heat flux of the traffic."""
+        """Get or set the max sensible heat flux of the traffic."""
         return self._sensible_heat
     
-    @property
-    def latent_heat(self):
-        """Return the max latent heat of the traffic."""
-        return self._latent_heat
+    @sensible_heat.setter
+    def sensible_heat(self, heat):
+        assert isinstance(heat, (float, int)), 'Sensible_heat must be a number got {}'.format(type(heat))
+        self._sensible_heat = heat
     
     @property
     def weekday_schedule(self):
-        """Return the weekday traffic schedule as a list."""
+        """Get or set the Weekday traffic schedule."""
         return self._weekday_schedule
+    
+    @weekday_schedule.setter
+    def weekday_schedule(self, sched):
+        if sched != []:
+            self._weekday_schedule = self.genChecks.checkSchedule(sched)
+        else:
+            self._weekday_schedule = [0.2,0.2,0.2,0.2,0.2,0.4,0.7,0.9,0.9,0.6,0.6, \
+                0.6,0.6,0.6,0.7,0.8,0.9,0.9,0.8,0.8,0.7,0.3,0.2,0.2]
     
     @property
     def saturday_schedule(self):
-        """Return the Saturday traffic schedule as a list."""
+        """Get or set the Saturday traffic schedule."""
         return self._saturday_schedule
+    
+    @saturday_schedule.setter
+    def saturday_schedule(self, sched):
+        if sched != []:
+            self._saturday_schedule = self.genChecks.checkSchedule(sched)
+        else:
+            self._saturday_schedule = [0.2,0.2,0.2,0.2,0.2,0.3,0.5,0.5,0.5,0.5,0.5, \
+                0.5,0.5,0.5,0.6,0.7,0.7,0.7,0.7,0.5,0.4,0.3,0.2,0.2]
     
     @property
     def sunday_schedule(self):
-        """Return the Sunday traffic schedule as a list."""
+        """Get or set the Sunday traffic schedule as a list."""
         return self._sunday_schedule
+    
+    @saturday_schedule.setter
+    def sunday_schedule(self, sched):
+        if sched != []:
+            self._sunday_schedule = self.genChecks.checkSchedule(sched)
+        else:
+            self._sunday_schedule = [0.2,0.2,0.2,0.2,0.2,0.3,0.4,0.4,0.4,0.4,0.4,0.4, \
+                0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.3,0.3,0.2,0.2]
     
     @property
     def isTrafficPar(self):
@@ -1342,8 +1343,10 @@ class DFTrafficPar(object):
     
     def __repr__(self):
         return 'Traffic Parameters: ' + \
-               '\n  Sensible Heat: ' + str(self._sensible_heat) + \
-               '\n  Latent Heat: ' + str(self._latent_heat)
+               '\n  Max Heat: ' + str(self._sensible_heat) + \
+               '\n  Weekday Avg Heat: ' + str(round(self._sensible_heat* (sum(self._weekday_schedule)/24),1)) + \
+               '\n  Saturday Avg Heat: ' + str(round(self._sensible_heat* (sum(self._saturday_schedule)/24),1)) + \
+               '\n  Sunday Avg Heat: ' + str(round(self._sensible_heat* (sum(self._sunday_schedule)/24),1))
 
 class DFVegetationPar(object):
     """Represents the behaviour of vegetation within an urban area.

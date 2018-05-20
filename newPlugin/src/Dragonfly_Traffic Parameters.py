@@ -19,8 +19,6 @@ Provided by Dragonfly 0.0.02
         4 W/m2 = A residential area in Singapore
         _
         Values are available for some cities by Sailor: http://onlinelibrary.wiley.com/doi/10.1002/joc.2106/abstract
-        latentHeat_: A number that represents the latent anthropogenic heat generated in the urban canyon in Watts per square meter of pavement (W/m2).  Latent heat is that which goes into evaporating moisture instead of raising the temperature of the air. This is typically near-zero except in cases where a significant fraction of heat in the canyon is coming from people (like a large crowd) or a significant fraction of heat is coming from cooking street food.  If no value is input here, it will be assumed that the latent heat is 0 W/m2.
-        -----------------: ...
         _weekdaySched_: A list of 24 values between 0 and 1 that sets the fraction of the anthropogenic heat that occurs at each hour of the typical weekday.  If no value is input here, a typical schedule for a commercial area will be used:
                 0.2,0.2,0.2,0.2,0.2,0.4,0.7,0.9,0.9,0.6,0.6,0.6,0.6,0.6,0.7,0.8,0.9,0.9,0.8,0.8,0.7,0.3,0.2,0.2
         _saturdaySched_: A list of 24 values between 0 and 1 that sets the fraction of the anthropogenic heat that occurs at each hour of the typical Saturday.  If no value is input here, a typical schedule for a commercial area will be used:
@@ -54,6 +52,6 @@ else:
     df_TrafficPar = sc.sticky["dragonfly_TrafficPar"]
 
 if initCheck == True:
-    trafficPar = df_TrafficPar(_sensibleHeat, latentHeat_, _weekdaySched_, 
-        _saturdaySched_, _sundaySched_)
+    trafficPar = df_TrafficPar(_sensibleHeat, _weekdaySched_, _saturdaySched_,
+        _sundaySched_)
     print trafficPar
