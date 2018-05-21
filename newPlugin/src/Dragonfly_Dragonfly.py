@@ -61,12 +61,12 @@ import Grasshopper
 import math
 import os
 import System
-System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12
 import datetime
 import zipfile
 import copy
+import cPickle
 
-PI = math.pi
+System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12
 rc.Runtime.HostUtils.DisplayOleAlerts(False)
 
 
@@ -208,8 +208,6 @@ class CheckIn():
                 print msg
                 ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
 
-checkIn = CheckIn(defaultFolder_)
-
 class versionCheck(object):
     
     def __init__(self):
@@ -266,28 +264,6 @@ class versionCheck(object):
         return isInputMissing
 
 
-class df_findFolders(object):
-    
-    def __init__(self):
-        self.UWGPath, self.UWGFile = self.which('UWGEngine.exe')
-    
-    def which(self, program):
-        """
-        Check for path. Modified from this link:
-        http://stackoverflow.com/questions/377017/test-if-executable-exists-in-python
-        """
-        def is_exe(fpath):
-            return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
-        
-        fpath, fname = os.path.split(program)
-        for path in os.environ["PATH"].split(os.pathsep):
-            path = path.strip('"')
-            exe_file = os.path.join(path, program)
-            if is_exe(exe_file):
-                return path, exe_file
-        return None, None
-
-
 class UWGGeometry(object):
     
     def __init__(self):
@@ -316,7 +292,6 @@ class UWGGeometry(object):
         Returns:
             centerPt: The center point of the surface.
             normalVector: The normal of the surface.
-        
         """
         
         brepFace = surface.Faces[0]
@@ -577,22 +552,6 @@ class Utilities(object):
     def __init__(self):
         """Class that contains general checks"""
     
-    def weighted_average(self, data, weights):
-        totalWeight = sum(weights)
-        normWeights = []
-        avg = 0
-        for i, x in enumerate(data):
-            nWeight = weights[i]/totalWeight
-            normWeights.append(nWeight)
-            avg += x*nWeight
-        
-        return avg, normWeights
-
-class GeneralChecks(object):
-    
-    def __init__(self):
-        """Class that contains general checks"""
-    
     def in_range(self, val, low, high, paramName='parameter'):
         if val <= high and val >= low:
             return val
@@ -630,13 +589,77 @@ class GeneralChecks(object):
             return low
         else:
             return float(val)
+    
+    def weighted_average(self, data, weights):
+        totalWeight = sum(weights)
+        normWeights = []
+        avg = 0
+        for i, x in enumerate(data):
+            nWeight = weights[i]/totalWeight
+            normWeights.append(nWeight)
+            avg += x*nWeight
+        
+        return avg, normWeights
 
 class DFBuildingTypes(object):
     
-    def __init__(self):
+    def __init__(self, readDOE_file_path):
         """Class that contains all of the accepted building typologies and contruction years"""
         
-        # dictionary of building programs.
+        # load up all of the building characteristcs from the urban weather generator pickle file.
+        if not os.path.exists(readDOE_file_path):
+            raise Exception("readDOE.pkl file: '{}' does not exist.".format(readDOE_file_path))
+        readDOE_file = open(readDOE_file_path, 'rb') # open pickle file in binary form
+        self.refDOE = cPickle.load(readDOE_file)
+        self.refBEM = cPickle.load(readDOE_file)
+        readDOE_file.close()
+        
+        # dictionary to go from building programs to numbers.
+        self.bldgtype = {
+            'FullServiceRestaurant': 0,
+            'Hospital': 1,
+            'LargeHotel': 2,
+            'LargeOffice': 3,
+            'MedOffice': 4,
+            'MidRiseApartment': 5,
+            'OutPatient': 6,
+            'PrimarySchool': 7,
+            'QuickServiceRestaurant': 8,
+            'SecondarySchool': 9,
+            'SmallHotel': 10,
+            'SmallOffice': 11,
+            'StandAloneRetail': 12,
+            'StripMall': 13,
+            'SuperMarket': 14,
+            'WareHouse':15
+            }
+        
+        self.builtera = {
+            'Pre1980s':0,
+            '1980sPresent':1,
+            'NewConstruction':2
+            }
+        
+        ZONETYPE = {
+            '1A (Miami)': 0,
+            '2A (Houston)': 1,
+            '2B (Phoenix)': 2,
+            '3A (Atlanta)': 3,
+            '3B-CA (Los Angeles)': 4,
+            '3B (Las Vegas)': 5,
+            '3C (San Francisco)': 6,
+            '4A (Baltimore)': 7,
+            '4B (Albuquerque)': 8,
+            '4C (Seattle)': 9,
+            '5A (Chicago)': 10,
+            '5B (Boulder)': 11,
+            '6A (Minneapolis)': 12,
+            '6B (Helena)': 13,
+            '7 (Duluth)': 14,
+            '8 (Fairbanks)': 15
+            }
+            
+        # dictionary of acceptable building program inputs.
         self.programsDict = {
             'FULLSERVICERESTAURANT': 'FullServiceRestaurant',
             'HOSPITAL': 'Hospital',
@@ -687,7 +710,7 @@ class DFBuildingTypes(object):
             'Retail': 'StandAloneRetail'
         }
         
-        # dictionary of building ages.
+        # dictionary of acceptable building ages.
         self.ageDict = {
             'PRE1980S': 'Pre1980s',
             '1980SPRESENT': '1980sPresent',
@@ -703,7 +726,8 @@ class DFBuildingTypes(object):
         }
     
     def check_program(self, bldg_program):
-        if str(bldg_program).upper() in self.programsDict.keys():
+        assert isinstance(bldg_program, str), 'bldg_program must be a text string got {}'.format(type(bldg_program))
+        if bldg_program.upper() in self.programsDict.keys():
             return self.programsDict[str(bldg_program).upper()]
         else:
             raise ValueError(
@@ -711,6 +735,7 @@ class DFBuildingTypes(object):
             )
     
     def check_age(self, bldg_age):
+        assert isinstance(bldg_age, str), 'bldg_age must be a text string got {}'.format(type(bldg_age))
         if str(bldg_age).upper() in self.ageDict.keys():
             return self.ageDict[str(bldg_age).upper()]
         else:
@@ -721,7 +746,7 @@ class DFBuildingTypes(object):
 class DFTypology(object):
     """Represents a group of buildings of the same typology in an urban area.
     
-    Attributes:
+    Properties:
         average_height: The average height of the buildings of this typology in meters.
         footprint_area: The footprint area of the buildings of this typology in square meteres.
         facade_area: The facade area of the buildings of this typology in square meters.
@@ -750,52 +775,55 @@ class DFTypology(object):
                 Pre1980s
                 1980sPresent
                 NewConstruction
-        fract_heat_to_canyon: A number from 0 to 1 that represents the fraction the building's waste 
-            heat from air conditioning that gets rejected into the urban canyon (as opposed to 
-            through rooftop equipment or into a ground source loop).  The default is set to 0.5.
+        floor_to_floor: A number that represents the average distance between floors for the building
+            typology.  The default is set to 3.05 meters.
         glz_ratio: An optional number from 0 to 1 that represents the fraction of the walls of the building typology
             that are glazed. If no value is input here, a default will be used that comes from the DoE building 
             template from the bldg_program and bldg_age.
+        fract_heat_to_canyon: A number from 0 to 1 that represents the fraction the building's waste 
+            heat from air conditioning that gets rejected into the urban canyon. The default is set to 0.5.
+        floor_area: A number that represents the floor area of the buiding in square meteres. The default is auto-calculated
+            using the footprint_area, average_height, and floor_to_floor.
+        number_of_stories: An integer that represents the average number of stories for the building typology.
     """
     
     def __init__(self, average_height, footprint_area, facade_area, bldg_program, 
-                bldg_age, fract_heat_to_canyon=None, glz_ratio=None, roof_veg_fraction=None):
+                bldg_age, floor_to_floor=None, glz_ratio=None,
+                fract_heat_to_canyon=None, floor_area=None):
         """Initialize a dragonfly building typology"""
         # get dependencies
-        self.bldgTypes = DFBuildingTypes()
-        self.genChecks = GeneralChecks()
+        self.bldgTypes = sc.sticky["dragonfly_UWGBldgTypes"]
+        self.genChecks = Utilities()
         
         # critical geometry parameters that all typologies must have.
-        self._average_height = float(average_height)
-        self._footprint_area = float(footprint_area)
-        self._facade_area = float(facade_area)
+        self.average_height = average_height
+        self.footprint_area = footprint_area
+        self.facade_area = facade_area
+        self.floor_to_floor = floor_to_floor
+        self.floor_area = floor_area
         
         # critical program parameters that all typologies must have.
-        self._bldg_program = self.bldgTypes.check_program(bldg_program)
-        self._bldg_age = self.bldgTypes.check_age(bldg_age)
+        self.bldg_program = bldg_program
+        self.bldg_age = bldg_age
         
         # optional parameters with default values.
-        if glz_ratio is not None:
-            self._glz_ratio = self.genChecks.in_range(float(glz_ratio), 0, 1, 'glz_ratio')
-        else:
-            self._glz_ratio = 'Auto'
-        if fract_heat_to_canyon is not None:
-            self._fract_heat_to_canyon = self.genChecks.in_range(float(fract_heat_to_canyon), 0, 1, 'fract_heat_to_canyon')
-        else:
-            self._fract_heat_to_canyon = 0.5
+        self.glz_ratio = glz_ratio
+        self.fract_heat_to_canyon = fract_heat_to_canyon
     
     @classmethod
-    def from_geometry(cls, bldg_breps, bldg_program, bldg_age, fract_heat_to_canyon=None, 
-        glz_ratio=None):
+    def from_geometry(cls, bldg_breps, bldg_program, bldg_age, floor_to_floor=None,
+        glz_ratio=None,fract_heat_to_canyon=None):
         """Initialize a building typology from closed building brep geometry
         Args:
             bldg_breps: A list of closed rhino breps representing buildings of the typology.
             bldg_program: A text string representing one of the 16 DOE building program types to be 
                 used as a template for this typology.
             bldg_age: A text string that sets the age of the buildings represented by this typology.
-            fract_heat_to_canyon: A number from 0 to 1 that represents the fraction the building's waste 
-                heat from air conditioning that gets rejected into the urban canyon (as opposed to 
-                through rooftop equipment or into a ground source loop).  The default is set to 0.5.
+            floor_to_floor: A number that represents the average distance between floors. Default is set to 3.05 meters.
+            glz_ratio: An optional number from 0 to 1 that represents the fraction of the walls of the building typology
+                that are glazed. Default will come from the DoE building template from the bldg_program and bldg_age.
+            fract_heat_to_canyon: An optional number from 0 to 1 that represents the fraction the building's waste 
+                heat from air conditioning that gets rejected into the urban canyon. The default is set to 0.5.
         
         Returns:
             typology: The dragonfly typology object
@@ -805,44 +833,119 @@ class DFTypology(object):
         geometryLib = UWGGeometry()
         avgBldgHeight, footprintArea, facadeArea, footprintBreps, facadeBreps = geometryLib.calculateTypologyGeoParams(bldg_breps)
         
-        typology = cls(avgBldgHeight, footprintArea, facadeArea, bldg_program, bldg_age, fract_heat_to_canyon, glz_ratio)
+        typology = cls(avgBldgHeight, footprintArea, facadeArea, bldg_program, bldg_age, floor_to_floor, glz_ratio, fract_heat_to_canyon)
         
         return typology, footprintBreps, facadeBreps
     
     @property
     def average_height(self):
-        """Return the average height of the building typology in meters."""
+        """Get or set the average height of the buildings in meters."""
         return self._average_height
+    
+    @average_height.setter
+    def average_height(self, h):
+        assert isinstance(h, (float, int)), 'average_height must be a number got {}'.format(type(h))
+        assert (h >= 0),"average_height must be greater than 0"
+        self._average_height = h
     
     @property
     def footprint_area(self):
-        """Return the footprint of the buildings in the typology in square meters."""
+        """Get or set the footprint of the buildings in square meters."""
         return self._footprint_area
+    
+    @footprint_area.setter
+    def footprint_area(self, a):
+        assert isinstance(a, (float, int)), 'footprint_area must be a number got {}'.format(type(a))
+        assert (a >= 0),"footprint_area must be greater than 0"
+        self._footprint_area = a
     
     @property
     def facade_area(self):
-        """Return the facade area of the buildings in the typology in square meters."""
+        """Get or set the facade area of the buildings in square meters."""
         return self._facade_area
+    
+    @facade_area.setter
+    def facade_area(self, a):
+        assert isinstance(a, (float, int)), 'facade_area must be a number got {}'.format(type(a))
+        assert (a >= 0),"facade_area must be greater than 0"
+        self._facade_area = a
+    
+    @property
+    def floor_to_floor(self):
+        """Get or set the facade area of the buildings in square meters."""
+        return self._floor_to_floor
+    
+    @floor_to_floor.setter
+    def floor_to_floor(self, x):
+        if x is not None:
+            assert isinstance(x, (float, int)), 'floor_to_floor must be a number got {}'.format(type(a))
+            assert (x >= 0),"floor_to_floor must be greater than 0"
+            self._floor_to_floor = x
+        else:
+            self._floor_to_floor = 3.05
+    
+    @property
+    def number_of_stories(self):
+        """Return the average number of stories in the buildings."""
+        return int(math.floor(self.average_height / self.floor_to_floor)-1)
+    
+    @property
+    def floor_area(self):
+        """Get or set the interior floor area of the buildings in square meters."""
+        return self._floor_area
+    
+    @floor_area.setter
+    def floor_area(self, a):
+        if a is not None:
+            assert isinstance(a, (float, int)), 'floor_area must be a number got {}'.format(type(a))
+            assert (a >= self._footprint_area),"floor_area cannot be smaller than the footprint_area"
+            self._floor_area = a
+        else:
+            self._floor_area = self._footprint_area * self.number_of_stories
     
     @property
     def bldg_program(self):
-        """Return the program of the buildings in the typology."""
+        """Get or set the program of the buildings in the typology."""
         return self._bldg_program
+    
+    @bldg_program.setter
+    def bldg_program(self, prog):
+        self._bldg_program = self.bldgTypes.check_program(prog)
     
     @property
     def bldg_age(self):
-        """Return the construction time of buildings in the typology."""
+        """Get or set the construction time of buildings in the typology."""
         return self._bldg_age
+    
+    @bldg_age.setter
+    def bldg_age(self, age):
+        self._bldg_age = self.bldgTypes.check_age(age)
+    
+    @property
+    def glz_ratio(self):
+        """Return the glazing ratio of the buildings in the typology."""
+        return self._glz_ratio
+    
+    @glz_ratio.setter
+    def glz_ratio(self, x):
+        if x is not None:
+            assert isinstance(x, (float, int)), 'glz_ratio must be a number got {}'.format(type(a))
+            self._fract_heat_to_canyon = self.genChecks.in_range(x, 0, 1, 'fract_heat_to_canyon')
+        else:
+            self._glz_ratio = float(self.bldgTypes.refBEM[self.bldgTypes.bldgtype[self.bldg_program]][self.bldgTypes.builtera[self.bldg_age]][0].building.glazingRatio)
     
     @property
     def fract_heat_to_canyon(self):
         """Return the fraction of the building's heat that is rejected to the urban canyon."""
         return self._fract_heat_to_canyon
     
-    @property
-    def glz_ratio(self):
-        """Return the glazing ratio of the buildings in the typology."""
-        return self._glz_ratio
+    @fract_heat_to_canyon.setter
+    def fract_heat_to_canyon(self, x):
+        if x is not None:
+            assert isinstance(x, (float, int)), 'fract_heat_to_canyon must be a number got {}'.format(type(a))
+            self._fract_heat_to_canyon = self.genChecks.in_range(x, 0, 1, 'fract_heat_to_canyon')
+        else:
+            self._fract_heat_to_canyon = 0.5
     
     @property
     def isDFTypology(self):
@@ -852,8 +955,11 @@ class DFTypology(object):
     def __repr__(self):
         return 'Building Typology: ' + self._bldg_program + ", " + self._bldg_age + \
                '\n  Average Height: ' + str(int(self._average_height)) + " m" + \
-               '\n  Footprint Area: ' + str(int(self._footprint_area)) + " m2" + \
-               '\n  Facade Area: ' + str(int(self._facade_area)) + " m2" + \
+               '\n  Number of Stories: ' + str(self.number_of_stories) + \
+               '\n  Floor Area: {:,.0f}'.format(self.floor_area) + " m2" + \
+               '\n  Footprint Area: {:,.0f}'.format(self.footprint_area) + " m2" + \
+               '\n  Facade Area: {:,.0f}'.format(self.facade_area) + " m2" + \
+               '\n  Glazing Ratio: ' + str(int(self.glz_ratio*100)) + "%" +\
                '\n-------------------------------------'
 
 class DFCity(object):
@@ -916,8 +1022,8 @@ class DFCity(object):
                 pavement_parameters=None, characteristic_length=500):
         """Initialize a dragonfly city"""
         # get dependencies
-        bldgTypes = DFBuildingTypes()
-        genChecks = GeneralChecks()
+        bldgTypes = sc.sticky["dragonfly_UWGBldgTypes"]
+        genChecks = Utilities()
         
         # critical geometry parameters that all cities must have.
         self._average_bldg_height = float(average_bldg_height)
@@ -1009,9 +1115,8 @@ class DFCity(object):
         Returns:
             city: The dragonfly city object
         """
-        
-        genChecks = GeneralChecks()
-        utilities = Utilities()
+        # get dependencies
+        genChecks = Utilities()
         
         # pull the relevating info off of the building typologies
         footprintAreas = []
@@ -1039,12 +1144,12 @@ class DFCity(object):
             genChecks.make_type_error('terrian', 'Terrain')
         
         # compute the critical variables for the city
-        avgBldgHeight, typologyRatios = utilities.weighted_average(bldgHeights, footprintAreas)
+        avgBldgHeight, typologyRatios = genChecks.weighted_average(bldgHeights, footprintAreas)
         bldgCoverage = sum(footprintAreas)/terrainArea
         facadeToSite = sum(facadeAreas)/terrainArea
         
         volWeights = [a*bldgHeights[i] for i, a in enumerate(footprintAreas)]
-        weightedFractToCanyon, typVolRatios = utilities.weighted_average(fractsToCanyon, volWeights)
+        weightedFractToCanyon, typVolRatios = genChecks.weighted_average(fractsToCanyon, volWeights)
         
         # return the city object.
         return cls(avgBldgHeight, bldgCoverage, facadeToSite, bldgTypes, typologyRatios, 
@@ -1137,7 +1242,7 @@ class DFCity(object):
 class DFTerrain(object):
     """Represents the terrain on which an urban area sits.
     
-    Attributes:
+    Properties:
         area: The area of the urban terrain surface in square meters (projected into the XY plane).
         characteristic_length:  A number representing the radius of a circle that encompasses the 
             whole neighborhood in meters.  If no value is input here, it will be auto-calculated 
@@ -1146,12 +1251,7 @@ class DFTerrain(object):
     
     def __init__(self, area, characteristic_length=None):
         """Initialize a dragonfly terrain surface"""
-        self._area = float(area)
-        
-        if characteristic_length is not None:
-            self._characteristic_length = float(characteristic_length)
-        else:
-            self._characteristic_length = math.sqrt(self._area/math.pi)
+        self.area = area
     
     @classmethod
     def from_geometry(cls, terrainSrfs):
@@ -1171,8 +1271,15 @@ class DFTerrain(object):
     
     @property
     def area(self):
-        """Return the area of the terrain surface in the XY plane."""
+        """Get or set the area of the terrain surface in the XY plane."""
         return self._area
+    
+    @area.setter
+    def area(self, a):
+        assert isinstance(a, (float, int)), 'area must be a number got {}'.format(type(a))
+        assert (a >= 0),"area must be greater than 0"
+        self._area = a
+        self._characteristic_length = math.sqrt(self._area/math.pi)
     
     @property
     def characteristic_length(self):
@@ -1192,7 +1299,7 @@ class DFTerrain(object):
 class DFVegetation(object):
     """Represents vegetation (either grass or trees) within an urban area.
     
-    Attributes:
+    Properties:
         area: The area of the urban terrain covered by the vegetation in square meters 
             (projected into the XY plane).
         is_trees: A boolean value that denotes whether the vegetation object represents 
@@ -1201,8 +1308,8 @@ class DFVegetation(object):
     
     def __init__(self, area, is_trees=False):
         """Initialize a dragonfly vegetation object"""
-        self._area = float(area)
-        self._is_trees = bool(is_trees)
+        self.area = area
+        self._s_trees = is_trees
     
     @classmethod
     def from_geometry(cls, veg_breps, is_trees=False):
@@ -1224,13 +1331,24 @@ class DFVegetation(object):
     
     @property
     def area(self):
-        """Return the area of the vegetation in the XY plane."""
+        """Get or set the area of the vegetation in the XY plane."""
         return self._area
+    
+    @area.setter
+    def area(self, a):
+        assert isinstance(a, (float, int)), 'area must be a number got {}'.format(type(a))
+        assert (a >= 0),"area must be greater than 0"
+        self._area = a
     
     @property
     def is_trees(self):
-        """Return a true/false value depending on whether the vegetation represents trees/grass."""
+        """Get or set a boolean showing whether the vegetation represents trees or grass."""
         return self._is_trees
+    
+    @is_trees.setter
+    def is_trees(self, a):
+        assert isinstance(a, (bool)), 'is_trees must be a boolean got {}'.format(type(a))
+        self._is_trees = a
     
     @property
     def isDFVegetation(self):
@@ -1246,7 +1364,7 @@ class DFVegetation(object):
             coverage: A number between 0 and 1 representing the fraction of 
                 the terrain covered by the vegetation.
         """
-        genChecks = GeneralChecks()
+        genChecks = Utilities()
         if hasattr(terrain, 'isDFTerrain'):
             coverage = genChecks.in_range((self._area/terrain.area), 0, 1, 'vegetation_coverage')
         else:
@@ -1262,7 +1380,7 @@ class DFVegetation(object):
 class DFTrafficPar(object):
     """Represents the traffic within an urban area.
     
-    Attributes:
+    Properties:
         sensible_heat: A number representing the maximum sensible anthropogenic heat flux of the urban area 
             in watts per square meter. This input is required.
         weekday_schedule: A list of 24 fractional values that will be multiplied by the sensible_heat
@@ -1280,7 +1398,7 @@ class DFTrafficPar(object):
                 saturday_schedule=[], sunday_schedule=[]):
         """Initialize dragonfly traffic parameters"""
         # get dependencies
-        self.genChecks = GeneralChecks()
+        self.genChecks = Utilities()
         
         self.sensible_heat = sensible_heat
         self.weekday_schedule = weekday_schedule
@@ -1352,7 +1470,7 @@ class DFTrafficPar(object):
 class DFVegetationPar(object):
     """Represents the behaviour of vegetation within an urban area.
     
-    Attributes:
+    Properties:
         vegetation_albedo: A number between 0 and 1 that represents the ratio of reflected radiation 
             from vegetated surfaces to incident radiation upon them.  If no value is input here, the 
             UWG will assume a typical vegetation albedo of 0.25.
@@ -1369,7 +1487,7 @@ class DFVegetationPar(object):
     def __init__(self, vegetation_albedo=None, vegetation_start_month=None, vegetation_end_month=None):
         """Initialize dragonfly vegetation parameters"""
         # get dependencies
-        self.genChecks = GeneralChecks()
+        self.genChecks = Utilities()
         
         self.vegetation_albedo = vegetation_albedo
         self.vegetation_start_month = vegetation_start_month
@@ -1444,7 +1562,7 @@ class DFVegetationPar(object):
 class DFPavementPar(object):
     """Represents the makeup of pavement within the urban area.
     
-    Attributes:
+    Properties:
         albedo: A number between 0 and 1 that represents the surface albedo (or reflectivity) 
             of the pavement.  The default is set to 0.1, which is typical of fresh asphalt.
         thickness: A number that represents the thickness of the pavement material in meters (m).  
@@ -1460,7 +1578,7 @@ class DFPavementPar(object):
     def __init__(self, albedo=None, thickness=None, conductivity=None, volumetric_heat_capacity=None):
         """Initialize dragonfly pavement parameters"""
         # get dependencies
-        self.genChecks = GeneralChecks()
+        self.genChecks = Utilities()
         
         self.albedo = albedo
         self.thickness = thickness
@@ -1537,7 +1655,7 @@ class DFPavementPar(object):
 class RefEPWSitePar(object):
     """Represents the properties of the reference site where the original EPW was recorded.
     
-    Attributes:
+    Properties:
         average_obstacle_height: A number that represents the height in meters of objects that 
             obstruct the view to the sky at the weather station site.  This includes both trees 
             and buildings.  The default is set to 0.1 meters.
@@ -1554,7 +1672,7 @@ class RefEPWSitePar(object):
     def __init__(self, average_obstacle_height=None, vegetation_coverage=None, temp_measure_height=None, wind_measure_height=None):
         """Initialize RefEPWSitePar parameters"""
         # get dependencies
-        genChecks = GeneralChecks()
+        genChecks = Utilities()
         
         if average_obstacle_height is not None:
             self._average_obstacle_height = float(average_obstacle_height)
@@ -1608,7 +1726,7 @@ class RefEPWSitePar(object):
 class BoundaryLayerPar(object):
     """Represents the properties of the urban boundary layer.
     
-    Attributes:
+    Properties:
         day_boundary_layer_height: A number that represents the height in meters of the urban boundary layer 
             during the daytime. This is the height to which the urban meterorological conditions are stable 
             and representative of the overall urban area. Typically, this boundary layer height increases with 
@@ -1689,6 +1807,10 @@ class BoundaryLayerPar(object):
                '\n  Circulation Coefficient: ' + str(self._circulation_coefficient) + \
                '\n  Exchange Coefficient: ' + str(self._exchange_coefficient)
 
+
+
+checkIn = CheckIn(defaultFolder_)
+
 try:
     checkIn.checkForUpdates(True)
 except:
@@ -1741,50 +1863,37 @@ if checkIn.letItFly:
     sc.sticky["dragonfly_release"] = versionCheck()       
     
     if sc.sticky.has_key("dragonfly_release") and sc.sticky["dragonfly_release"]:
-        folders = df_findFolders()
-        sc.sticky["dragonfly_folders"] = {}
-        if folders.UWGPath == None:
-            if os.path.isdir("C:\\ladybug" + "\\UWG\\"):
-                folders.UWGPath = "C:\\ladybug" + "\\UWG\\"
-            else:
-                # Try to download these files in the background.
-                try:
-                    ## download File
-                    print 'Downloading UWG to ', "C:\\ladybug\\UWG\\"
-                    updatedLink = "https://github.com/hansukyang/UWG_Matlab/raw/master/ArchivedCodes/UWG.zip"
-                    localFilePath = "C:\\ladybug" + 'UWG.zip'
-                    client = System.Net.WebClient()
-                    client.DownloadFile(updatedLink, localFilePath)
-                    #Unzip the file
-                    unzip(localFilePath, "C:\\ladybug")
-                    os.rename("C:\\ladybug" + '\\UWG\\UWGEngine_mcr\\META\\', "C:\\ladybug" + '\\UWG\\UWGEngine_mcr\\.META\\')
-                    folders.UWGPath = "C:\\ladybug" + "\\UWG\\"
-                except:
-                    msg1 = "Dragonfly failed to download the Urban Weather Generator (UWG) folder in the background.\n" + \
-                         "Download the following file and unzip it into the C:\ drive of your system:"
-                    msg2 = "https://github.com/hansukyang/UWG_Matlab/raw/master/ArchivedCodes/UWG.zip"
-                    
-                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg1)
-                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg2)
-                    
-                    folders.UWGPath = ""
-        
-        if os.path.isdir("c:\\Program Files\\MATLAB\\MATLAB Runtime\\v90\\"):
-            folders.matlabPath = "c:\\Program Files\\MATLAB\\MATLAB Runtime\\v90\\"
+        # Check for the existince of the UWG folder.
+        username = os.getenv("USERNAME")
+        rhinoScriptsDir = 'C:\\Users\\{}\\AppData\\Roaming\\McNeel\\Rhinoceros\\6.0\\scripts\\'.format(username)
+        uwgClassDir = rhinoScriptsDir + 'UWG\\'
+        readDOE_file_path = os.path.join(uwgClassDir,"readDOE.pkl")
+        if not os.path.isdir(rhinoScriptsDir):
+            msg = "Dragonfly currently only works on Rhino 6."
+            print msg
+            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+        notWorkingUWGmsg = "You will not be able to run simulations to account for urban heat island. \n" + \
+            "Use the Dragonfly installer component to (re)install the UWG or download \n" + \
+            "the most recent version from here: \n" + \
+            "https://github.com/ladybug-tools/urbanWeatherGen \n" + \
+            "and copy the UWG folder to here: \n" + uwgClassDir
+        if not os.path.isdir(uwgClassDir):
+            msg = "The Urban Weather Generator (UWG) is not currently installed. \n" + notWorkingUWGmsg
+            print msg
+            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+            uwgClassDir = None
         else:
-            
-            msg3 = "Dragonfly cannot find the correct version of the Matlab Runtime Compiler v9.0 (MRC 9.0) in your system. \n" + \
-            "You won't be able to morph EPW files to account for urban heat island effects without this application. \n" + \
-            "You can download an installer for the the Matlab Runtime Compiler from this link on the UWG github:"
-            msg4 = "https://www.mathworks.com/supportfiles/downloads/R2015b/deployment_files/R2015b/installers/win64/MCR_R2015b_win64_installer.exe"
-            
-            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg3)
-            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg4)
-            
-            folders.matlabPath = ""
+            try:
+                from UWG import UWG
+            except:
+                msg = "The Urban Weather Generator (UWG) failed to load. \n" + notWorkingUWGmsg
+                print msg
+                ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+                uwgClassDir = None
         
-        sc.sticky["dragonfly_folders"]["UWGPath"] = folders.UWGPath
-        sc.sticky["dragonfly_folders"]["matlabPath"] = folders.matlabPath
+        # copy the classes to memory
+        if uwgClassDir != None:
+            sc.sticky["dragonfly_UWGBldgTypes"] = DFBuildingTypes(readDOE_file_path)
         sc.sticky["dragonfly_UWGGeometry"] = UWGGeometry
         sc.sticky["dragonfly_BuildingTypology"] = DFTypology
         sc.sticky["dragonfly_City"] = DFCity
@@ -1799,7 +1908,7 @@ if checkIn.letItFly:
         print "Hi " + os.getenv("USERNAME")+ "!\n" + \
               "Dragonfly is Flying! Vviiiiiiizzz...\n\n" + \
               "Default path is set to: " + sc.sticky["Dragonfly_DefaultFolder"] + "\n" + \
-              "UWGEngine path is set to: " + sc.sticky["dragonfly_folders"]["UWGPath"]
+              "UWGEngine path is set to: " + str(uwgClassDir)
         
         # push ladybug component to back
         ghenv.Component.OnPingDocument().SelectAll()
