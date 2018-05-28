@@ -8,7 +8,7 @@
 
 
 """
-Use this component to morph a rural or airport EPW to reflect the conditions within an urban street canyon.  The properties of this urban street canyon are specified in the connected _UWGParemeters, which should come from one of the 'Dragonfly_UWG Parameters' components.
+Use this component to morph a rural or airport EPW to reflect the conditions within an urban street canyon.  The properties of this urban street canyon are specified in the connected _UWGCity, which should come from one of the 'Dragonfly_UWG Ccity' component.
 _
 For definitions of the inputs of the Urban Weather Generator, please see this page of the MIT Urban Microclimate Group:
 http://urbanmicroclimate.scripts.mit.edu/uwg_parameters.php#ref
@@ -26,25 +26,40 @@ Provided by Dragonfly 0.0.02
         epwSitePar_: An optional list of Reference EPW Site Parameters from the "Dragonfly_Reference EPW Site Par" component.
         boundLayerPar_: Optional Boundary Layer Parameters from the "Dragonfly_Boundary Layer Par" component.
         --------------------: ...
-        _writeXML: Set to "True" to have the component take your connected UWGParemeters and write them into an XML file.  The file path of the resulting XML file will appear in the xmlFileAddress output of this component.  Note that only setting this to "True" and not setting the output below to "True" will not automatically run the XML through the Urban Weather Generator for you.
-        runUWG_: Set to "True" to have the component run your XML and EPW files through the Urban Weather Generator (UWG).  This will ensure that a morphed EPW file path appears in the epwFileAddress output. Set to 2 if you want the analysis to run in background. This option is useful for parametric runs when you don't want to see command shells.
+        _runUWG: Set to "True" to have the component morph the EPW using the Urban Weather Generator (UWG) and the attached UWGCity.
         --------------------: ...
-        _workingDir_: An optional working directory to a folder on your system, into which your XML and morphed EPW files will be written.  The default will write these files in the folder that contains the connected epwFile_.  NOTE THAT DIRECTORIES INPUT HERE SHOULD NOT HAVE ANY SPACES OR UNDERSCORES IN THE FILE PATH.
-        _xmlFileName_: An optional text string which will be used to name your XML and morphed EPW files.  Change this to aviod over-writing results of previous runs of the Urban Weather Generator.
+        _workingDir_: An optional working directory to a folder on your system, into which the morphed EPW files will be written.  The default will write these files in the folder that contains the connected epwFile_.
+        _epwFileName_: An optional text string which will be used to name of your morphed EPW files.  Change this to aviod over-writing results of previous runs of the Urban Weather Generator.
     Returns:
         readMe!: ...
         ---------------: ...
-        uwgFileAddress: The file path of the .uwg file that has been generated on your machine.
         epwFileAddress: The file path of the morphed EPW file that has been generated on your machine.  This only happens when you set "runUWG_" to "True."
         ---------------: ...
-        uwgText: The text written into the .uwg file.
+        uwgObject: The python UWG object that can be edited and simulated using the methods on the UWG.
 """
 
 ghenv.Component.Name = "Dragonfly_Run Urban Weather Generator"
 ghenv.Component.NickName = 'RunUWG'
-ghenv.Component.Message = 'VER 0.0.02\nAPR_29_2018'
+ghenv.Component.Message = 'VER 0.0.02\nMAY_25_2018'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "01::UWG"
+#compatibleDFVersion = VER 0.0.02\nMAY_25_2018
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
 
 
+import scriptcontext as sc
+import Grasshopper.Kernel as gh
+
+#Dragonfly check.
+initCheck = True
+if not sc.sticky.has_key('dragonfly_release') == True:
+    initCheck = False
+    print "You should first let Drafgonfly fly..."
+    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, "You should first let Drafgonfly fly...")
+else:
+    if not sc.sticky['dragonfly_release'].isCompatible(ghenv.Component): initCheck = False
+    if sc.sticky['dragonfly_release'].isInputMissing(ghenv.Component): initCheck = False
+
+
+if initCheck == True and _runUWG == True:
+    pass

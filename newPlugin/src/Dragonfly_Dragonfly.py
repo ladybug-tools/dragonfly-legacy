@@ -46,7 +46,7 @@ Provided by Dragonfly 0.0.02
 
 ghenv.Component.Name = "Dragonfly_Dragonfly"
 ghenv.Component.NickName = 'Dragonfly'
-ghenv.Component.Message = 'VER 0.0.02\nMAY_20_2018'
+ghenv.Component.Message = 'VER 0.0.02\nMAY_25_2018'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "0 | Dragonfly"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -255,8 +255,8 @@ class versionCheck(object):
         
         for param in GHComponent.Params.Input:
             if param.NickName.startswith("_") and \
-                not param.NickName.endswith("_") and \
-                not param.VolatileDataCount:
+                not param.NickName.endswith("_"):
+                if not param.VolatileDataCount:
                     warning = "Input parameter %s failed to collect data!"%param.NickName
                     GHComponent.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
                     isInputMissing = True
@@ -372,7 +372,6 @@ class UWGGeometry(object):
         Returns:
             result: The building breps after being unioned.
         """
-        
         try:
             return rc.Geometry.Brep.CreateBooleanUnion(bldgBreps, sc.doc.ModelAbsoluteTolerance)
         except:
@@ -403,6 +402,39 @@ class UWGGeometry(object):
         footprintArea = footprintArea * self.areaConversionFac
         
         return footprintArea, footprintBreps
+    
+    def getFloorBreps(self, buildingMass, floorHeight=3.05):
+        """Extracts a series of surfaces representing the interior floors of a building
+        
+        Args:
+            buildingMass: A closed brep representing the building volume
+            floorHeight: The average floor-to-floor height between floors in meters. 
+                The default is 3.05 meters
+        
+        Returns:
+            floorArea: The total floor area of the building.
+            floorBreps: A list of breps representing the floors of the building.
+        """
+        
+        # draw a bounding box around the mass and use the lowest Z point to set the base point.
+        massBB = buildingMass.GetBoundingBox(rc.Geometry.Plane.WorldXY)
+        fullRange = massBB.Max.Z - massBB.Min.Z
+        numCrvs = int(math.floor(fullRange / floorHeight))
+        flrRanges = range(0, numCrvs)
+        flrHeights = [x*floorHeight + massBB.Min.Z for x in flrRanges]
+        
+        # get the floor area curve at each of the floor heights.
+        floorBreps = []
+        floorArea = 0
+        for count, h in enumerate(flrHeights):
+            floorBasePt = rc.Geometry.Point3d(0,0,h)
+            sectionPlane = rc.Geometry.Plane(floorBasePt, rc.Geometry.Vector3d.ZAxis)
+            floorCrvs = rc.Geometry.Brep.CreateContourCurves(buildingMass, sectionPlane)
+            floorBrep = rc.Geometry.Brep.CreatePlanarBreps(floorCrvs, sc.doc.ModelAbsoluteTolerance)
+            floorArea += rc.Geometry.AreaMassProperties.Compute(floorBrep).Area
+            floorBreps.extend(floorBrep)
+        
+        return floorArea, floorBreps
     
     def calculateBldgFootprint(self, bldgBrep, maxFloorAngle=60):
         """Extracts building footprint and footprint area
@@ -462,7 +494,7 @@ class UWGGeometry(object):
         """
         
         bldgBBox = rc.Geometry.Brep.GetBoundingBox(bldgBrep, rc.Geometry.Plane.WorldXY)
-        bldgHeight = bldgBBox.Diagonal[2]
+        bldgHeight = bldgBBox.Max.Z - bldgBBox.Min.Z
         
         return bldgHeight
     
@@ -480,7 +512,6 @@ class UWGGeometry(object):
             facadeArea: The footprint area of the building.
             facadeBreps: A list if breps representing the facades of the building.
         """
-        
         facadeAreas = []
         facadeBreps = []
         
@@ -500,12 +531,14 @@ class UWGGeometry(object):
         
         return facadeArea, facadeBreps
     
-    def calculateTypologyGeoParams(self, bldgBreps, maxRoofAngle=45, maxFloorAngle=60):
+    def calculateTypologyGeoParams(self, bldgBreps, floorHeight=3.05, maxRoofAngle=45, maxFloorAngle=60):
         """Extracts building footprint and footprint area
         
         Args:
             bldgBreps: A list of closed rhino brep representing buildings of the same typology.
-            maxRoofAngle: The roof normal angle from the positive Z axis (in degrees) beyond 
+            floorHeight: The average floor-to-floor height between floors in meters. 
+                The default is 3.05 meters
+            maxRoofAngle: The roof normal angle from the positive Z axis (in degrees) beyond
                 which a surface is no longer considered a roof. Default is 45.
             maxFloorAngle: The floor normal angle from the negative Z axis (in degrees) beyond 
                 which a surface is no longer considered a floor. Default is 60.
@@ -513,16 +546,28 @@ class UWGGeometry(object):
         Returns:
             avgBldgHeight: The average height of the buildings in the typology
             footprintArea: The footprint area of the buildings in this typology.
+            floorArea: The total interior floor area of the buildings.
             facadeArea: The facade are of the buildings in this typology.
             footprintBreps: A list of breps representing the footprints of the buildings.
+            floorBreps: A list of breps representing the floors of the buildings.
             facadeBreps: A list of breps representing the exposed facade surfaces of the typology.
         """
+        # default floor height
+        if floorHeight is None:
+            floorHeight = 3.05
         
+        # lists of outputs to be filled.
         bldgHeights = []
         footprintAreas = []
         footprintBreps = []
+        floorAreas = []
+        floorBreps = []
         
-        for bldgBrep in bldgBreps:
+        # extract data from the geometries
+        for i, bldgBrep in enumerate(bldgBreps):
+            # check that the geometrt is closed
+            assert (bldgBrep.IsSolid == True),"Brep {} in bldgBreps is not closed.".format(str(i))
+            
             # get the building height
             bldgHeights.append(self.extractBldgHeight(bldgBrep))
             
@@ -530,22 +575,28 @@ class UWGGeometry(object):
             ftpA, ftpBrep = self.calculateBldgFootprint(bldgBrep, maxFloorAngle)
             footprintAreas.append(ftpA)
             footprintBreps.append(ftpBrep)
-        
-        # get the area-weighted hieght of the buildings and total footprint area
-        footprintArea = sum(footprintAreas)
-        footprintWeights = [(y/footprintArea) for y in footprintAreas]
-        avgBldgHeight = sum([x*footprintWeights[i] for i,x in enumerate(bldgHeights)])
+            
+            # get the floor area
+            flrA, flrBrep = self.getFloorBreps(bldgBrep, floorHeight)
+            floorAreas.append(flrA)
+            floorBreps.extend(flrBrep)
         
         # compute the facade area of all of the building breps after they have been boolean unioned.
         unionedBreps = self.unionAllBreps(bldgBreps)
         facadeArea, facadeBreps = self.extractBldgFacades(unionedBreps, maxRoofAngle, maxFloorAngle)
-        #facadeArea, facadeBreps = self.extractBldgFacades(bldgBreps, maxRoofAngle, maxFloorAngle)
         
+        # calculate the final metrics
+        floorArea = sum(floorAreas)
+        footprintArea = sum(footprintAreas)
+        footprintWeights = [(y/footprintArea) for y in footprintAreas]
+        avgBldgHeight = sum([x*footprintWeights[i] for i,x in enumerate(bldgHeights)])
+        
+        # account for Rhino model units.
         avgBldgHeight = avgBldgHeight * self.linearConversionFac
         footprintArea = footprintArea * self.areaConversionFac
         facadeArea = facadeArea * self.areaConversionFac
         
-        return avgBldgHeight, footprintArea, facadeArea, footprintBreps, facadeBreps
+        return avgBldgHeight, footprintArea, floorArea, facadeArea, footprintBreps, floorBreps, facadeBreps
 
 class Utilities(object):
     
@@ -568,11 +619,6 @@ class Utilities(object):
                     "Length of {} : {} does not match the length of {} : {}".format(list1Name, str(len(list1)), list2Name, str(len(list1)))
                 )
     
-    def make_type_error(self, inputName, objectName):
-        raise TypeError (
-                "{} are not a valid dragonfly {} object.".format(inputName, objectName)
-            )
-    
     def checkSchedule(self, schedule):
         if len(schedule) == 24:
             return [self.in_range(x, 0, 1, 'schedule value') for x in schedule]
@@ -589,17 +635,6 @@ class Utilities(object):
             return low
         else:
             return float(val)
-    
-    def weighted_average(self, data, weights):
-        totalWeight = sum(weights)
-        normWeights = []
-        avg = 0
-        for i, x in enumerate(data):
-            nWeight = weights[i]/totalWeight
-            normWeights.append(nWeight)
-            avg += x*nWeight
-        
-        return avg, normWeights
 
 class DFBuildingTypes(object):
     
@@ -631,7 +666,7 @@ class DFBuildingTypes(object):
             'StandAloneRetail': 12,
             'StripMall': 13,
             'SuperMarket': 14,
-            'WareHouse':15
+            'Warehouse':15
             }
         
         self.builtera = {
@@ -640,7 +675,7 @@ class DFBuildingTypes(object):
             'NewConstruction':2
             }
         
-        ZONETYPE = {
+        self.zonetype = {
             '1A (Miami)': 0,
             '2A (Houston)': 1,
             '2B (Phoenix)': 2,
@@ -658,7 +693,18 @@ class DFBuildingTypes(object):
             '7 (Duluth)': 14,
             '8 (Fairbanks)': 15
             }
-            
+        
+        self.zoneconverter = {
+            1: 0,
+            2: 1,
+            3: 3,
+            4: 7,
+            5: 10,
+            6: 12,
+            7: 14,
+            8: 15
+        }
+        
         # dictionary of acceptable building program inputs.
         self.programsDict = {
             'FULLSERVICERESTAURANT': 'FullServiceRestaurant',
@@ -782,6 +828,7 @@ class DFTypology(object):
             template from the bldg_program and bldg_age.
         fract_heat_to_canyon: A number from 0 to 1 that represents the fraction the building's waste 
             heat from air conditioning that gets rejected into the urban canyon. The default is set to 0.5.
+        wall_albedo: the exterior albedo of the typology's walls.
         floor_area: A number that represents the floor area of the buiding in square meteres. The default is auto-calculated
             using the footprint_area, average_height, and floor_to_floor.
         number_of_stories: An integer that represents the average number of stories for the building typology.
@@ -795,6 +842,10 @@ class DFTypology(object):
         self.bldgTypes = sc.sticky["dragonfly_UWGBldgTypes"]
         self.genChecks = Utilities()
         
+        # attribute to tract whether we need to update the geometry of the parent city.
+        self._has_parent_city = False
+        self._parent_city = None
+        
         # critical geometry parameters that all typologies must have.
         self.average_height = average_height
         self.footprint_area = footprint_area
@@ -806,14 +857,16 @@ class DFTypology(object):
         self.bldg_program = bldg_program
         self.bldg_age = bldg_age
         
-        # optional parameters with default values.
+        # optional parameters with default values set by program.
         self.glz_ratio = glz_ratio
+        self.wall_albedo = None
         self.fract_heat_to_canyon = fract_heat_to_canyon
     
     @classmethod
     def from_geometry(cls, bldg_breps, bldg_program, bldg_age, floor_to_floor=None,
         glz_ratio=None,fract_heat_to_canyon=None):
         """Initialize a building typology from closed building brep geometry
+        
         Args:
             bldg_breps: A list of closed rhino breps representing buildings of the typology.
             bldg_program: A text string representing one of the 16 DOE building program types to be 
@@ -831,11 +884,11 @@ class DFTypology(object):
             facadeBreps: A list of breps representing the exposed facade surfaces of the typology.
         """
         geometryLib = UWGGeometry()
-        avgBldgHeight, footprintArea, facadeArea, footprintBreps, facadeBreps = geometryLib.calculateTypologyGeoParams(bldg_breps)
+        avgBldgHeight, footprintArea, floorArea, facadeArea, footprintBreps, floorBreps, facadeBreps = geometryLib.calculateTypologyGeoParams(bldg_breps, floor_to_floor)
         
-        typology = cls(avgBldgHeight, footprintArea, facadeArea, bldg_program, bldg_age, floor_to_floor, glz_ratio, fract_heat_to_canyon)
+        typology = cls(avgBldgHeight, footprintArea, facadeArea, bldg_program, bldg_age, floor_to_floor, glz_ratio, fract_heat_to_canyon, floorArea)
         
-        return typology, footprintBreps, facadeBreps
+        return typology, footprintBreps, floorBreps, facadeBreps
     
     @property
     def average_height(self):
@@ -847,6 +900,8 @@ class DFTypology(object):
         assert isinstance(h, (float, int)), 'average_height must be a number got {}'.format(type(h))
         assert (h >= 0),"average_height must be greater than 0"
         self._average_height = h
+        if self.has_parent_city == True:
+            self.parent_city.update_geo_from_typologies()
     
     @property
     def footprint_area(self):
@@ -858,6 +913,8 @@ class DFTypology(object):
         assert isinstance(a, (float, int)), 'footprint_area must be a number got {}'.format(type(a))
         assert (a >= 0),"footprint_area must be greater than 0"
         self._footprint_area = a
+        if self.has_parent_city == True:
+            self.parent_city.update_geo_from_typologies()
     
     @property
     def facade_area(self):
@@ -869,6 +926,8 @@ class DFTypology(object):
         assert isinstance(a, (float, int)), 'facade_area must be a number got {}'.format(type(a))
         assert (a >= 0),"facade_area must be greater than 0"
         self._facade_area = a
+        if self.has_parent_city == True:
+            self.parent_city.update_geo_from_typologies()
     
     @property
     def floor_to_floor(self):
@@ -878,7 +937,7 @@ class DFTypology(object):
     @floor_to_floor.setter
     def floor_to_floor(self, x):
         if x is not None:
-            assert isinstance(x, (float, int)), 'floor_to_floor must be a number got {}'.format(type(a))
+            assert isinstance(x, (float, int)), 'floor_to_floor must be a number got {}'.format(type(x))
             assert (x >= 0),"floor_to_floor must be greater than 0"
             self._floor_to_floor = x
         else:
@@ -887,7 +946,7 @@ class DFTypology(object):
     @property
     def number_of_stories(self):
         """Return the average number of stories in the buildings."""
-        return int(math.floor(self.average_height / self.floor_to_floor)-1)
+        return int(math.floor(self.average_height / self.floor_to_floor))
     
     @property
     def floor_area(self):
@@ -902,6 +961,8 @@ class DFTypology(object):
             self._floor_area = a
         else:
             self._floor_area = self._footprint_area * self.number_of_stories
+        if self.has_parent_city == True:
+            self.parent_city.update_geo_from_typologies()
     
     @property
     def bldg_program(self):
@@ -923,34 +984,96 @@ class DFTypology(object):
     
     @property
     def glz_ratio(self):
-        """Return the glazing ratio of the buildings in the typology."""
+        """Get or set the glazing ratio of the buildings in the typology."""
         return self._glz_ratio
     
     @glz_ratio.setter
     def glz_ratio(self, x):
         if x is not None:
-            assert isinstance(x, (float, int)), 'glz_ratio must be a number got {}'.format(type(a))
-            self._fract_heat_to_canyon = self.genChecks.in_range(x, 0, 1, 'fract_heat_to_canyon')
+            assert isinstance(x, (float, int)), 'glz_ratio must be a number got {}'.format(type(x))
+            self._glz_ratio = self.genChecks.in_range(x, 0, 1, 'glz_ratio')
         else:
             self._glz_ratio = float(self.bldgTypes.refBEM[self.bldgTypes.bldgtype[self.bldg_program]][self.bldgTypes.builtera[self.bldg_age]][0].building.glazingRatio)
     
     @property
+    def wall_albedo(self):
+        """Get or set the exterior wall albedo of the buildings in the typology."""
+        return self._wall_albedo
+    
+    @wall_albedo.setter
+    def wall_albedo(self, x):
+        if x is not None:
+            assert isinstance(x, (float, int)), 'wall_albedo must be a number got {}'.format(type(x))
+            self._wall_albedo = self.genChecks.in_range(x, 0, 1, 'wall_albedo')
+        else:
+            self._wall_albedo = float(self.bldgTypes.refBEM[self.bldgTypes.bldgtype[self.bldg_program]][self.bldgTypes.builtera[self.bldg_age]][0].wall.albedo)
+    
+    @property
     def fract_heat_to_canyon(self):
-        """Return the fraction of the building's heat that is rejected to the urban canyon."""
+        """Get or set the fraction of the building's heat that is rejected to the urban canyon."""
         return self._fract_heat_to_canyon
     
     @fract_heat_to_canyon.setter
     def fract_heat_to_canyon(self, x):
         if x is not None:
-            assert isinstance(x, (float, int)), 'fract_heat_to_canyon must be a number got {}'.format(type(a))
+            assert isinstance(x, (float, int)), 'fract_heat_to_canyon must be a number got {}'.format(type(x))
             self._fract_heat_to_canyon = self.genChecks.in_range(x, 0, 1, 'fract_heat_to_canyon')
         else:
             self._fract_heat_to_canyon = 0.5
     
     @property
+    def has_parent_city(self):
+        return self._has_parent_city
+    
+    @property
+    def parent_city(self):
+        return self._parent_city
+    
+    @property
     def isDFTypology(self):
         """Return True for DFTypology."""
         return True
+    
+    def get_default_shgc(self, zone):
+        """Get the solar heat gain coefficient of the buildings in the typology given the climate zone."""
+        assert isinstance(zone, int), 'zone must be a number got {}'.format(type(zone))
+        zone = self.genChecks.in_range(zone, 1, 8, 'zone')
+        zoneIndex = self.bldgTypes.zoneconverter[zone]
+        return float(self.bldgTypes.refBEM[self.bldgTypes.bldgtype[self.bldg_program]][self.bldgTypes.builtera[self.bldg_age]][zoneIndex].building.shgc)
+    
+    @classmethod
+    def create_merged_typology(cls, typology_one, typology_two):
+        """Creates a merged Dragonfly typology between two typologies of the same DoE building type and contruction period.
+        
+        Args:
+            typology_one: The first Dragonfly building typology.
+            typology_two: The second Dragonfly building typology.
+        
+        Returs:
+            merged_typology: A Dragonfly typology representing the merged previous typologies.
+        """
+        # checks
+        assert (hasattr(typology_one, 'isDFTypology')), 'typology_one must be a Dragonfly typology. got {}'.format(type(typology_one))
+        assert (hasattr(typology_two, 'isDFTypology')), 'typology_two must be a Dragonfly typology. got {}'.format(type(typology_two))
+        assert (typology_one.bldg_program == typology_two.bldg_program),"bldg_program of typology_one: {} does not match that of typology_two: {}".format(typology_one.bldg_program, typology_two.bldg_program)
+        assert (typology_one.bldg_age == typology_two.bldg_age),"bldg_age of this typology_one: {} does not match that of typology_two: {}".format(typology_one.bldg_age, typology_two.bldg_age)
+        
+        # attributes that get totalled
+        new_footprint_area = typology_one.footprint_area + typology_two.footprint_area
+        new_facade_area = typology_one.facade_area + typology_two.facade_area
+        new_floor_area = typology_one.floor_area + typology_two.floor_area
+        
+        # atributes that get weighted averaged.
+        new_average_height = (typology_one.average_height*typology_one.footprint_area + typology_two.average_height*typology_two.footprint_area)/new_footprint_area
+        new_floor_to_floor = (typology_one.floor_to_floor*typology_one.floor_area + typology_two.floor_to_floor*typology_two.floor_area)/new_floor_area
+        new_fract_heat_to_canyon = (typology_one.fract_heat_to_canyon*typology_one.floor_area + typology_two.fract_heat_to_canyon*typology_two.floor_area)/new_floor_area
+        new_glz_ratio = (typology_one.glz_ratio*typology_one.facade_area + typology_two.glz_ratio*typology_two.facade_area)/new_facade_area
+        new_wall_albedo = (typology_one.wall_albedo*typology_one.facade_area + typology_two.wall_albedo*typology_two.facade_area)/new_facade_area
+        
+        newtypology = cls(new_average_height, new_footprint_area, new_facade_area, typology_one.bldg_program, typology_one.bldg_age, new_floor_to_floor, new_glz_ratio, new_fract_heat_to_canyon, new_floor_area)
+        newtypology.wall_albedo = new_wall_albedo
+        
+        return newtypology
     
     def __repr__(self):
         return 'Building Typology: ' + self._bldg_program + ", " + self._bldg_age + \
@@ -965,48 +1088,22 @@ class DFTypology(object):
 class DFCity(object):
     """Represents a an entire uban area inclluding buildings, pavement, vegetation, and traffic.
     
-    Attributes:
+    Properties:
         average_bldg_height: The average height of the buildings of the city in meters.
         site_coverage_ratio: A number between 0 and 1 that represents the fraction of the city terrain 
             the building footprints occupy.  It describes how close the buildings are to one another in the city.
         facade_to_site_ratio: A number that represents the ratio of vertical urban surface area [walls] to 
             the total terrain area of the city.  This value can be greater than 1.
-        bldg_types: A list of text strings that represent the building programs and building ages in the city separated by a 
-            comma (eg. MidRiseApartment,1980sPresent). Choose from the following 16 DOE building program types:
-                FullServiceRestaurant
-                Hospital
-                LargeHotel
-                LargeOffice
-                MediumOffice
-                MidRiseApartment
-                OutPatient
-                PrimarySchool
-                QuickServiceRestaurant
-                SecondarySchool
-                SmallHotel
-                SmallOffice
-                StandAloneRetail
-                StripMall
-                SuperMarket
-                Warehouse
-            ...and from the following building ages:
-                Pre1980s
-                1980sPresent
-                NewConstruction
-        bldg_type_ratios: A list of values with the same length as the bldg_types.  This list contains values between 0 and 1 
-            that represent the fraction of the urban area occupied by each of the buildings in the bldg_types.  The 
-            values in this list should sum to 1.
+        bldg_type_ratios: A dictoinary with keys that represent the DoE template building programs and building ages 
+            separated by a comma (eg. MidRiseApartment,1980sPresent).  Under each key of the dictionary, there should
+            be a single decimal number indicative of the fraction of the urban area's floor area taken by the typology.
+            The sum of all fractions in the dictionary should equal 1. Here is an example dictionary:
+                { MidRiseApartment,Pre1980s : 0.7, LargeOffice,1980sPresent: 0.3 }
         traffic_parameters: A dragonfly TrafficPar object that defines the traffic within an urban area.
         tree_coverage_ratio: An number from 0 to 1 that defines the fraction of the entire urban area 
             (including both pavement and roofs) that is covered by trees.  The default is set to 0.
         grass_coverage_ratio: An number from 0 to 1 that defines the fraction of the entire urban area 
             (including both pavement and roofs) that is covered by grass/vegetation.  The default is set to 0.
-        fract_heat_to_canyon: A number from 0 to 1 that represents the fraction the building's waste 
-            heat from air conditioning that gets rejected into the urban canyon (as opposed to 
-            through rooftop equipment or into a ground source loop).  The default is set to 0.5.
-        glz_ratios: A list of values with the same length as the bldg_types.  This list contains values between 0 and 1 
-            that represent the fraction of the walls in the city that are glazed. The default is to use a value that 
-            comes from the DoE building template from the bldg_program and bldg_age.
         vegetation_parameters: A dragonfly VegetationPar object that defines the behaviour of vegetation within an urban area.
         pavement_parameters: A dragonfly PavementPar object that defines the makeup of pavement within the urban area.
         characteristic_length: A number representing the radius of a circle that encompasses the whole neighborhood in meters.
@@ -1016,86 +1113,41 @@ class DFCity(object):
             http://hdl.handle.net/1721.1/82284
     """
     
-    def __init__(self, average_bldg_height, site_coverage_ratio, facade_to_site_ratio, bldg_types, 
-                bldg_type_ratios, traffic_parameters, tree_coverage_ratio=None, grass_coverage_ratio=None, 
-                fract_heat_to_canyon=None, glz_ratios=None, vegetation_parameters=None,
+    def __init__(self, average_bldg_height, site_coverage_ratio, facade_to_site_ratio, 
+                bldg_type_ratios, traffic_parameters, tree_coverage_ratio=None, 
+                grass_coverage_ratio=None, vegetation_parameters=None,
                 pavement_parameters=None, characteristic_length=500):
         """Initialize a dragonfly city"""
         # get dependencies
-        bldgTypes = sc.sticky["dragonfly_UWGBldgTypes"]
-        genChecks = Utilities()
+        self.bldgTypes = sc.sticky["dragonfly_UWGBldgTypes"]
+        self.genChecks = Utilities()
         
-        # critical geometry parameters that all cities must have.
-        self._average_bldg_height = float(average_bldg_height)
-        self._site_coverage_ratio = genChecks.in_range(float(site_coverage_ratio), 0, 1, 'site_coverage_ratio')
-        self._facade_to_site_ratio = float(facade_to_site_ratio)
+        # critical geometry parameters that all cities must have and are not set-able.
+        assert isinstance(average_bldg_height, (float, int)), 'average_bldg_height must be a number got {}'.format(type(average_bldg_height))
+        assert (average_bldg_height >= 0),"average_bldg_height must be greater than 0"
+        self._average_bldg_height = average_bldg_height
+        assert isinstance(site_coverage_ratio, (float, int)), 'site_coverage_ratio must be a number got {}'.format(type(site_coverage_ratio))
+        self._site_coverage_ratio = self.genChecks.in_range(site_coverage_ratio, 0, 1, 'site_coverage_ratio')
+        assert isinstance(facade_to_site_ratio, (float, int)), 'facade_to_site_ratio must be a number got {}'.format(type(facade_to_site_ratio))
+        assert (facade_to_site_ratio >= 0),"facade_to_site_ratio must be greater than 0"
+        self._facade_to_site_ratio = facade_to_site_ratio
+        assert isinstance(characteristic_length, (float, int)), 'characteristic_length must be a number got {}'.format(type(characteristic_length))
+        assert (characteristic_length >= 0),"characteristic_length must be greater than 0"
+        self._characteristic_length = characteristic_length
         
-        # critical program parameters that all typologies must have.
-        self._bldg_types = []
-        for type in bldg_types:
-            try:
-                bldg_program, bldg_age = type.split(',')
-                _bldg_program = bldgTypes.check_program(bldg_program)
-                _bldg_age = bldgTypes.check_age(bldg_age)
-                self._bldg_types.append(_bldg_program + ',' + _bldg_age)
-            except:
-                raise Exception (
-                    "Building Type {} is not in the correct format of BuildingProgram,BuildingAge.".format('"' + str(type) + '"')
-                )
+        # critical program parameters that all typologies must have and are set-able.
+        self._bldg_type_ratios = bldg_type_ratios
+        self._building_typologies = None
+        self._are_typologies_loaded = False
         
-        if genChecks.length_match(bldg_types, bldg_type_ratios, 'bldg_types', 'bldg_type_ratios') == True:
-            self._bldg_type_ratios = [float(x) for x in bldg_type_ratios]
-        if sum(self._bldg_type_ratios) != 1:
-            raise Exception (
-                    "Building Type ratios sum to {}.  They must sum to 1.".format(str(sum(self._bldg_type_ratios)))
-                )
+        # dragonfly parameter objects that define conditions within the city and are set-able.
+        self.traffic_parameters = traffic_parameters
+        self.vegetation_parameters = vegetation_parameters
+        self.pavement_parameters = pavement_parameters
         
-        # glazing ratios
-        if glz_ratios is not None:
-            if genChecks.length_match(bldg_types, glz_ratios, 'bldg_types', 'glz_ratios') == True:
-                self._glz_ratios = glz_ratios
-        else:
-            self._glz_ratios = ['Auto' for x in bldg_types]
-        
-        # parameter objects that define things within the city
-        if hasattr(traffic_parameters, 'isTrafficPar'):
-            self._traffic_parameters = traffic_parameters
-        else:
-            genChecks.make_type_error('traffic_parameters', 'TrafficPar')
-        if vegetation_parameters is not None:
-            if hasattr(vegetation_parameters, 'isVegetationPar'):
-                self._vegetation_parameters = vegetation_parameters
-            else:
-                genChecks.make_type_error('vegetation_parameters', 'VegetationPar')
-        else:
-            self._vegetation_parameters = DFVegetationPar()
-        if pavement_parameters is not None:
-            if hasattr(pavement_parameters, 'isPavementPar'):
-                self._pavement_parameters = pavement_parameters
-            else:
-                genChecks.make_type_error('pavement_parameters', 'PavementPar')
-        else:
-            self._pavement_parameters = DFPavementPar()
-        
-        # vegetation coverage.
-        if tree_coverage_ratio is not None:
-            self._tree_coverage_ratio = genChecks.in_range(float(tree_coverage_ratio), 0, 1, 'tree_coverage_ratio')
-        else:
-            self._tree_coverage_ratio = 0
-        
-        if grass_coverage_ratio is not None:
-            self._grass_coverage_ratio = genChecks.in_range(float(grass_coverage_ratio), 0, 1, 'grass_coverage_ratio')
-        else:
-            self._grass_coverage_ratio = 0
-        
-        # fraction of heat to canyon.
-        if fract_heat_to_canyon is not None:
-            self._fract_heat_to_canyon = genChecks.in_range(float(fract_heat_to_canyon), 0, 1, 'fract_heat_to_canyon')
-        else:
-            self._fract_heat_to_canyon = 0.5
-        
-        # characteristic length.
-        self._characteristic_length = float(characteristic_length)
+        # vegetation coverage
+        self.tree_coverage_ratio = tree_coverage_ratio
+        self.grass_coverage_ratio = grass_coverage_ratio
     
     @classmethod
     def from_typologies(cls, typologies, terrian, traffic_parameters, tree_coverage_ratio=None, 
@@ -1115,46 +1167,62 @@ class DFCity(object):
         Returns:
             city: The dragonfly city object
         """
-        # get dependencies
-        genChecks = Utilities()
-        
-        # pull the relevating info off of the building typologies
-        footprintAreas = []
-        facadeAreas = []
-        bldgHeights = []
-        bldgTypes = []
-        glzRatios = []
-        fractsToCanyon = []
-        
+        # merge any typologies that are of the same DoE template.
+        bldgTypes = {}
+        mergedTypes = []
+        uniqueCount = 0
         for bType in typologies:
-            if hasattr(bType, 'isDFTypology'):
-                footprintAreas.append(bType.footprint_area)
-                facadeAreas.append(bType.facade_area)
-                bldgHeights.append(bType.average_height)
-                bldgTypes.append(bType.bldg_program + ',' + bType.bldg_age)
-                glzRatios.append(bType.glz_ratio)
-                fractsToCanyon.append(bType.fract_heat_to_canyon)
+            assert hasattr(bType, 'isDFTypology'), 'typology is not a dragonfly typolgy object. Got {}'.format(type(bType))
+            bTypeName = bType.bldg_program + ',' + bType.bldg_age
+            if bTypeName not in bldgTypes.keys():
+                mergedTypes.append(bType)
+                bldgTypes[bTypeName] = uniqueCount
+                uniqueCount += 1
             else:
-                genChecks.make_type_error('typology', 'Typology')
+                typeToMerge = mergedTypes[bldgTypes[bTypeName]]
+                mergedType = DFTypology.create_merged_typology(bType, typeToMerge)
+                mergedTypes[bldgTypes[bTypeName]] = mergedType
         
         # process the terrain surface.
-        if hasattr(terrian, 'isDFTerrain'):
-            terrainArea = terrian.area
-        else:
-            genChecks.make_type_error('terrian', 'Terrain')
+        assert hasattr(terrian, 'isDFTerrain'), 'terrian is not a dragonfly terrian object. Got {}'.format(type(terrian))
+        terrainArea = terrian.area
         
-        # compute the critical variables for the city
-        avgBldgHeight, typologyRatios = genChecks.weighted_average(bldgHeights, footprintAreas)
-        bldgCoverage = sum(footprintAreas)/terrainArea
-        facadeToSite = sum(facadeAreas)/terrainArea
+        # compute the critical geometry variables for the city
+        totalFootprintArea = 0
+        weightedHeightSum = 0
+        totalFacadeArea = 0
+        floorAreas = []
+        fullTypeNames = []
+        for bType in mergedTypes:
+            totalFootprintArea += bType.footprint_area
+            weightedHeightSum += bType.average_height*bType.footprint_area
+            totalFacadeArea += bType.facade_area
+            floorAreas.append(bType.floor_area)
+            fullTypeNames.append(bType.bldg_program + ',' + bType.bldg_age)
+        avgBldgHeight = weightedHeightSum/totalFootprintArea
+        bldgCoverage = totalFootprintArea/terrainArea
+        facadeToSite = totalFacadeArea/terrainArea
         
-        volWeights = [a*bldgHeights[i] for i, a in enumerate(footprintAreas)]
-        weightedFractToCanyon, typVolRatios = genChecks.weighted_average(fractsToCanyon, volWeights)
+        # build the dictionary of typology ratios
+        totalWeight = sum(floorAreas)
+        typologyRatios = [x/totalWeight for x in floorAreas]
+        bldgTypeDict = {}
+        for i, key in enumerate(fullTypeNames):
+            bldgTypeDict[key] = typologyRatios[i]
         
-        # return the city object.
-        return cls(avgBldgHeight, bldgCoverage, facadeToSite, bldgTypes, typologyRatios, 
-            traffic_parameters, tree_coverage_ratio, grass_coverage_ratio, weightedFractToCanyon,
-            glzRatios, vegetation_parameters, pavement_parameters, terrian.characteristic_length)
+        # create the city object.
+        dfCity = cls(avgBldgHeight, bldgCoverage, facadeToSite, bldgTypeDict, traffic_parameters, 
+            tree_coverage_ratio, grass_coverage_ratio, vegetation_parameters, 
+            pavement_parameters, terrian.characteristic_length)
+        
+        # link the typologies to the city object
+        for bTyp in mergedTypes:
+            bTyp._has_parent_city = True
+            bTyp._parent_city = dfCity
+        dfCity._building_typologies = mergedTypes
+        dfCity._are_typologies_loaded = True
+        
+        return dfCity
     
     @property
     def average_bldg_height(self):
@@ -1172,64 +1240,204 @@ class DFCity(object):
         return self._facade_to_site_ratio
     
     @property
+    def characteristic_length(self):
+        """Return the caracteristic length of the city."""
+        return self._characteristic_length
+    
+    @property
     def bldg_types(self):
-        """Return a list of building types in the city."""
-        return self._bldg_program
+        """Return a list of the building types in the city."""
+        return self._bldg_type_ratios.keys()
     
     @property
     def bldg_type_ratios(self):
-        """Return the a list of ratios corresponding to the building types."""
+        """Get or set the building types and corresponding ratios as a dictionary.
+        
+        Note that setting the typology ratios here completely overwrites the 
+        building_typologies associated with this city object.
+        """
         return self._bldg_type_ratios
+    
+    @bldg_type_ratios.setter
+    def bldg_type_ratios(self, bldg_type_dict):
+        totalRatios = 0
+        for type in bldg_type_dict.keys():
+            assert isinstance(type, str), 'building_type must be a string got {}'.format(type(type))
+            assert isinstance(bldg_type_dict[type], (float, int)), 'building_type ratio must be a number got {}'.format(type(bldg_type_dict[type]))
+            totalRatios += bldg_type_dict[type]
+            try:
+                bldg_program, bldg_age = type.split(',')
+                _bldg_program = self.bldgTypes.check_program(bldg_program)
+                _bldg_age = self.bldgTypes.check_age(bldg_age)
+                self._bldg_types.append(_bldg_program + ',' + _bldg_age)
+            except:
+                raise Exception (
+                    "Building Type {} is not in the correct format of BuildingProgram,BuildingAge.".format('"' + str(type) + '"')
+                )
+        assert (totalRatios == 1),"Total building ratios do not sum to 1. Got {}".format(str(totalRatios))
+        self._bldg_type_ratios = bldg_type_dict
+        self._are_typologies_loaded = False
+    
+    @property
+    def building_typologies(self):
+        """Return a list of dragonfly building typology objects for the urban area."""
+        if self.are_typologies_loaded == True:
+            return self._building_typologies
+        else:
+            # build dragonfly typology objects from the dictionary of building type ratios.
+            self._building_typologies = []
+            for bType in self.bldg_type_ratios.keys():
+                bldg_program, bldg_age = bType.split(',')
+                cityFract = self.bldg_type_ratios[bType]
+                site_area = math.pow(self.characteristic_length,2) * math.pi
+                footprint_area = site_area * self.site_coverage_ratio * cityFract
+                facade_area = site_area * self.facade_to_site_ratio * cityFract
+                newType = DFTypology(self.average_bldg_height, footprint_area, facade_area, bldg_program, bldg_age)
+                newType._parent_city = self
+                newType._has_parent_city = True
+                self._building_typologies.append(newType)
+            self._are_typologies_loaded = True
+            return self._building_typologies
     
     @property
     def traffic_parameters(self):
-        """Return the traffic parameter object that describes the city's traffic."""
+        """Get or set the traffic parameter object that describes the city's traffic."""
         return self._traffic_parameters
+    
+    @traffic_parameters.setter
+    def traffic_parameters(self, p):
+        assert hasattr(p, 'isTrafficPar'), 'traffic_parameters is not a dragonfly traffic_parameters object. Got {}'.format(type(p))
+        self._traffic_parameters = p
     
     @property
     def vegetation_parameters(self):
-        """Return the vegetation parameter object that describes the city's vegetation."""
+        """Get or set the vegetation parameter object that describes the city's vegetation."""
         return self._vegetation_parameters
+    
+    @vegetation_parameters.setter
+    def vegetation_parameters(self, p):
+        if p is not None:
+            assert hasattr(p, 'isVegetationPar'), 'vegetation_parameters is not a dragonfly vegetation_parameters object. Got {}'.format(type(p))
+            self._vegetation_parameters = p
+        else:
+            self._vegetation_parameters = DFVegetationPar()
     
     @property
     def pavement_parameters(self):
-        """Return the pavement parameter object that describes the city's pavement."""
+        """Get or set the pavement parameter object that describes the city's pavement."""
         return self._pavement_parameters
+    
+    @pavement_parameters.setter
+    def pavement_parameters(self, p):
+        if p is not None:
+            assert hasattr(p, 'isPavementPar'), 'pavement_parameters is not a dragonfly pavement_parameters object. Got {}'.format(type(p))
+            self._pavement_parameters = p
+        else:
+            self._pavement_parameters = DFPavementPar()
     
     @property
     def tree_coverage_ratio(self):
-        """Return the ratio of the entire site area of the city covered in trees."""
+        """Get or set the ratio of the entire site area of the city covered in trees."""
         return self._tree_coverage_ratio
+    
+    @tree_coverage_ratio.setter
+    def tree_coverage_ratio(self, x):
+        if x is not None:
+            assert isinstance(x, (float, int)), 'tree_coverage_ratio must be a number got {}'.format(type(x))
+            self._tree_coverage_ratio = self.genChecks.in_range(x, 0, 1, 'tree_coverage_ratio')
+        else:
+            self._tree_coverage_ratio = 0
     
     @property
     def grass_coverage_ratio(self):
-        """Return the ratio of the entire site area of the city covered in grass."""
+        """Get or set the ratio of the entire site area of the city covered in grass."""
         return self._grass_coverage_ratio
+    
+    @grass_coverage_ratio.setter
+    def grass_coverage_ratio(self, x):
+        if x is not None:
+            assert isinstance(x, (float, int)), 'grass_coverage_ratio must be a number got {}'.format(type(x))
+            self._grass_coverage_ratio = self.genChecks.in_range(x, 0, 1, 'grass_coverage_ratio')
+        else:
+            self._grass_coverage_ratio = 0
     
     @property
     def fract_heat_to_canyon(self):
         """Return the fraction of the building's heat that is rejected to the urban canyon."""
-        return self._fract_heat_to_canyon
+        weightedSum = 0
+        totalFlrArea = 0
+        for bldgType in self.building_typologies:
+            weightedSum += bldgType.fract_heat_to_canyon*bldgType.floor_area
+            totalFlrArea += bldgType.floor_area
+        return weightedSum/totalFlrArea
     
     @property
-    def glz_ratios(self):
-        """Return a list of the the glazing ratios for each of the typologies in the city."""
-        return self._glz_ratios
+    def glz_ratio(self):
+        """Return the average glazing ratio of the buildings in the city."""
+        weightedSum = 0
+        totalFacadeArea = 0
+        for bldgType in self.building_typologies:
+            weightedSum += bldgType.glz_ratio*bldgType.facade_area
+            totalFacadeArea += bldgType.facade_area
+        return weightedSum/totalFacadeArea
     
     @property
-    def characteristic_length(self):
-        """Returns the caracteristic length of the city."""
-        return self._characteristic_length
+    def wall_albedo(self):
+        """Return the average wall albedo of the buildings in the city."""
+        weightedSum = 0
+        totalFacadeArea = 0
+        for bldgType in self.building_typologies:
+            weightedSum += bldgType.wall_albedo*bldgType.facade_area
+            totalFacadeArea += bldgType.facade_area
+        return weightedSum/totalFacadeArea
+    
+    @property
+    def are_typologies_loaded(self):
+        """Return True when typologies need to be created or re-generated."""
+        return self._are_typologies_loaded
     
     @property
     def isDFCity(self):
         """Return True for DFCity."""
         return True
     
+    def update_geo_from_typologies(self):
+        """Updates the city-wide geometry parameters whenever an individual building typology's have changed."""
+        site_area = math.pow(self.characteristic_length,2) * math.pi
+        totalFootprintArea = 0
+        weightedHeightSum = 0
+        totalFacadeArea = 0
+        floorAreas = []
+        fullTypeNames = []
+        for bType in self.building_typologies:
+            totalFootprintArea += bType.footprint_area
+            weightedHeightSum += bType.average_height*bType.footprint_area
+            totalFacadeArea += bType.facade_area
+            floorAreas.append(bType.floor_area)
+            fullTypeNames.append(bType.bldg_program + ',' + bType.bldg_age)
+        self._average_bldg_height = weightedHeightSum/totalFootprintArea
+        self._site_coverage_ratio = totalFootprintArea/site_area
+        self._facade_to_site_ratio = totalFacadeArea/site_area
+        
+        totalWeight = sum(floorAreas)
+        typologyRatios = [x/totalWeight for x in floorAreas]
+        self._building_typologies = {}
+        for i, key in enumerate(fullTypeNames):
+            self._building_typologies[key] = typologyRatios[i]
+    
+    def get_default_shgc(self, zone):
+        """Get the solar heat gain coefficient of the buildings in the typology given the climate zone."""
+        weightedSum = 0
+        totalFacadeArea = 0
+        for bldgType in self.building_typologies:
+            weightedSum += bldgType.get_default_shgc(zone)*bldgType.facade_area
+            totalFacadeArea += bldgType.facade_area
+        return weightedSum/totalFacadeArea
+    
     def __repr__(self):
         typologyList = ''
-        for i, x in enumerate(self._bldg_types):
-            typologyList = typologyList + '\n     ' + str(round(self._bldg_type_ratios[i], 2)) + ' - ' + x
+        for x in self.bldg_types:
+            typologyList = typologyList + '\n     ' + str(round(self.bldg_type_ratios[x], 2)) + ' - ' + x
         return 'Dragonfly City: ' + \
                '\n  Average Bldg Height: ' + str(int(self._average_bldg_height)) + " m" + \
                '\n  Site Coverage Ratio: ' + str(round(self._site_coverage_ratio, 2)) + \
@@ -1672,44 +1880,67 @@ class RefEPWSitePar(object):
     def __init__(self, average_obstacle_height=None, vegetation_coverage=None, temp_measure_height=None, wind_measure_height=None):
         """Initialize RefEPWSitePar parameters"""
         # get dependencies
-        genChecks = Utilities()
+        self.genChecks = Utilities()
         
-        if average_obstacle_height is not None:
-            self._average_obstacle_height = float(average_obstacle_height)
-        else:
-            self._average_obstacle_height = 0.1
-        if vegetation_coverage is not None:
-            self._vegetation_coverage = genChecks.in_range(float(vegetation_coverage), 0, 1, 'vegetation_coverage')
-        else:
-            self._vegetation_coverage = 0.9
-        if temp_measure_height is not None:
-            self._temp_measure_height = float(temp_measure_height)
-        else:
-            self._temp_measure_height = 10
-        if wind_measure_height is not None:
-            self._wind_measure_height = float(wind_measure_height)
-        else:
-            self._wind_measure_height = 10
+        self.average_obstacle_height = average_obstacle_height
+        self.vegetation_coverage = vegetation_coverage
+        self.temp_measure_height = temp_measure_height
+        self.wind_measure_height = wind_measure_height
     
     @property
     def average_obstacle_height(self):
-        """Return the average obstacle height."""
+        """Get or set the average obstacle height."""
         return self._average_obstacle_height
+    
+    @average_obstacle_height.setter
+    def average_obstacle_height(self, h):
+        if h is not None:
+            assert isinstance(h, (float, int)), 'average_obstacle_height must be a number got {}'.format(type(h))
+            assert (h >= 0),"average_obstacle_height must be greater than 0"
+            self._average_obstacle_height = h
+        else:
+            self._average_obstacle_height = 0.1
     
     @property
     def vegetation_coverage(self):
-        """Return the vegetation coverage."""
+        """Get or set the vegetation coverage."""
         return self._vegetation_coverage
+    
+    @vegetation_coverage.setter
+    def vegetation_coverage(self, a):
+        if a is not None:
+            assert isinstance(a, (float, int)), 'vegetation_coverage must be a number got {}'.format(type(a))
+            self._vegetation_coverage = self.genChecks.in_range(a, 0, 1, 'vegetation_coverage')
+        else:
+            self._vegetation_coverage = 0.9
     
     @property
     def temp_measure_height(self):
-        """Return the temperature measurement height."""
+        """Get or set the temperature measurement height."""
         return self._temp_measure_height
+    
+    @temp_measure_height.setter
+    def temp_measure_height(self, h):
+        if h is not None:
+            assert isinstance(h, (float, int)), 'temp_measure_height must be a number got {}'.format(type(h))
+            assert (h >= 0),"temp_measure_height must be greater than 0"
+            self._temp_measure_height = h
+        else:
+            self._temp_measure_height = 10
     
     @property
     def wind_measure_height(self):
-        """Return the wind measurement height."""
+        """Get or set the wind measurement height."""
         return self._wind_measure_height
+    
+    @wind_measure_height.setter
+    def wind_measure_height(self, h):
+        if h is not None:
+            assert isinstance(h, (float, int)), 'wind_measure_height must be a number got {}'.format(type(h))
+            assert (h >= 0),"wind_measure_height must be greater than 0"
+            self._wind_measure_height = h
+        else:
+            self._wind_measure_height = 10
     
     @property
     def isRefEPWSitePar(self):
@@ -1748,51 +1979,78 @@ class BoundaryLayerPar(object):
     def __init__(self, day_boundary_layer_height=None, night_boundary_layer_height=None, 
         inversion_height=None, circulation_coefficient=None, exchange_coefficient=None):
         """Initialize Boundary Layer parameters"""
-        if day_boundary_layer_height is not None:
-            self._day_boundary_layer_height = float(day_boundary_layer_height)
-        else:
-            self._day_boundary_layer_height = 1000
-        if night_boundary_layer_height is not None:
-            self._night_boundary_layer_height = float(night_boundary_layer_height)
-        else:
-            self._night_boundary_layer_height = 80
-        if inversion_height is not None:
-            self._inversion_height = float(inversion_height)
-        else:
-            self._inversion_height = 150
-        if circulation_coefficient is not None:
-            self._circulation_coefficient = float(circulation_coefficient)
-        else:
-            self._circulation_coefficient = 1.2
-        if exchange_coefficient is not None:
-            self._exchange_coefficient = float(exchange_coefficient)
-        else:
-            self._exchange_coefficient = 1.0
+        
+        self.day_boundary_layer_height = day_boundary_layer_height
+        self.night_boundary_layer_height = night_boundary_layer_height
+        self.inversion_height = inversion_height
+        self.circulation_coefficient = circulation_coefficient
+        self.exchange_coefficient = exchange_coefficient
     
     @property
     def day_boundary_layer_height(self):
-        """Return the daytime boundary layer height."""
+        """Get or set the daytime boundary layer height."""
         return self._day_boundary_layer_height
+    
+    @day_boundary_layer_height.setter
+    def day_boundary_layer_height(self, h):
+        if h is not None:
+            assert isinstance(h, (float, int)), 'day_boundary_layer_height must be a number got {}'.format(type(h))
+            assert (h >= 0),"day_boundary_layer_height must be greater than 0"
+            self._day_boundary_layer_height = h
+        else:
+            self._day_boundary_layer_height = 1000
     
     @property
     def night_boundary_layer_height(self):
-        """Return the nighttime boundary layer height."""
+        """Get or set the nighttime boundary layer height."""
         return self._night_boundary_layer_height
+    
+    @night_boundary_layer_height.setter
+    def night_boundary_layer_height(self, h):
+        if h is not None:
+            assert isinstance(h, (float, int)), 'night_boundary_layer_height must be a number got {}'.format(type(h))
+            assert (h >= 0),"night_boundary_layer_height must be greater than 0"
+            self._night_boundary_layer_height = h
+        else:
+            self._night_boundary_layer_height = 80
     
     @property
     def inversion_height(self):
-        """Return the inversion height."""
+        """Get or set the inversion height."""
         return self._inversion_height
+    
+    @inversion_height.setter
+    def inversion_height(self, h):
+        if h is not None:
+            assert isinstance(h, (float, int)), 'inversion_height must be a number got {}'.format(type(h))
+            assert (h >= 0),"inversion_height must be greater than 0"
+            self._inversion_height = h
+        else:
+            self._inversion_height = 150
     
     @property
     def circulation_coefficient(self):
-        """Return the circulation coefficient."""
+        """Get or set the circulation coefficient."""
         return self._circulation_coefficient
+    
+    def circulation_coefficient(self, h):
+        if h is not None:
+            assert isinstance(h, (float, int)), 'circulation_coefficient must be a number got {}'.format(type(h))
+            self._circulation_coefficient = h
+        else:
+            self._circulation_coefficient = 1.2
     
     @property
     def exchange_coefficient(self):
-        """Return the exchange coefficient."""
+        """Get or set the exchange coefficient."""
         return self._exchange_coefficient
+    
+    def exchange_coefficient(self, h):
+        if h is not None:
+            assert isinstance(h, (float, int)), 'exchange_coefficient must be a number got {}'.format(type(h))
+            self._exchange_coefficient = h
+        else:
+            self._exchange_coefficient = 1.0
     
     @property
     def isBoundaryLayerPar(self):
@@ -1801,11 +2059,11 @@ class BoundaryLayerPar(object):
     
     def __repr__(self):
         return 'Boundary Layer Parameters: ' + \
-               '\n  Boundary Height (Day | Night): ' + str(self._day_boundary_layer_height) + \
-                    ' m | ' + str(self._night_boundary_layer_height) + ' m' +\
-               '\n  Inversion Height: ' + str(self._inversion_height) + ' m' + \
-               '\n  Circulation Coefficient: ' + str(self._circulation_coefficient) + \
-               '\n  Exchange Coefficient: ' + str(self._exchange_coefficient)
+               '\n  Boundary Height (Day | Night): ' + str(self.day_boundary_layer_height) + \
+                    ' m | ' + str(self.night_boundary_layer_height) + ' m' +\
+               '\n  Inversion Height: ' + str(self.inversion_height) + ' m' + \
+               '\n  Circulation Coefficient: ' + str(self.circulation_coefficient) + \
+               '\n  Exchange Coefficient: ' + str(self.exchange_coefficient)
 
 
 

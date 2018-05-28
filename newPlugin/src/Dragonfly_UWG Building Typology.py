@@ -43,6 +43,7 @@ Provided by Dragonfly 0.0.02
         buildingTypology: A building typology that can be plugged into the "Dragonfly_UWG City" component.
         ------------------: ...
         bldgFootprints: The building geometry as projected onto the world XY plane.  This is used to determine the site coverage ratio and to perform a weighted-average of the building heights.
+        bldgFloorBreps: A list of breps representing the floors of the typology.
         facadeBreps: A list of breps representing the exposed facade area of the building breps.  These will be used to calculate the facade-to-site ratio.
 """
 
@@ -64,19 +65,11 @@ if not sc.sticky.has_key('dragonfly_release') == True:
     print "You should first let Drafgonfly fly..."
     ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, "You should first let Drafgonfly fly...")
 else:
-    try:
-        if not sc.sticky['dragonfly_release'].isCompatible(ghenv.Component): initCheck = False
-        if sc.sticky['dragonfly_release'].isInputMissing(ghenv.Component): initCheck = False
-        df_BuildingTypology = sc.sticky["dragonfly_BuildingTypology"]
-    except:
-        initCheck = False
-        warning = "You need a newer version of Drafgonfly to use this compoent." + \
-        "Use updateDrafgonfly component to update userObjects.\n" + \
-        "If you have already updated userObjects drag Drafgonfly_Drafgonfly component " + \
-        "into canvas and try again."
-        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+    if not sc.sticky['dragonfly_release'].isCompatible(ghenv.Component): initCheck = False
+    if sc.sticky['dragonfly_release'].isInputMissing(ghenv.Component): initCheck = False
+    df_BuildingTypology = sc.sticky["dragonfly_BuildingTypology"]
 
 if initCheck == True and _runIt == True:
-    buildingTypology, bldgFootprints, facadeBreps = df_BuildingTypology.from_geometry(_bldgGeo, 
+    buildingTypology, bldgFootprints, bldgFloorBreps, facadeBreps = df_BuildingTypology.from_geometry(_bldgGeo, 
         _bldgProgram, _bldgAge, _floor2Floor_, _glzRatio_, _fract2Canyon_)
     print buildingTypology
