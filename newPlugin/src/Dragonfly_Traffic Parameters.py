@@ -30,7 +30,7 @@ Provided by Dragonfly 0.0.02
 """
 
 ghenv.Component.Name = "Dragonfly_Traffic Parameters"
-ghenv.Component.NickName = 'trafficPar'
+ghenv.Component.NickName = 'TrafficPar'
 ghenv.Component.Message = 'VER 0.0.01\nJUN_03_2018'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "00::UWG"

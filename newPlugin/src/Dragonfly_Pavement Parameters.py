@@ -23,7 +23,7 @@ Provided by Dragonfly 0.0.02
 """
 
 ghenv.Component.Name = "Dragonfly_Pavement Parameters"
-ghenv.Component.NickName = 'pavementPar'
+ghenv.Component.NickName = 'PavementPar'
 ghenv.Component.Message = 'VER 0.0.02\nJUN_03_2018'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "00::UWG"

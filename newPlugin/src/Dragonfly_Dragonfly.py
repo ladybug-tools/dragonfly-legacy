@@ -1459,9 +1459,19 @@ class DFCity(DFObject):
         weightedSum = 0
         totalFacadeArea = 0
         for bldgType in self.building_typologies:
-            weightedSum += bldgType.get_default_shgc(self._climate_zone)*bldgType.facade_area
+            weightedSum += bldgType.get_default_shgc(self.climate_zone)*bldgType.facade_area
             totalFacadeArea += bldgType.facade_area
         return weightedSum/totalFacadeArea
+    
+    @property
+    def floor_height(self):
+        """Get the average floor height of the buildings in the typology."""
+        weightedSum = 0
+        totalFloorArea = 0
+        for bldgType in self.building_typologies:
+            weightedSum += bldgType.floor_to_floor * bldgType.floor_area
+            totalFloorArea += bldgType.floor_area
+        return weightedSum/totalFloorArea
     
     @property
     def are_typologies_loaded(self):
@@ -1759,7 +1769,7 @@ class DFTrafficPar(DFParameter):
     
     def get_uwg_matrix(self):
         """Return a python matrix of the traffic schedule that can be assigned to the UWG."""
-        return [weekday_schedule, saturday_schedule, sunday_schedule]
+        return [self.weekday_schedule, self.saturday_schedule, self.sunday_schedule]
     
     def ToString(self):
         """Overwrite .NET ToString method."""

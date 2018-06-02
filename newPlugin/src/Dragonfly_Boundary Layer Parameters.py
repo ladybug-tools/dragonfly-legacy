@@ -18,11 +18,11 @@ Provided by Dragonfly 0.0.02
         _circulationCoeff_: A number that represents the circulation coefficient.  The default is 1.2 per Bueno, Bruno (2012).
         _exchangeCoeff_: A number that represents the exchange coefficient.  The default is 1.0 per Bueno, Bruno (2014).
     Returns:
-        boundLayerPar: A list of refernce EPW site parameters that can be plugged into the "Dragonfly_Run Urban Weather Generator" component.
+        bndLayerPar: A list of refernce EPW site parameters that can be plugged into the "Dragonfly_Run Urban Weather Generator" component.
 """
 
 ghenv.Component.Name = "Dragonfly_Boundary Layer Parameters"
-ghenv.Component.NickName = 'boundaryLayerPar'
+ghenv.Component.NickName = 'BndLayerPar'
 ghenv.Component.Message = 'VER 0.0.02\nJUN_03_2018'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "00::UWG"
@@ -45,5 +45,5 @@ else:
     df_BndLayerPar = sc.sticky["dragonfly_BoundaryLayerPar"]
 
 if initCheck == True:
-    boundLayerPar = df_BndLayerPar(_dayBndLayerHeight_, _nightBndLayerHeight_, _inversionHeight_, 
+    bndLayerPar = df_BndLayerPar(_dayBndLayerHeight_, _nightBndLayerHeight_, _inversionHeight_, 
         _circulationCoeff_, _exchangeCoeff_)

@@ -8,9 +8,9 @@
 
 
 """
-Use this component to generate a city for an Urban Weather Generator simulation using building typologies.  These building typologies can generated with the "Dragonfly_UWG Building Typology" component.
+Use this component to generate a Dragonfly City object from Dragonfly Bldgg Typology objects.  These building typologies can generated with the "Dragonfly_Building Typology" component.
 _
-The ouput of this component can be plugged into the 'Dragonfly_Run Urban Weather Generator' component in order to morph a rural/airport weather file to reflect the urban conditions input to this component.
+The ouput of this component can be plugged into the 'Dragonfly_Run Urban Weather Generator' component to morph a rural/airport weather file to reflect the urban climate.
 -
 Provided by Dragonfly 0.0.02
     Args:
@@ -19,6 +19,7 @@ Provided by Dragonfly 0.0.02
         treesOrCoverage_: Either a list of closed breps that represent the tree canopies of the urban area or a number between 0 and 1 that represents that fraction of tree coverage over the entire urban area (including those over both roofs and pavement).  If breps are input, they will be projected to the ground plane to compute the area of tree coverage as seen from above.  Thus, simpler tree geometry like boxes that represent the tree canopies are preferred.  If nothing is input here, it will be assumed that there are no trees in the urban area.
         grassOrCoverage_: Either a list of surfaces that represent the grassy surfaces of the urban area or a number between 0 and 1 that represents that fraction of grass coverage over the entire urban area (including both green roofs and ground vegetation). If surfaces are input here, they should be coplanar with the terrainBrep. If nothing is input here, it will be assumed that there is no grass in the urban area.
         --------------------: ...
+        _climateZone: A text string representing the ASHRAE climate zone. (eg. 5A). This is used to set default constructions for the buildings in the city.
         _trafficPar: Traffic parameters from the "Dragonfly_Traffic Parameters" component.  This input is required as anthropogenic heat from traffic can significantly affect urban climate and varies widely between commerical, residential, and industrial districts.
         vegetationPar_: An optional set of vegetation parameters from the "Dragonfly_Vegetation Parameters" component.  If no vegetation parameters are input here, the Dragonfly will use a vegetation albedo of 0.25, tree latent fraction of 0.7, and grass latent fraction of 0.6.  Furthermore, Dragonfly will attempt to determine the months in which vegetation is active by looking at the average monthly temperatures in the EPW file.
         pavementPar_: An optional set of pavement parameters from the "Dragonfly_Pavement Parameters" component.  If no paramters are plugged in here, it will be assumed that all pavement is asphalt.
@@ -27,15 +28,15 @@ Provided by Dragonfly 0.0.02
     Returns:
         readMe!: A report of the key variables extraced from the input geometry.
         ----------------: ...
-        UWGCity: A city that can be plugged into the "Dragonfly_Run Urban Weather Generator" component.
+        DFCity: A Drafongfly city objectthat can be plugged into the "Dragonfly_Run Urban Weather Generator" component.
         ----------------: ...
         treeFootprints: If tree breps are connected, this is the tree geometry as projected into the world XY plane.  This is used to determine the tree coverage.
         grassFootprints: If grass breps are connected, this is the tree geometry as projected into the world XY plane.  This is used to determine the grass coverage.
         terrainSrf: The terrian brep projected into the world XY plane.  The area of this surface is used to determine all other geometric parameters.
 """
 
-ghenv.Component.Name = "Dragonfly_UWG City"
-ghenv.Component.NickName = 'UWGcity'
+ghenv.Component.Name = "Dragonfly_City"
+ghenv.Component.NickName = 'City'
 ghenv.Component.Message = 'VER 0.0.02\nJUN_03_2018'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "00::UWG"
@@ -78,6 +79,6 @@ if initCheck == True and _runIt == True:
             grassObj, grassFootprints = df_Vegetation.from_geometry(grassOrCoverage_, False)
             gCover = grassObj.computeCoverage(terrain)
     
-    UWGCity = df_City.from_typologies(_buildingTypologies, terrain,
+    DFCity = df_City.from_typologies(_buildingTypologies, terrain, _climateZone,
         _trafficPar, tCover, gCover, vegetationPar_, pavementPar_)
 

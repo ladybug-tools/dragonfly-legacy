@@ -7,7 +7,7 @@
 # @license GPL-3.0+ <http://spdx.org/licenses/GPL-3.0+>
 
 """
-Use this component to generate a default building typology to be used with the "Dragonfly_UWG City" component.  The specific characteristcs of these typologies are based on the US Department of Energy (DoE) Building types.  Wall, roof, and window constructions are based on the climateZone of the epw weather file.
+Use this component to generate a default building typology to be used with the "Dragonfly_City" component.  The specific characteristcs of these typologies are based on the US Department of Energy (DoE) Building types.
 -
 Provided by Dragonfly 0.0.02
     Args:
@@ -40,14 +40,14 @@ Provided by Dragonfly 0.0.02
     Returns:
         readMe!: ...
         ------------------: ...
-        buildingTypology: A building typology that can be plugged into the "Dragonfly_UWG City" component.
+        DFBldgTypology: A Dragonfly building typology object that can be plugged into the "Dragonfly_City" component.
         ------------------: ...
         bldgFootprints: The building geometry as projected onto the world XY plane.  This is used to determine the site coverage ratio and to perform a weighted-average of the building heights.
         bldgFloorBreps: A list of breps representing the floors of the typology.
         facadeBreps: A list of breps representing the exposed facade area of the building breps.  These will be used to calculate the facade-to-site ratio.
 """
 
-ghenv.Component.Name = "Dragonfly_UWG Building Typology"
+ghenv.Component.Name = "Dragonfly_Building Typology"
 ghenv.Component.NickName = 'BldgTypology'
 ghenv.Component.Message = 'VER 0.0.02\nJUN_03_2018'
 ghenv.Component.Category = "Dragonfly"
@@ -70,5 +70,5 @@ else:
     df_BuildingTypology = sc.sticky["dragonfly_BuildingTypology"]
 
 if initCheck == True and _runIt == True:
-    buildingTypology, bldgFootprints, bldgFloorBreps, facadeBreps = df_BuildingTypology.from_geometry(_bldgGeo, 
+    DFBldgTypology, bldgFootprints, bldgFloorBreps, facadeBreps = df_BuildingTypology.from_geometry(_bldgGeo, 
         _bldgProgram, _bldgAge, _floor2Floor_, _glzRatio_, _fract2Canyon_)
