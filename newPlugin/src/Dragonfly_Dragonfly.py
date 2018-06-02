@@ -565,7 +565,7 @@ class DFGeometry(object):
         
         # extract data from the geometries
         for i, bldgBrep in enumerate(bldgBreps):
-            # check that the geometrt is closed
+            # check that the geometry is closed
             assert (bldgBrep.IsSolid == True),"Brep {} in bldgBreps is not closed.".format(str(i))
             
             # get the building height
@@ -649,7 +649,7 @@ class DFBuildingTypes(object):
         self.refBEM = cPickle.load(readDOE_file)
         readDOE_file.close()
         
-        # dictionary to go from building programs to numbers.
+        # dictionary to go from building programs to numbers understood by the UWG.
         self.bldgtype = {
             'FullServiceRestaurant': 0,
             'Hospital': 1,
@@ -669,40 +669,70 @@ class DFBuildingTypes(object):
             'Warehouse':15
             }
         
+        # dictionary to go from construction era to numbers understood by the UWG.
         self.builtera = {
             'Pre1980s':0,
             '1980sPresent':1,
             'NewConstruction':2
             }
         
+        # dictionary to go from climate zone numbers understood by the UWG to a human-readable format.
         self.zonetype = {
-            '1A (Miami)': 0,
-            '2A (Houston)': 1,
-            '2B (Phoenix)': 2,
-            '3A (Atlanta)': 3,
-            '3B-CA (Los Angeles)': 4,
-            '3B (Las Vegas)': 5,
-            '3C (San Francisco)': 6,
-            '4A (Baltimore)': 7,
-            '4B (Albuquerque)': 8,
-            '4C (Seattle)': 9,
-            '5A (Chicago)': 10,
-            '5B (Boulder)': 11,
-            '6A (Minneapolis)': 12,
-            '6B (Helena)': 13,
-            '7 (Duluth)': 14,
-            '8 (Fairbanks)': 15
+            0: '1A',
+            1: '2A',
+            2: '2B',
+            3: '3A',
+            4: '3B-CA',
+            5: '3B',
+            6: '3C',
+            7: '4A',
+            8: '4B',
+            9: '4C',
+            10: '5A',
+            11: '5B',
+            12: '6A',
+            13: '6B',
+            14: '7',
+            15: '8'
             }
         
+        # dictionary of acceptable ASHRAE climate zone inputs.
         self.zoneconverter = {
-            1: 0,
-            2: 1,
-            3: 3,
-            4: 7,
-            5: 10,
-            6: 12,
-            7: 14,
-            8: 15
+            '1A': 0,
+            '2A': 1,
+            '2B': 2,
+            '3A': 3,
+            '3B-CA': 4,
+            '3B': 5,
+            '3C': 6,
+            '4A': 7,
+            '4B': 8,
+            '4C': 9,
+            '5A': 10,
+            '5B': 11,
+            '6A': 12,
+            '6B': 13,
+            '7': 14,
+            '8': 15,
+            
+            '1': 0,
+            '2': 1,
+            '3': 3,
+            '4': 7,
+            '5': 10,
+            '6': 12,
+            
+            '1B': 0,
+            '1C': 0,
+            '2C': 1,
+            '5C': 10,
+            '6C': 12,
+            '7A': 14,
+            '7B': 14,
+            '7C': 14,
+            '8A': 15,
+            '8B': 15,
+            '8C': 15
         }
         
         # dictionary of acceptable building program inputs.
@@ -773,21 +803,18 @@ class DFBuildingTypes(object):
     
     def check_program(self, bldg_program):
         assert isinstance(bldg_program, str), 'bldg_program must be a text string got {}'.format(type(bldg_program))
-        if bldg_program.upper() in self.programsDict.keys():
-            return self.programsDict[str(bldg_program).upper()]
-        else:
-            raise ValueError(
-                "Building Program {} not recognized.".format('"' + str(bldg_program) + '"')
-            )
+        assert bldg_program.upper() in self.programsDict.keys(), "bldg_program {} is not recognized as a valid program.".format('"' + bldg_program + '"')
+        return self.programsDict[str(bldg_program).upper()]
     
     def check_age(self, bldg_age):
         assert isinstance(bldg_age, str), 'bldg_age must be a text string got {}'.format(type(bldg_age))
-        if str(bldg_age).upper() in self.ageDict.keys():
-            return self.ageDict[str(bldg_age).upper()]
-        else:
-            raise ValueError(
-                "Building Age {} not recognized.".format('"' + str(bldg_age) + '"')
-            )
+        assert bldg_age.upper() in self.ageDict.keys(), "bldg_age {} is not recognized as a valid building age.".format('"' + bldg_age + '"')
+        return self.ageDict[str(bldg_age).upper()]
+    
+    def check_cimate_zone(self, climate_zone):
+        assert isinstance(climate_zone, str), 'climate_zone must be a text string got {}'.format(type(climate_zone))
+        assert climate_zone.upper() in self.zoneconverter.keys(), 'climate_zone {} is not recognized as a valid climate zone'.format(climate_zone)
+        return self.zoneconverter[climate_zone.upper()]
 
 class DFObject(object):
     """Base class for Dragonfly typology, city, terrain, and vegetation."""
@@ -1050,11 +1077,9 @@ class DFTypology(DFObject):
         """Return True for DFTypology."""
         return True
     
-    def get_default_shgc(self, zone):
-        """Get the solar heat gain coefficient of the buildings in the typology given the climate zone."""
-        assert isinstance(zone, int), 'zone must be a number got {}'.format(type(zone))
-        zone = self.genChecks.in_range(zone, 1, 8, 'zone')
-        zoneIndex = self.bldgTypes.zoneconverter[zone]
+    def get_default_shgc(self, climate_zone):
+        """Get the solar heat gain coefficient of the buildings in the typology given the climate climate_zone."""
+        zoneIndex = self.bldgTypes.check_cimate_zone(climate_zone)
         return float(self.bldgTypes.refBEM[self.bldgTypes.bldgtype[self.bldg_program]][self.bldgTypes.builtera[self.bldg_age]][zoneIndex].building.shgc)
     
     @classmethod
@@ -1097,7 +1122,8 @@ class DFTypology(DFObject):
     
     def __repr__(self):
         """Represnt Dragonfly typology."""
-        return 'Dragonfly Building Typology: ' + self._bldg_program + ", " + self._bldg_age + \
+        return 'Dragonfly Building Typology: ' + \
+               '\n  ' + self._bldg_program + ", " + self._bldg_age + \
                '\n  Average Height: ' + str(int(self._average_height)) + " m" + \
                '\n  Number of Stories: ' + str(self.number_of_stories) + \
                '\n  Floor Area: {:,.0f}'.format(self.floor_area) + " m2" + \
@@ -1119,6 +1145,8 @@ class DFCity(DFObject):
             be a single decimal number indicative of the fraction of the urban area's floor area taken by the typology.
             The sum of all fractions in the dictionary should equal 1. Here is an example dictionary:
                 { MidRiseApartment,Pre1980s : 0.7, LargeOffice,1980sPresent: 0.3 }
+        climate_zone: A text string representing the ASHRAE climate zone. (eg. 5A). This is used to set 
+            default constructions for the buildings in the city.
         traffic_parameters: A dragonfly TrafficPar object that defines the traffic within an urban area.
         tree_coverage_ratio: An number from 0 to 1 that defines the fraction of the entire urban area 
             (including both pavement and roofs) that is covered by trees.  The default is set to 0.
@@ -1134,7 +1162,7 @@ class DFCity(DFObject):
     """
     
     def __init__(self, average_bldg_height, site_coverage_ratio, facade_to_site_ratio, 
-                bldg_type_ratios, traffic_parameters, tree_coverage_ratio=None, 
+                bldg_type_ratios, climate_zone, traffic_parameters, tree_coverage_ratio=None, 
                 grass_coverage_ratio=None, vegetation_parameters=None,
                 pavement_parameters=None, characteristic_length=500):
         """Initialize a dragonfly city"""
@@ -1161,6 +1189,7 @@ class DFCity(DFObject):
         self._are_typologies_loaded = False
         
         # dragonfly parameter objects that define conditions within the city and are set-able.
+        self.climate_zone = climate_zone
         self.traffic_parameters = traffic_parameters
         self.vegetation_parameters = vegetation_parameters
         self.pavement_parameters = pavement_parameters
@@ -1170,12 +1199,14 @@ class DFCity(DFObject):
         self.grass_coverage_ratio = grass_coverage_ratio
     
     @classmethod
-    def from_typologies(cls, typologies, terrian, traffic_parameters, tree_coverage_ratio=None, 
+    def from_typologies(cls, typologies, terrian, climate_zone, traffic_parameters, tree_coverage_ratio=None, 
         grass_coverage_ratio=None, vegetation_parameters=None, pavement_parameters=None):
         """Initialize a city from a list of building typologies
         Args:
             typologies: A list of dragonfly Typology objects.
             terrian: A dragonfly Terrain object.
+            climate_zone: A text string representing the ASHRAE climate zone. (eg. 5A). This is used to set 
+                default constructions for the buildings in the city.
             traffic_parameters: A dragonfly TrafficPar object that defines the traffic within an urban area.
             tree_coverage_ratio: An number from 0 to 1 that defines the fraction of the entire urban area 
                 (including both pavement and roofs) that is covered by trees.  The default is set to 0.
@@ -1231,8 +1262,8 @@ class DFCity(DFObject):
             bldgTypeDict[key] = typologyRatios[i]
         
         # create the city object.
-        dfCity = cls(avgBldgHeight, bldgCoverage, facadeToSite, bldgTypeDict, traffic_parameters, 
-            tree_coverage_ratio, grass_coverage_ratio, vegetation_parameters, 
+        dfCity = cls(avgBldgHeight, bldgCoverage, facadeToSite, bldgTypeDict, climate_zone,
+            traffic_parameters, tree_coverage_ratio, grass_coverage_ratio, vegetation_parameters, 
             pavement_parameters, terrian.characteristic_length)
         
         # link the typologies to the city object
@@ -1274,7 +1305,7 @@ class DFCity(DFObject):
         """Get or set the building types and corresponding ratios as a dictionary.
         
         Note that setting the typology ratios here completely overwrites the 
-        building_typologies associated with this city object.
+        building_typologies currently associated with this city object.
         """
         return self._bldg_type_ratios
     
@@ -1318,6 +1349,17 @@ class DFCity(DFObject):
                 self._building_typologies.append(newType)
             self._are_typologies_loaded = True
             return self._building_typologies
+    
+    @property
+    def climate_zone(self):
+        """Get or set the ASHRAE climate zone that dictates the nature of the constructions of the buildings."""
+        return self.bldgTypes.zonetype[self._climate_zone]
+    
+    @climate_zone.setter
+    def climate_zone(self, z):
+        assert isinstance(z, str), 'climate_zone must be a text string got {}'.format(type(z))
+        assert z.upper() in self.bldgTypes.zoneconverter.keys(), 'climate_zone {} is not recognized as a valid climate zone'.format(z)
+        self._climate_zone = self.bldgTypes.zoneconverter[z.upper()]
     
     @property
     def traffic_parameters(self):
@@ -1412,6 +1454,16 @@ class DFCity(DFObject):
         return weightedSum/totalFacadeArea
     
     @property
+    def shgc(self):
+        """Get the solar heat gain coefficient of the buildings in the typology."""
+        weightedSum = 0
+        totalFacadeArea = 0
+        for bldgType in self.building_typologies:
+            weightedSum += bldgType.get_default_shgc(self._climate_zone)*bldgType.facade_area
+            totalFacadeArea += bldgType.facade_area
+        return weightedSum/totalFacadeArea
+    
+    @property
     def are_typologies_loaded(self):
         """Return True when typologies need to be created or re-generated."""
         return self._are_typologies_loaded
@@ -1420,6 +1472,17 @@ class DFCity(DFObject):
     def isDFCity(self):
         """Return True for DFCity."""
         return True
+    
+    def get_uwg_matrix(self):
+        """Return a matrix of bldg typologies and construction eras that be assigned to the UWG."""
+        bTypeMtx = [[0 for x in range(3)] for y in range(16)]
+        for type in self.bldg_type_ratios.keys():
+            fraction = round(self.bldg_type_ratios[type], 3)
+            bldg_program, bldg_age = type.split(',')
+            program_i = self.bldgTypes.bldgtype[bldg_program]
+            age_i = self.bldgTypes.builtera[bldg_age]
+            bTypeMtx[program_i][age_i] = fraction
+        return bTypeMtx
     
     def update_geo_from_typologies(self):
         """Updates the city-wide geometry parameters whenever an individual building typology's have changed."""
@@ -1444,15 +1507,6 @@ class DFCity(DFObject):
         self._building_typologies = {}
         for i, key in enumerate(fullTypeNames):
             self._building_typologies[key] = typologyRatios[i]
-    
-    def get_default_shgc(self, zone):
-        """Get the solar heat gain coefficient of the buildings in the typology given the climate zone."""
-        weightedSum = 0
-        totalFacadeArea = 0
-        for bldgType in self.building_typologies:
-            weightedSum += bldgType.get_default_shgc(zone)*bldgType.facade_area
-            totalFacadeArea += bldgType.facade_area
-        return weightedSum/totalFacadeArea
     
     def ToString(self):
         """Overwrite .NET ToString method."""
@@ -1703,6 +1757,10 @@ class DFTrafficPar(DFParameter):
         """Return True for isTrafficPar."""
         return True
     
+    def get_uwg_matrix(self):
+        """Return a python matrix of the traffic schedule that can be assigned to the UWG."""
+        return [weekday_schedule, saturday_schedule, sunday_schedule]
+    
     def ToString(self):
         """Overwrite .NET ToString method."""
         return self.__repr__()
@@ -1710,10 +1768,10 @@ class DFTrafficPar(DFParameter):
     def __repr__(self):
         """Represnt Dragonfly traffic parameters."""
         return 'Dragonfly Traffic Parameters: ' + \
-               '\n  Max Heat: ' + str(self._sensible_heat) + \
-               '\n  Weekday Avg Heat: ' + str(round(self._sensible_heat* (sum(self._weekday_schedule)/24),1)) + \
-               '\n  Saturday Avg Heat: ' + str(round(self._sensible_heat* (sum(self._saturday_schedule)/24),1)) + \
-               '\n  Sunday Avg Heat: ' + str(round(self._sensible_heat* (sum(self._sunday_schedule)/24),1))
+               '\n  Max Heat: ' + str(self._sensible_heat) + ' W/m2' + \
+               '\n  Weekday Avg Heat: ' + str(round(self._sensible_heat* (sum(self._weekday_schedule)/24),1)) + ' W/m2' + \
+               '\n  Saturday Avg Heat: ' + str(round(self._sensible_heat* (sum(self._saturday_schedule)/24),1)) + ' W/m2' + \
+               '\n  Sunday Avg Heat: ' + str(round(self._sensible_heat* (sum(self._sunday_schedule)/24),1)) + ' W/m2'
 
 class DFVegetationPar(DFParameter):
     """Represents the behaviour of vegetation within an urban area.
