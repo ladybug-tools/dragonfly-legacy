@@ -61,7 +61,7 @@ def create_uwg(epwFile, endFolder, name):
         endFolder = startFolder
     if name is None:
         name = epwName + '_URBAN.epw'
-    return UWG(epwName, None, startFolder, None, endFolder, name)
+    return UWG(epwName, None, startFolder, None, endFolder, name), endFolder + '\\' + name
 
 def parse_ladybug_analysis_period(analysisPeriod):
     if analysisPeriod is not None:
@@ -198,6 +198,7 @@ else:
     if sc.sticky['dragonfly_release'].isInputMissing(ghenv.Component): initCheck = False
     df_RefEPWSitePar = sc.sticky["dragonfly_RefEpwPar"]
     df_BndLayerPar = sc.sticky["dragonfly_BoundaryLayerPar"]
+    uwg_path = sc.sticky["dragonfly_UWGPath"]
 
 # ladybug check
 if not sc.sticky.has_key("ladybug_release") == True:
@@ -226,7 +227,15 @@ if initCheck == True and _write == True:
     assert (hasattr(_DFCity, 'isDFCity')), '_DFCity must be a Dragonfly City object. Got {}'.format(type(_DFCity))
     
     # create a uwgObject from the dragonfly objects.
-    uwgObject = create_uwg(_epwFile, _folder_, _name_)
+    uwgObject, newEpwPath = create_uwg(_epwFile, _folder_, _name_)
+    uwgObject.RESOURCE_PATH = uwg_path
     uwgObject = set_uwg_input(uwgObject, _DFCity, epwSitePar, bndLayerPar, _analysisPeriod_, _simTimestep_)
+    uwgObject.read_epw()
+    uwgObject.instantiate_input()
+    uwgObject.hvac_autosize()
     
     # run the UWG object if run is set to True.
+    if run_ == True:
+        uwgObject.simulate()
+        uwgObject.write_epw()
+        urbanEpw = newEpwPath

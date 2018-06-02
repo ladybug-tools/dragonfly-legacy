@@ -2156,6 +2156,7 @@ class BoundaryLayerPar(DFParameter):
         """Get or set the circulation coefficient."""
         return self._circulation_coefficient
     
+    @circulation_coefficient.setter
     def circulation_coefficient(self, h):
         if h is not None:
             assert isinstance(h, (float, int)), 'circulation_coefficient must be a number got {}'.format(type(h))
@@ -2168,6 +2169,7 @@ class BoundaryLayerPar(DFParameter):
         """Get or set the exchange coefficient."""
         return self._exchange_coefficient
     
+    @exchange_coefficient.setter
     def exchange_coefficient(self, h):
         if h is not None:
             assert isinstance(h, (float, int)), 'exchange_coefficient must be a number got {}'.format(type(h))
@@ -2240,6 +2242,7 @@ if checkIn.letItFly:
         
         # copy the classes to memory
         if uwgClassDir != None:
+            sc.sticky["dragonfly_UWGPath"] = uwgClassDir
             sc.sticky["dragonfly_UWGBldgTypes"] = DFBuildingTypes(readDOE_file_path)
         sc.sticky["dragonfly_DFGeometry"] = DFGeometry
         sc.sticky["dragonfly_BuildingTypology"] = DFTypology
