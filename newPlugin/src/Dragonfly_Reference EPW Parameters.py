@@ -22,11 +22,11 @@ Provided by Dragonfly 0.0.02
 
 ghenv.Component.Name = "Dragonfly_Reference EPW Parameters"
 ghenv.Component.NickName = 'RefEPWPar'
-ghenv.Component.Message = 'VER 0.0.02\nMAY_13_2018'
+ghenv.Component.Message = 'VER 0.0.02\nJUN_03_2018'
 ghenv.Component.Category = "Dragonfly"
-ghenv.Component.SubCategory = "01::UWG"
+ghenv.Component.SubCategory = "00::UWG"
 #compatibleDFVersion = VER 0.0.02\nMAY_13_2018
-ghenv.Component.AdditionalHelpFromDocStrings = "5"
+ghenv.Component.AdditionalHelpFromDocStrings = "0"
 
 import scriptcontext as sc
 import Grasshopper.Kernel as gh
@@ -45,4 +45,3 @@ else:
 if initCheck == True:
     epwSitePar = df_RefEpwPar(avgObstacleHeight_, vegetationCoverage_, tempMeasureHeight_, 
         windMeasureHeight_)
-    print epwSitePar

@@ -46,7 +46,7 @@ Provided by Dragonfly 0.0.02
 
 ghenv.Component.Name = "Dragonfly_Dragonfly"
 ghenv.Component.NickName = 'Dragonfly'
-ghenv.Component.Message = 'VER 0.0.02\nMAY_25_2018'
+ghenv.Component.Message = 'VER 0.0.02\nJUN_03_2018'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "0 | Dragonfly"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -264,7 +264,7 @@ class versionCheck(object):
         return isInputMissing
 
 
-class UWGGeometry(object):
+class DFGeometry(object):
     
     def __init__(self):
         # transform to project things into the XY plane
@@ -789,7 +789,23 @@ class DFBuildingTypes(object):
                 "Building Age {} not recognized.".format('"' + str(bldg_age) + '"')
             )
 
-class DFTypology(object):
+class DFObject(object):
+    """Base class for Dragonfly typology, city, terrain, and vegetation."""
+
+    @property
+    def isDFObject(self):
+        """Return True."""
+        return True
+
+class DFParameter(object):
+    """Base class for Dragonfly trafficPar, vegetationPar, pavementPar, etc."""
+
+    @property
+    def isDFParameter(self):
+        """Return True."""
+        return True
+
+class DFTypology(DFObject):
     """Represents a group of buildings of the same typology in an urban area.
     
     Properties:
@@ -883,7 +899,7 @@ class DFTypology(object):
             footprintBreps: A list of breps representing the footprints of the buildings.
             facadeBreps: A list of breps representing the exposed facade surfaces of the typology.
         """
-        geometryLib = UWGGeometry()
+        geometryLib = DFGeometry()
         avgBldgHeight, footprintArea, floorArea, facadeArea, footprintBreps, floorBreps, facadeBreps = geometryLib.calculateTypologyGeoParams(bldg_breps, floor_to_floor)
         
         typology = cls(avgBldgHeight, footprintArea, facadeArea, bldg_program, bldg_age, floor_to_floor, glz_ratio, fract_heat_to_canyon, floorArea)
@@ -1075,17 +1091,21 @@ class DFTypology(object):
         
         return newtypology
     
+    def ToString(self):
+        """Overwrite .NET ToString method."""
+        return self.__repr__()
+    
     def __repr__(self):
-        return 'Building Typology: ' + self._bldg_program + ", " + self._bldg_age + \
+        """Represnt Dragonfly typology."""
+        return 'Dragonfly Building Typology: ' + self._bldg_program + ", " + self._bldg_age + \
                '\n  Average Height: ' + str(int(self._average_height)) + " m" + \
                '\n  Number of Stories: ' + str(self.number_of_stories) + \
                '\n  Floor Area: {:,.0f}'.format(self.floor_area) + " m2" + \
                '\n  Footprint Area: {:,.0f}'.format(self.footprint_area) + " m2" + \
                '\n  Facade Area: {:,.0f}'.format(self.facade_area) + " m2" + \
-               '\n  Glazing Ratio: ' + str(int(self.glz_ratio*100)) + "%" +\
-               '\n-------------------------------------'
+               '\n  Glazing Ratio: ' + str(int(self.glz_ratio*100)) + "%"
 
-class DFCity(object):
+class DFCity(DFObject):
     """Represents a an entire uban area inclluding buildings, pavement, vegetation, and traffic.
     
     Properties:
@@ -1434,7 +1454,12 @@ class DFCity(object):
             totalFacadeArea += bldgType.facade_area
         return weightedSum/totalFacadeArea
     
+    def ToString(self):
+        """Overwrite .NET ToString method."""
+        return self.__repr__()
+    
     def __repr__(self):
+        """Represnt Dragonfly city."""
         typologyList = ''
         for x in self.bldg_types:
             typologyList = typologyList + '\n     ' + str(round(self.bldg_type_ratios[x], 2)) + ' - ' + x
@@ -1447,7 +1472,7 @@ class DFCity(object):
                '\n  ------------------------' + \
                '\n  Building Typologies: ' + typologyList
 
-class DFTerrain(object):
+class DFTerrain(DFObject):
     """Represents the terrain on which an urban area sits.
     
     Properties:
@@ -1471,7 +1496,7 @@ class DFTerrain(object):
             terrain: The dragonfly terrain object.
             surfaceBreps: The srfBreps representing the terrain (projected into the XY plane).
         """
-        geometryLib = UWGGeometry()
+        geometryLib = DFGeometry()
         surfaceArea, surfaceBreps = geometryLib.calculateFootprints(terrainSrfs)
         terrain = cls(surfaceArea)
         
@@ -1499,12 +1524,17 @@ class DFTerrain(object):
         """Return True for DFTerrain."""
         return True
     
+    def ToString(self):
+        """Overwrite .NET ToString method."""
+        return self.__repr__()
+    
     def __repr__(self):
-        return 'Terrain Surface: ' + \
+        """Represnt Dragonfly terrain."""
+        return 'Dragonfly Terrain: ' + \
                '\n  Area: ' + str(int(self._area)) + " m2" + \
                '\n  Radius: ' + str(int(self._characteristic_length)) + " m"
 
-class DFVegetation(object):
+class DFVegetation(DFObject):
     """Represents vegetation (either grass or trees) within an urban area.
     
     Properties:
@@ -1531,7 +1561,7 @@ class DFVegetation(object):
             vegetation: The dragonfly vegetation object.
             projected_breps: The veg_breps projected into the XY plane.
         """
-        geometryLib = UWGGeometry()
+        geometryLib = DFGeometry()
         surfaceArea, projected_breps = geometryLib.calculateFootprints(veg_breps, is_trees)
         vegetation = cls(surfaceArea, is_trees)
         
@@ -1580,12 +1610,17 @@ class DFVegetation(object):
         
         return coverage
     
+    def ToString(self):
+        """Overwrite .NET ToString method."""
+        return self.__repr__()
+    
     def __repr__(self):
-        vegType = 'Trees' if self._is_trees else 'Grass'
+        """Represnt Dragonfly vegetation."""
+        vegType = 'Dragonfly Trees' if self._is_trees else 'Dragonfly Grass'
         return 'Vegetation: ' + vegType + \
                '\n  Area: ' + str(int(self._area)) + " m2"
 
-class DFTrafficPar(object):
+class DFTrafficPar(DFParameter):
     """Represents the traffic within an urban area.
     
     Properties:
@@ -1668,14 +1703,19 @@ class DFTrafficPar(object):
         """Return True for isTrafficPar."""
         return True
     
+    def ToString(self):
+        """Overwrite .NET ToString method."""
+        return self.__repr__()
+    
     def __repr__(self):
-        return 'Traffic Parameters: ' + \
+        """Represnt Dragonfly traffic parameters."""
+        return 'Dragonfly Traffic Parameters: ' + \
                '\n  Max Heat: ' + str(self._sensible_heat) + \
                '\n  Weekday Avg Heat: ' + str(round(self._sensible_heat* (sum(self._weekday_schedule)/24),1)) + \
                '\n  Saturday Avg Heat: ' + str(round(self._sensible_heat* (sum(self._saturday_schedule)/24),1)) + \
                '\n  Sunday Avg Heat: ' + str(round(self._sensible_heat* (sum(self._sunday_schedule)/24),1))
 
-class DFVegetationPar(object):
+class DFVegetationPar(DFParameter):
     """Represents the behaviour of vegetation within an urban area.
     
     Properties:
@@ -1762,12 +1802,17 @@ class DFVegetationPar(object):
         """Return True for isVegetationPar."""
         return True
     
+    def ToString(self):
+        """Overwrite .NET ToString method."""
+        return self.__repr__()
+    
     def __repr__(self):
-        return 'Vegetation Parameters: ' + \
+        """Represnt Dragonfly vegetation parameters."""
+        return 'Dragonfly Vegetation Parameters: ' + \
                '\n  Albedo: ' + str(self._vegetation_albedo) + \
                '\n  Vegetation Time: ' + self.monthsDict[self._vegetation_start_month] + ' - ' + self.monthsDict[self._vegetation_end_month]
 
-class DFPavementPar(object):
+class DFPavementPar(DFParameter):
     """Represents the makeup of pavement within the urban area.
     
     Properties:
@@ -1853,14 +1898,19 @@ class DFPavementPar(object):
         """Return True for isPavementPar."""
         return True
     
+    def ToString(self):
+        """Overwrite .NET ToString method."""
+        return self.__repr__()
+    
     def __repr__(self):
-        return 'Pavement Parameters: ' + \
+        """Represnt Dragonfly pavement parameters."""
+        return 'Dragonfly Pavement Parameters: ' + \
                '\n  Albedo: ' + str(self._albedo) + \
                '\n  Thickness: ' + str(self._thickness) + \
                '\n  Conductivity: ' + str(self._conductivity) + \
                '\n  Vol Heat Capacity: ' + str(self._volumetric_heat_capacity)
 
-class RefEPWSitePar(object):
+class RefEPWSitePar(DFParameter):
     """Represents the properties of the reference site where the original EPW was recorded.
     
     Properties:
@@ -1947,14 +1997,19 @@ class RefEPWSitePar(object):
         """Return True for isRefEPWSitePar."""
         return True
     
+    def ToString(self):
+        """Overwrite .NET ToString method."""
+        return self.__repr__()
+    
     def __repr__(self):
-        return 'Reference EPW Site Parameters: ' + \
+        """Represnt Dragonfly reference EPW site parameters."""
+        return 'Dragonfly Reference EPW Site Parameters: ' + \
                '\n  Obstacle Height: ' + str(self._average_obstacle_height) + ' m' + \
                '\n  Vegetation Coverage: ' + str(self._vegetation_coverage) + \
                '\n  Measurement Height (Temp | Wind): ' + str(self._temp_measure_height) + \
                     ' m | ' + str(self._wind_measure_height) + ' m'
 
-class BoundaryLayerPar(object):
+class BoundaryLayerPar(DFParameter):
     """Represents the properties of the urban boundary layer.
     
     Properties:
@@ -2057,8 +2112,13 @@ class BoundaryLayerPar(object):
         """Return True for isBoundaryLayerPar."""
         return True
     
+    def ToString(self):
+        """Overwrite .NET ToString method."""
+        return self.__repr__()
+    
     def __repr__(self):
-        return 'Boundary Layer Parameters: ' + \
+        """Represnt Dragonfly boundary layer parameters."""
+        return 'Dragonfly Boundary Layer Parameters: ' + \
                '\n  Boundary Height (Day | Night): ' + str(self.day_boundary_layer_height) + \
                     ' m | ' + str(self.night_boundary_layer_height) + ' m' +\
                '\n  Inversion Height: ' + str(self.inversion_height) + ' m' + \
@@ -2076,45 +2136,6 @@ except:
     pass
 
 now = datetime.datetime.now()
-
-def checkGHPythonVersion(target = "0.6.0.3"):
-    
-    currentVersion = int(ghenv.Version.ToString().replace(".", ""))
-    targetVersion = int(target.replace(".", ""))
-    
-    if targetVersion > currentVersion: return False
-    else: return True
-
-GHPythonTargetVersion = "0.6.0.3"
-
-try:
-    if not checkGHPythonVersion(GHPythonTargetVersion):
-        assert False
-except:
-    msg =  "Dragonfly failed to fly! :(\n" + \
-           "You are using an old version of GHPython. " +\
-           "Please update to version: " + GHPythonTargetVersion
-    print msg
-    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
-    checkIn.letItFly = False
-    sc.sticky["dragonfly_release"] = False
-
-
-
-def unzip(source_filename, dest_dir):
-    with zipfile.ZipFile(source_filename) as zf:
-        for member in zf.infolist():
-            # Path traversal defense copied from
-            # http://hg.python.org/cpython/file/tip/Lib/http/server.py#l789
-            words = member.filename.split('\\')
-            path = dest_dir
-            for word in words[:-1]:
-                drive, word = os.path.splitdrive(word)
-                head, word = os.path.split(word)
-                if word in (os.curdir, os.pardir, ''): continue
-                path = os.path.join(path, word)
-            zf.extract(member, path)
-
 
 
 if checkIn.letItFly:
@@ -2152,7 +2173,7 @@ if checkIn.letItFly:
         # copy the classes to memory
         if uwgClassDir != None:
             sc.sticky["dragonfly_UWGBldgTypes"] = DFBuildingTypes(readDOE_file_path)
-        sc.sticky["dragonfly_UWGGeometry"] = UWGGeometry
+        sc.sticky["dragonfly_DFGeometry"] = DFGeometry
         sc.sticky["dragonfly_BuildingTypology"] = DFTypology
         sc.sticky["dragonfly_City"] = DFCity
         sc.sticky["dragonfly_Terrain"] = DFTerrain

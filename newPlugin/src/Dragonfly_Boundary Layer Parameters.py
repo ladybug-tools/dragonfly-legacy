@@ -23,11 +23,11 @@ Provided by Dragonfly 0.0.02
 
 ghenv.Component.Name = "Dragonfly_Boundary Layer Parameters"
 ghenv.Component.NickName = 'boundaryLayerPar'
-ghenv.Component.Message = 'VER 0.0.02\nMAY_13_2018'
+ghenv.Component.Message = 'VER 0.0.02\nJUN_03_2018'
 ghenv.Component.Category = "Dragonfly"
-ghenv.Component.SubCategory = "01::UWG"
+ghenv.Component.SubCategory = "00::UWG"
 #compatibleDFVersion = VER 0.0.02\nMAY_13_2018
-ghenv.Component.AdditionalHelpFromDocStrings = "5"
+ghenv.Component.AdditionalHelpFromDocStrings = "0"
 
 
 import scriptcontext as sc
@@ -47,4 +47,3 @@ else:
 if initCheck == True:
     boundLayerPar = df_BndLayerPar(_dayBndLayerHeight_, _nightBndLayerHeight_, _inversionHeight_, 
         _circulationCoeff_, _exchangeCoeff_)
-    print boundLayerPar

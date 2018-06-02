@@ -36,11 +36,11 @@ Provided by Dragonfly 0.0.02
 
 ghenv.Component.Name = "Dragonfly_UWG City"
 ghenv.Component.NickName = 'UWGcity'
-ghenv.Component.Message = 'VER 0.0.02\nMAY_12_2018'
+ghenv.Component.Message = 'VER 0.0.02\nJUN_03_2018'
 ghenv.Component.Category = "Dragonfly"
-ghenv.Component.SubCategory = "01::UWG"
+ghenv.Component.SubCategory = "00::UWG"
 #compatibleDFVersion = VER 0.0.02\nMAY_12_2018
-ghenv.Component.AdditionalHelpFromDocStrings = "2"
+ghenv.Component.AdditionalHelpFromDocStrings = "3"
 
 
 import scriptcontext as sc
@@ -80,6 +80,4 @@ if initCheck == True and _runIt == True:
     
     UWGCity = df_City.from_typologies(_buildingTypologies, terrain,
         _trafficPar, tCover, gCover, vegetationPar_, pavementPar_)
-    
-    print UWGCity
 

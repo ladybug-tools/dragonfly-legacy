@@ -31,11 +31,11 @@ Provided by Dragonfly 0.0.02
 
 ghenv.Component.Name = "Dragonfly_Traffic Parameters"
 ghenv.Component.NickName = 'trafficPar'
-ghenv.Component.Message = 'VER 0.0.01\nMAY_20_2018'
+ghenv.Component.Message = 'VER 0.0.01\nJUN_03_2018'
 ghenv.Component.Category = "Dragonfly"
-ghenv.Component.SubCategory = "01::UWG"
+ghenv.Component.SubCategory = "00::UWG"
 #compatibleDFVersion = VER 0.0.02\nMAY_20_2018
-ghenv.Component.AdditionalHelpFromDocStrings = "4"
+ghenv.Component.AdditionalHelpFromDocStrings = "5"
 
 import scriptcontext as sc
 import Grasshopper.Kernel as gh
