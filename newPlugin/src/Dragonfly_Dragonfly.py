@@ -63,8 +63,8 @@ import os
 import System
 import datetime
 import zipfile
-import copy
 import cPickle
+from copy import deepcopy
 
 System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12
 rc.Runtime.HostUtils.DisplayOleAlerts(False)
@@ -391,7 +391,7 @@ class DFGeometry(object):
         footprintBreps = []
         
         for srfBrep in srfBreps:
-            brepCopy = copy.deepcopy(srfBrep)
+            brepCopy = deepcopy(srfBrep)
             brepCopy.Transform(self.groundProjection)
             footprintBreps.append(brepCopy)
             if solid == True:
@@ -436,50 +436,95 @@ class DFGeometry(object):
         
         return floorArea, floorBreps
     
-    def calculateBldgFootprint(self, bldgBrep, maxFloorAngle=60):
+    def isGeoEquivalent(self, surface1, surface2):
+        """ Checks whether the area, XY centerpoint and XY first point match between two surfaces.
+        
+        Args:
+            surface1: First surface to check.
+            surface1: Second surface to check.
+        
+        Returns:
+            isEquivalent:A boolean value indicating whether surface1 is geometrically equivalent to surface 2.
+        """
+        
+        # check wether the center points match within tolerance.
+        tol = sc.doc.ModelAbsoluteTolerance
+        surface1am = rc.Geometry.AreaMassProperties.Compute(surface1)
+        surface2am = rc.Geometry.AreaMassProperties.Compute(surface2)
+        srf1Cent = surface1am.Centroid
+        srf2Cent = surface2am.Centroid
+        if srf1Cent.X <= srf2Cent.X + tol and srf1Cent.X >= srf2Cent.X - tol and srf1Cent.Y <= srf2Cent.Y + tol and srf1Cent.Y >= srf2Cent.Y - tol:
+            pass
+        else:
+            return False
+        
+        # check whether areas match within tolerance
+        areaTol = tol*tol
+        srf1Area = surface1am.Area
+        srf2Area = surface2am.Area
+        if srf1Area <= srf2Area + areaTol and srf1Area >= srf2Area - areaTol:
+            pass
+        else:
+            return False
+        
+        # check wether the point at start matches within tolerance
+        pt1 = surface1.Edges[0].PointAtStart
+        pt2 = surface2.Edges[0].PointAtStart
+        if pt1.X <= pt2.X + tol and pt1.X >= pt2.X - tol and pt1.Y <= pt2.Y + tol and pt1.Y >= pt2.Y - tol:
+            pass
+        else:
+            return False
+        
+        return True
+    
+    def calculateBldgFootprint(self, floorBreps):
         """Extracts building footprint and footprint area
         
         Args:
-            bldgBrep: A closed rhino brep representing a building.
-            maxFloorAngle: The floor normal angle from the negative Z axis (in degrees) beyond 
-                which a surface is no longer considered a floor. Default is 60.
+            floorBreps: A list of breps representing the floors of the building.
         
         Returns:
             footprintArea: The footprint area of the building.
-            footprintBrep: A Brep representing the footprint of the building.
+            footprintBrep: A Brep representing the footprint of the building in Rhino units.
         """
+        # check to be sure that there are floors
+        if len(floorBreps) == 0:
+            return 0, None
         
-        # separate out the surfaces of the building brep.
-        footPrintBreps, upSrfs, sideSrfs, sideNormals, roofNormals, bottomNormVectors, bottomCentPts = \
-            self.separateBrepSrfs(bldgBrep, 45, maxFloorAngle)
+        # grab all unique breps
+        uniqueBreps = [floorBreps[0]]
+        for brep1 in floorBreps[1:]:
+            matchFound = False
+            for brep2 in uniqueBreps:
+                if self.isGeoEquivalent(brep1, brep2):
+                    matchFound = True
+            if matchFound == False:
+                uniqueBreps.append(brep1)
         
-        # check to see if there are any building breps that self-intersect once they are projected into the XYPlane. 
-        # if so, the building cantilevers over itslef and we have to use an alternative method to get the footprint.
-        meshedBrep = rc.Geometry.Mesh.CreateFromBrep(bldgBrep, rc.Geometry.MeshingParameters.Coarse)
-        selfIntersect = False
-        for count, normal in enumerate(bottomNormVectors):
-            srfRay = rc.Geometry.Ray3d(bottomCentPts[count], normal)
-            for mesh in meshedBrep:
-                intersectTest = rc.Geometry.Intersect.Intersection.MeshRay(mesh, srfRay)
-                if intersectTest <= sc.doc.ModelAbsoluteTolerance: pass
-                else: selfIntersect = True
+        # check to be sure all unique breps are facing up (necessary for a clean boolean union).
+        for brep in uniqueBreps:
+            centerPt, normalVector = self.getSrfCenPtandNormal(brep)
+            if normalVector.Z < 0:
+                brep.Flip()
         
-        if selfIntersect == True:
-            # Use any downward-facing surfaces that we can identify as part of the building footprint.
-            # Boolean them together to get the projected area.
-            groundBreps = []
-            for srf in footPrintBreps:
-                srf.Transform(self.groundProjection)
-                groundBreps.append(srf)
-            booleanSrf = rc.Geometry.Brep.CreateBooleanUnion(groundBreps, sc.doc.ModelAbsoluteTolerance)[0]
-            footprintBrep = booleanSrf
-            footprintArea = rc.Geometry.AreaMassProperties.Compute(booleanSrf).Area
+        # union any remaining surfaces.
+        if len(uniqueBreps) > 1:
+            projectedBreps = []
+            for brep in uniqueBreps:
+                brepCopy = deepcopy(brep)
+                brepCopy.Transform(self.groundProjection)
+                projectedBreps.append(brepCopy)
+            
+            footprintBrep = rc.Geometry.Brep.CreateBooleanUnion(projectedBreps, sc.doc.ModelAbsoluteTolerance)[0]
+            footprintCurves = footprintBrep.DuplicateNakedEdgeCurves(True, True)
+            footprintOutline = rc.Geometry.Curve.JoinCurves(footprintCurves, sc.doc.ModelAbsoluteTolerance)
+            footprintBrep = rc.Geometry.Brep.CreatePlanarBreps(footprintOutline, sc.doc.ModelAbsoluteTolerance)[0]
         else:
-            #Project the whole building brep into the X/Y plane and take half its area.
-            brepCopy = copy.deepcopy(bldgBrep)
-            brepCopy.Transform(self.groundProjection)
-            footprintBrep = brepCopy
-            footprintArea = rc.Geometry.AreaMassProperties.Compute(brepCopy).Area/2
+            footprintBrep = deepcopy(uniqueBreps[0])
+            footprintBrep.Transform(self.groundProjection)
+        
+        # calculate area
+        footprintArea = rc.Geometry.AreaMassProperties.Compute(footprintBrep).Area
         
         return footprintArea, footprintBrep
     
@@ -571,15 +616,16 @@ class DFGeometry(object):
             # get the building height
             bldgHeights.append(self.extractBldgHeight(bldgBrep))
             
-            # get the footprint area
-            ftpA, ftpBrep = self.calculateBldgFootprint(bldgBrep, maxFloorAngle)
-            footprintAreas.append(ftpA)
-            footprintBreps.append(ftpBrep)
-            
             # get the floor area
             flrA, flrBrep = self.getFloorBreps(bldgBrep, floorHeight)
             floorAreas.append(flrA)
             floorBreps.extend(flrBrep)
+            
+            # get the footprint area
+            ftpA, ftpBrep = self.calculateBldgFootprint(flrBrep)
+            footprintAreas.append(ftpA)
+            if ftpBrep is not None:
+                footprintBreps.append(ftpBrep)
         
         # compute the facade area of all of the building breps after they have been boolean unioned.
         unionedBreps = self.unionAllBreps(bldgBreps)
