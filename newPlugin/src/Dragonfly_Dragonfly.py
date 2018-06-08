@@ -46,7 +46,7 @@ Provided by Dragonfly 0.0.02
 
 ghenv.Component.Name = "Dragonfly_Dragonfly"
 ghenv.Component.NickName = 'Dragonfly'
-ghenv.Component.Message = 'VER 0.0.02\nJUN_03_2018'
+ghenv.Component.Message = 'VER 0.0.02\nJUN_08_2018'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "0 | Dragonfly"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -373,7 +373,11 @@ class DFGeometry(object):
             result: The building breps after being unioned.
         """
         try:
-            return rc.Geometry.Brep.CreateBooleanUnion(bldgBreps, sc.doc.ModelAbsoluteTolerance)
+            union = rc.Geometry.Brep.CreateBooleanUnion(bldgBreps, sc.doc.ModelAbsoluteTolerance)
+            if union is not None:
+                return union
+            else:
+                return bldgBreps
         except:
             return bldgBreps
     
@@ -430,7 +434,10 @@ class DFGeometry(object):
             floorBasePt = rc.Geometry.Point3d(0,0,h)
             sectionPlane = rc.Geometry.Plane(floorBasePt, rc.Geometry.Vector3d.ZAxis)
             floorCrvs = rc.Geometry.Brep.CreateContourCurves(buildingMass, sectionPlane)
-            floorBrep = rc.Geometry.Brep.CreatePlanarBreps(floorCrvs, sc.doc.ModelAbsoluteTolerance)
+            try:
+                floorBrep = rc.Geometry.Brep.CreatePlanarBreps(floorCrvs, sc.doc.ModelAbsoluteTolerance)
+            except TypeError:
+                floorBrep = rc.Geometry.Brep.CreatePlanarBreps(floorCrvs)
             floorArea += rc.Geometry.AreaMassProperties.Compute(floorBrep).Area
             floorBreps.extend(floorBrep)
         
@@ -515,10 +522,17 @@ class DFGeometry(object):
                 brepCopy.Transform(self.groundProjection)
                 projectedBreps.append(brepCopy)
             
-            footprintBrep = rc.Geometry.Brep.CreateBooleanUnion(projectedBreps, sc.doc.ModelAbsoluteTolerance)[0]
+            footprintBrep = rc.Geometry.Brep.CreateBooleanUnion(projectedBreps, sc.doc.ModelAbsoluteTolerance)
+            if footprintBrep is not None:
+                footprintBrep = footprintBrep[0]
+            else:
+                footprintBrep = projectedBreps[0]
             footprintCurves = footprintBrep.DuplicateNakedEdgeCurves(True, True)
             footprintOutline = rc.Geometry.Curve.JoinCurves(footprintCurves, sc.doc.ModelAbsoluteTolerance)
-            footprintBrep = rc.Geometry.Brep.CreatePlanarBreps(footprintOutline, sc.doc.ModelAbsoluteTolerance)[0]
+            try:
+                footprintBrep = rc.Geometry.Brep.CreatePlanarBreps(footprintOutline, sc.doc.ModelAbsoluteTolerance)[0]
+            except TypeError:
+                footprintBrep = rc.Geometry.Brep.CreatePlanarBreps(footprintOutline)[0]
         else:
             footprintBrep = deepcopy(uniqueBreps[0])
             footprintBrep.Transform(self.groundProjection)
