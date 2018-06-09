@@ -31,9 +31,9 @@ Provided by Dragonfly 0.0.02
 
 ghenv.Component.Name = "Dragonfly_Traffic Parameters"
 ghenv.Component.NickName = 'TrafficPar'
-ghenv.Component.Message = 'VER 0.0.01\nJUN_03_2018'
+ghenv.Component.Message = 'VER 0.0.02\nJUN_08_2018'
 ghenv.Component.Category = "Dragonfly"
-ghenv.Component.SubCategory = "00::UWG"
+ghenv.Component.SubCategory = "1 | Urban Weather"
 #compatibleDFVersion = VER 0.0.02\nMAY_20_2018
 ghenv.Component.AdditionalHelpFromDocStrings = "5"
 

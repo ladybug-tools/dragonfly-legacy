@@ -24,7 +24,7 @@ ghenv.Component.Name = "Dragonfly_Reference EPW Parameters"
 ghenv.Component.NickName = 'RefEPWPar'
 ghenv.Component.Message = 'VER 0.0.02\nJUN_03_2018'
 ghenv.Component.Category = "Dragonfly"
-ghenv.Component.SubCategory = "00::UWG"
+ghenv.Component.SubCategory = "1 | Urban Weather"
 #compatibleDFVersion = VER 0.0.02\nMAY_13_2018
 ghenv.Component.AdditionalHelpFromDocStrings = "0"
 

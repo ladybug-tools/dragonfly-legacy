@@ -37,7 +37,7 @@ ghenv.Component.Name = "Dragonfly_Update Dragonfly"
 ghenv.Component.NickName = 'updateDragonfly'
 ghenv.Component.Message = 'VER 0.0.02\nJUN_08_2018'
 ghenv.Component.Category = "Dragonfly"
-ghenv.Component.SubCategory = "02 | Developers"
+ghenv.Component.SubCategory = "3 | Developers"
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
 except: pass
