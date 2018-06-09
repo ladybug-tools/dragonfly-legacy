@@ -16,7 +16,7 @@ Provided by Dragonfly 0.0.02
     Args:
         _buildingTypologies: One or more building typologies from the "Dragonfly_UWG Building Typology" component.
         _terrainBrep: A brep or list of breps that represent the the terrian beneath the urban area, including all pavement, grass areas, and the region beneath the buildings.  Note that this  brep should just reflect the surface of the terrain and should not be a closed solid.  The outer limits of this surface will be used to determine the density of the urban area so including surface area that extends well beyond the buildings will cause the simulation to inacurately model the density.
-        treesOrCoverage_: Either a list of closed breps that represent the tree canopies of the urban area or a number between 0 and 1 that represents that fraction of tree coverage over the entire urban area (including those over both roofs and pavement).  If breps are input, they will be projected to the ground plane to compute the area of tree coverage as seen from above.  Thus, simpler tree geometry like boxes that represent the tree canopies are preferred.  If nothing is input here, it will be assumed that there are no trees in the urban area.
+        treesOrCoverage_: Either a list of horizontal surfaces that represent the tree canopies of the urban area or a number between 0 and 1 that represents that fraction of tree coverage over the entire urban area (including those over both roofs and pavement).  If breps are input, they will be projected to the ground plane to compute the area of tree coverage as seen from above.  Thus, simpler tree geometry like boxes that represent the tree canopies are preferred.  If nothing is input here, it will be assumed that there are no trees in the urban area.
         grassOrCoverage_: Either a list of surfaces that represent the grassy surfaces of the urban area or a number between 0 and 1 that represents that fraction of grass coverage over the entire urban area (including both green roofs and ground vegetation). If surfaces are input here, they should be coplanar with the terrainBrep. If nothing is input here, it will be assumed that there is no grass in the urban area.
         --------------------: ...
         _climateZone: A text string representing the ASHRAE climate zone. (eg. 5A). This is used to set default constructions for the buildings in the city.
@@ -37,7 +37,7 @@ Provided by Dragonfly 0.0.02
 
 ghenv.Component.Name = "Dragonfly_City"
 ghenv.Component.NickName = 'City'
-ghenv.Component.Message = 'VER 0.0.02\nJUN_03_2018'
+ghenv.Component.Message = 'VER 0.0.02\nJUN_09_2018'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "00::UWG"
 #compatibleDFVersion = VER 0.0.02\nMAY_12_2018

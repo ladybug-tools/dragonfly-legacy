@@ -1,18 +1,18 @@
 
 Dragonfly for Grasshopper
 ========================================
-Dragonfly allows users to model and estimate large-scale climate phenomena like urban heat island, climate change scnarios, and the inlfuence of climate factors like elevation above sea level.  This is accomplished with the help of several urban thermodynaic engines including the Urban Weather Generator and CitySim.  Dragonfly also links to several datasets like the results of the Hadley Global Circulation Model (for climate change projections) and several satellite image datasets (such as LANDSAT and MODIS).  The Dragonfly project intends to make many large-scale climate variables accessible to the visual scripting interface of Grasshopper as well as the 3D visualization interface of Rhino.
+Dragonfly allows users to model large-scale climate phenomena like urban heat island, account for variation in weather from year to year by generating AMY files, and estimate the influence of climate factors like elevation above sea level.  The Dragonfly project intends to make many large-scale climate variables accessible to CAD interfaces and the other insects of [Ladybug Tools](https://github.com/ladybug-tools).
 
 You need to have [Ladybug](https://github.com/mostaphaRoudsari/Ladybug) installed in order to run Dragonfly.
 
-It is also useful to have [Honeybee](https://github.com/mostaphaRoudsari/Honeybee) installed, which makes it easier to run the Dragonfly components that export to the [Urban Weather Generator (UWG)](https://github.com/hansukyang/UWG_Matlab).
+Dragonfly uses the [Urban Weather Generator (UWG)](https://github.com/ladybug-tools/urbanWeatherGen).
 
 
-Licence
+License
 ========================================
 Dragonfly: A Plugin for Climate Data Generation (GPL) started by Chris Mackey
 
-Copyright (c) 2013-2015, Chris Mackey
+Copyright, Chris Mackey
 
 Dragonfly is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 3 of the License, or (at your option) any later version.
 
@@ -25,11 +25,7 @@ You should have received a copy of the GNU General Public License along with Dra
 
 Useful links
 ========================================
-[Dragonfly group page on Grasshopper](http://www.grasshopper3d.com/group/ladybug)
-
-[Facebook page](https://www.facebook.com/LadyBugforGrasshopper)
-
-[Dragonfly on Twitter](https://www.twitter.com/ladybug_tool)
+[Dragonfly examples on Hydra](http://www.grasshopper3d.com/group/ladybug)
 
 
 Contributors(a-z):
@@ -37,9 +33,11 @@ Contributors(a-z):
 
 [Chris Mackey](https://github.com/chriswmackey)
 
+[Joseph Yang](https://github.com/hansukyang)
+
 [Mostapha Roudsari](https://github.com/mostapharoudsari)
 
+[Saeran Vasanthakumar](https://github.com/saeranv)
 
-So many thanks to the [Urban Microclimate Group at MIT](http://urbanmicroclimate.scripts.mit.edu/index.php) and the [Urban Weather Gnerator Project](https://github.com/hansukyang/UWG_Matlab).
 
-Special thanks is also due to the IPCC and the LANDSAT, ASTER, SRTM and GPM projects at NASA!
+Many thanks are to the [Urban Microclimate Group at MIT](http://urbanmicroclimate.scripts.mit.edu/index.php).

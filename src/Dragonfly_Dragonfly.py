@@ -1686,7 +1686,7 @@ class DFVegetation(DFObject):
             projected_breps: The veg_breps projected into the XY plane.
         """
         geometryLib = DFGeometry()
-        surfaceArea, projected_breps = geometryLib.calculateFootprints(veg_breps, is_trees)
+        surfaceArea, projected_breps = geometryLib.calculateFootprints(veg_breps)
         vegetation = cls(surfaceArea, is_trees)
         
         return vegetation, projected_breps
