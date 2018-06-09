@@ -1,20 +1,6 @@
-# Run the Urban Weather Generator
-#
-# Dragonfly: A Plugin for Climate Data Generation (GPL) started by Chris Mackey
-# 
+# Dragonfly: A Plugin for Climate Modeling (GPL) started by Chris Mackey <chris@ladybug.tools> 
 # This file is part of Dragonfly.
-# 
-# Copyright (c) 2015, Chris Mackey <Chris@MackeyArchitecture.com> 
-# Dragonfly is free software; you can redistribute it and/or modify 
-# it under the terms of the GNU General Public License as published 
-# by the Free Software Foundation; either version 3 of the License, 
-# or (at your option) any later version. 
-# 
-# Dragonfly is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of 
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the 
-# GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with Dragonfly; If not, see <http://www.gnu.org/licenses/>.
 # 
@@ -22,7 +8,7 @@
 
 
 """
-Use this component to morph a rural or airport EPW to reflect the conditions within an urban street canyon.  The properties of this urban street canyon are specified in the connected _UWGParemeters, which should come from one of the 'Dragonfly_UWG Parameters' components.
+Use this component to morph a rural or airport EPW to reflect the conditions within an urban street canyon.  The properties of this urban street canyon are specified in the connected _UWGCity.
 _
 For definitions of the inputs of the Urban Weather Generator, please see this page of the MIT Urban Microclimate Group:
 http://urbanmicroclimate.scripts.mit.edu/uwg_parameters.php#ref
@@ -30,383 +16,226 @@ _
 For a full list of publications on the Urban Weather Generator, please see this page of the MIT Urban Microclimate Group:
 http://urbanmicroclimate.scripts.mit.edu/publications.php
 -
-Provided by Dragonfly 0.0.01
+Provided by Dragonfly 0.0.02
     Args:
-        _epwFile: An .epw file path on your system as a text string.  This is the rural or airport file that will be morphed to reflect the climate conditions within an urban canyon.
-        _UWGCity: A list of parameters from one of the 'Dragonfly_UWG Parameters' components.  This list describes describes the characteristics of the urban street canyon for which an epw file will be produced.
-        analysisPeriod_: An optional analysis period from the 'Ladybug_Analysis Period' component.  If no Analysis period is given, the Urban Weather Generator will be run for the enitre year.
-        --------------------: ...
-        epwSitePar_: An optional list of Reference EPW Site Parameters from the "Dragonfly_Reference EPW Site Par" component.
-        boundLayerPar_: Optional Boundary Layer Parameters from the "Dragonfly_Boundary Layer Par" component.
-        --------------------: ...
-        _writeXML: Set to "True" to have the component take your connected UWGParemeters and write them into an XML file.  The file path of the resulting XML file will appear in the xmlFileAddress output of this component.  Note that only setting this to "True" and not setting the output below to "True" will not automatically run the XML through the Urban Weather Generator for you.
-        runUWG_: Set to "True" to have the component run your XML and EPW files through the Urban Weather Generator (UWG).  This will ensure that a morphed EPW file path appears in the epwFileAddress output. Set to 2 if you want the analysis to run in background. This option is useful for parametric runs when you don't want to see command shells.
-        --------------------: ...
-        _workingDir_: An optional working directory to a folder on your system, into which your XML and morphed EPW files will be written.  The default will write these files in the folder that contains the connected epwFile_.  NOTE THAT DIRECTORIES INPUT HERE SHOULD NOT HAVE ANY SPACES OR UNDERSCORES IN THE FILE PATH.
-        _xmlFileName_: An optional text string which will be used to name your XML and morphed EPW files.  Change this to aviod over-writing results of previous runs of the Urban Weather Generator.
+        _epwFile: An .epw file path on your system.  This is the rural or airport file that will be morphed to reflect the climate conditions within an urban canyon.
+        _DFCity: A Dragonfly City object. This object can be generated with the "Dragonfly_City" component.
+        epwSitePar_: Optional Reference EPW Site Parameters from the "Dragonfly_Reference EPW Site Par" component.
+        bndLayerPar_: Optional Boundary Layer Parameters from the "Dragonfly_Boundary Layer Par" component.
+        _analysisPeriod_: An optional analysis period from the 'Ladybug_Analysis Period' component.  If no Analysis period is given, the Urban Weather Generator will be run for the enitre year.
+        _simTimestep_: A number representing the timestep at which the simulation is run in seconds.  The default is set to 300 seconds (5 minutes).  Note that all restuls are still reported on an hour-by-hour basis in the otuput EPW and this input only changes how the calculation is run in the UWG.
+        _folder_: An optional working directory to a folder on your system, into which the morphed EPW files will be written.  The default will write these files in the folder that contains the connected _epwFile.
+        _name_: An optional text string which will be used to name of your morphed EPW files.  Change this to aviod over-writing results of previous runs of the Urban Weather Generator.
+        _write: Set to "True" to have the component generate a UWG object from the connected DFCity and parameters. This object can be edited and smulated using a python component.
+        run_: Set to "True" to simulate the uwgObject and morph the EPW using the Urban Weather Generator (UWG).
     Returns:
         readMe!: ...
-        xmlText: The text written into the XML file.
-        xmlFileAddress: The file path of the XML file that has been generated on your machine.
-        epwFileAddress: The file path of the morphed EPW file that has been generated on your machine.  This only happens when you set "runUWG_" to "True."
+        ---------------: ...
+        urbanEpw: The file path of the morphed EPW file that has been generated on your machine.
+        ---------------: ...
+        uwgObject: The python UWG object that can be edited and simulated using the methods on the UWG.
 """
 
 ghenv.Component.Name = "Dragonfly_Run Urban Weather Generator"
 ghenv.Component.NickName = 'RunUWG'
-ghenv.Component.Message = 'VER 0.0.01\nAPR_26_2018'
+ghenv.Component.Message = 'VER 0.0.02\nJUN_03_2018'
 ghenv.Component.Category = "Dragonfly"
-ghenv.Component.SubCategory = "2 | GenerateUrbanClimate"
-#compatibleLBVersion = VER 0.0.59\nFEB_01_2015
-try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
-except: pass
+ghenv.Component.SubCategory = "00::UWG"
+#compatibleDFVersion = VER 0.0.02\nMAY_25_2018
+ghenv.Component.AdditionalHelpFromDocStrings = "1"
 
 
 import scriptcontext as sc
-import Rhino as rc
-import os
-import shutil
-
-from clr import AddReference
-AddReference('Grasshopper')
 import Grasshopper.Kernel as gh
+import os
 
+try:
+    from UWG import UWG
+except ImportError as e:
+    raise ImportError('\nFailed to import the UWG:\n\t{}'.format(e))
 
-def checkTheInputs(df_textGen, lb_preparation):
-    # Set a warning variable.
-    w = gh.GH_RuntimeMessageLevel.Warning
-    
-    #Check to be sure that the EPW file is on the person's system.
-    checkData1 = True
-    if not os.path.isfile(_epwFile):
-        checkData1 = False
-        warning1 = "Could not find the connected _epwFile on your system. \n Make sure that you have the file on your system at this address:"
-        warning2 = _epwFile
-        print warning1
-        print warning2
-        ghenv.Component.AddRuntimeMessage(w, warning1)
-        ghenv.Component.AddRuntimeMessage(w, warning2)
-    
-    #Check to be sure that the _UWGCity are valid.
-    checkData2 = True
-    if not _UWGCity.startswith('<?xml version="1.0" encoding="utf-8"?>\n<xml_input>'):
-        checkData2 = False
-        warning = "The connected _UWGCity are not valid parameters fromt one of the 'Dragonfly_UWG Parameters' components."
-        print warning
-        ghenv.Component.AddRuntimeMessage(w, warning)
-    
-    #Set a default filename.
-    if _xmlFileName_:
-        if _xmlFileName_.endswith('.xml'):
-            xmlFileName = _xmlFileName_
-            simName = _xmlFileName_.replace('.xml', "")	
-        else:
-            xmlFileName = _xmlFileName_ + '.xml'
-            simName = _xmlFileName_
-    else:
-        xmlFileName = 'unnamed.xml'
-        simName = 'unnamed'
-    
-    
-    #Check if there is a workingDir connected and, if not set a default. Create the directory on the person's system. 
-    checkData3 = True
-    if _workingDir_:
-        if _workingDir_.endswith('\\'): workingDir = _workingDir_ + simName + '\\UWG\\'
-        else: workingDir = _workingDir_ + '\\' + simName + '\\UWG\\'
-    else:
-        workingDir = sc.sticky["Ladybug_DefaultFolder"] + simName + '\\UWG\\'
-    if not os.path.exists(workingDir):
-        try:
-            os.makedirs(workingDir)
-        except:
-            checkData3 = False
-            warning =  'cannot create the working directory as: ', workingDir + \
-                  '\nPlease set a new working directory'
-            print warning
-            ghenv.Component.AddRuntimeMessage(w, warning)
-    print 'Current working directory is set to: ' + workingDir
-    
-    
-    #Check the epwSitePar_ and, if there are none, set default ones.
-    checkData4 = True
-    if len(epwSitePar_) != 0:
-        try:
-            epwSiteParString, tempHeight, windHeight = epwSitePar_
-        except:
-            checkData4 = False
-            warning =  'epwSitePar_ is not valid.'
-            print warning
-            ghenv.Component.AddRuntimeMessage(w, warning)
-    else:
-        epwSiteParString = df_textGen.defaultRefSitePar
-        tempHeight = 10
-        windHeight = 10
-    
-    #Check the boundLayerPar_ and, if there are none, leave the default ones.
-    checkData5 = True
-    if boundLayerPar_:
-        if not boundLayerPar_.startswith('    <daytimeBLHeight>'):
-            checkData5 = False
-            warning =  'boundLayerPar_ is not valid.'
-            print warning
-            ghenv.Component.AddRuntimeMessage(w, warning)
-    
-    #Check the analysisPeriod and, if there is none, run the simulation for the whole year.
-    if analysisPeriod_:
-        stMonth, stDay, stHour, endMonth, endDay, endHour = lb_preparation.readRunPeriod(analysisPeriod_)
+def create_uwg(epwFile, endFolder, name):
+    startFolder, epwName = os.path.split(epwFile)
+    epwName = epwName.replace('.epw', '')
+    if endFolder is None:
+        endFolder = startFolder
+    if name is None:
+        name = epwName + '_URBAN.epw'
+    return UWG(epwName, None, startFolder, None, endFolder, name), endFolder + '\\' + name
+
+def parse_ladybug_analysis_period(analysisPeriod):
+    if analysisPeriod is not None:
+        lb_preparation = sc.sticky["ladybug_Preparation"]()
+        stMonth, stDay, stHour, endMonth, endDay, endHour = lb_preparation.readRunPeriod(analysisPeriod)
         startDOY = int(lb_preparation.getJD(stMonth, stDay))
         endDOY = int(lb_preparation.getJD(endMonth, endDay))
         simDuration = endDOY - startDOY + 1
-        stHOY = lb_preparation.date2Hour(stMonth, stDay, 1)
-        analysisPeriod = analysisPeriod_
+        return stMonth, stDay, simDuration
     else:
-        stMonth = 1
-        stDay = 1
-        simDuration = 365
-        stHOY = 1
-        analysisPeriod = [(1,1,1),(12,31,24)]
-    analysisPeriodStr = '    <simuStartMonth>' + str(stMonth) + '</simuStartMonth>\n' +\
-                        '    <simuStartDay>' + str(stDay) + '</simuStartDay>\n' +\
-                        '    <simuDuration>' + str(simDuration) + '</simuDuration>\n'
-    
-    #Grab default untouchable parameters.
-    ### Note that I only say they are 'untochable' because there is no documentation about them on the UWG site the last time that I checked:
-    # http://urbanmicroclimate.scripts.mit.edu/uwg_parameters.php
-    untouchablePar = df_textGen.untouchablePar
-    
-    #Do a final check of everything and, if it's good, project any goemtry that needs to be projected in order to extract relevant parameters.
-    checkData = False
-    if checkData1 == True and checkData2 == True and checkData3 == True and checkData4 == True  and checkData5 == True:
-        checkData = True
-    
-    return checkData, workingDir, xmlFileName, _epwFile, epwSiteParString, tempHeight, windHeight, boundLayerPar_, analysisPeriodStr, stHOY, analysisPeriod, untouchablePar
+        return 1, 1, 365
 
-
-def writeBatchFile(workingDir, xmlFileName, epwFileAddress, newEPWFileName, UWGDirectory = 'C:\\ladybug\\UWG', runInBackground = False):
-    
-    workingDrive = workingDir[:2]
-    
-    epwFileName = epwFileAddress.split('\\')[-1]
-    epwFileDir = epwFileAddress.split(epwFileName)[0]
-    
-    if not workingDir.EndsWith('\\'): workingDir = workingDir + '\\'
-    
-    if xmlFileName.EndsWith('.xml'):  shXMLFileName = xmlFileName.replace('.xml', '')
-    else: shXMLFileName = xmlFileName
-    
-    fullPath = workingDir + shXMLFileName
-    
-    folderName = workingDir.replace( (workingDrive + '\\'), '')
-    
-    batchStr = workingDrive + '\ncd\\' +  folderName + '\n' + UWGDirectory + \
-            '\UWGEngine ' + epwFileDir + ' ' + epwFileName + ' ' + workingDir + ' ' + xmlFileName + ' ' + workingDir + ' ' + newEPWFileName
-    
-    batchFileAddress = fullPath +'.bat'
-    batchfile = open(batchFileAddress, 'w')
-    batchfile.write(batchStr)
-    batchfile.close()
-    
-    #execute the batch file
-    if runInBackground:		
-        self.runCmd(batchFileAddress)		
-    else:		
-        os.system(batchFileAddress)		
-
-def runCmd(batchFileAddress, shellKey = True):
-    batchFileAddress.replace("\\", "/")		
-    p = subprocess.Popen(["cmd /c ", batchFileAddress], shell=shellKey, stdout=subprocess.PIPE, stderr=subprocess.PIPE)		
-    out, err = p.communicate()		
-
-def reOrderEPWData(originalEpwFile, newEPWFile, analysisPeriod, workingDir, lb_preparation):
-    #Get the hours of the analysis period and turn them into lines of the EPW.
-    headerReplaceLines = []
-    headerLineNum = 6
-    HOYS, months, days = lb_preparation.getHOYsBasedOnPeriod(analysisPeriod, 1)
-    for hour in HOYS: headerReplaceLines.append(hour+headerLineNum)
-    
-    #Make a new EPW and write the appropriate lines into it.
-    finalEWPFileName = newEPWFile.split('\\')[-1].split('.epw')[0]
-    finalEWPFileName = finalEWPFileName + '-' + str(analysisPeriod[0][0])+ str(analysisPeriod[0][1])+ str(analysisPeriod[0][2]) + '-' + str(analysisPeriod[1][0])+ str(analysisPeriod[1][1])+ str(analysisPeriod[1][2]) + '.epw'
-    finalFilePath = workingDir + finalEWPFileName
-    finalFile = open(finalFilePath, "w")
-    originalFile = open(originalEpwFile, "r")
-    newFile = open(newEPWFile, "r")
-    
-    #Grab the parts from the original EPW to keep.
-    originalEPWLines1 = []
-    originalEPWLines2 = []
-    periodTrigger = False
-    lastVal = False
-    for lineCount, line in enumerate(originalFile):
-        if lineCount not in headerReplaceLines and periodTrigger == False: originalEPWLines1.append(line)
-        elif lineCount not in headerReplaceLines and periodTrigger == True:
-            if lastVal == False: originalEPWLines2.append(line)
-            lastVal = False
-        else:
-            if periodTrigger == False: originalEPWLines1.append(line)
-            periodTrigger = True
-            lastVal = True
-    
-    #Grab the parts from the new EPW to insert.
-    maxLine = len(HOYS) + 8
-    newEPWLines = []
-    hour = HOYS[0]
-    for lineCountNew, newLine in enumerate(newFile):
-        if lineCountNew > 7 and lineCountNew < maxLine:
-            d, m, t = lb_preparation.hour2Date(hour, True)
-            finalLine = ''
-            newLineSplit = newLine.split(',')
-            for valCount, val in enumerate(newLineSplit):
-                if valCount == 1: finalLine = finalLine + str(int(m)+1) + ','
-                elif valCount == 2: finalLine = finalLine + str(int(d)) + ','
-                elif valCount == 3: finalLine = finalLine + str(int(t)) + ','
-                elif valCount != 1-len(newLineSplit): finalLine = finalLine + val + ','
-                else: finalLine = finalLine + val
-            finalLine = finalLine[:-1]
-            newEPWLines.append(finalLine)
-            hour +=1
-    
-    #Build the new EPW file.
-    for line in originalEPWLines1: finalFile.write(line)
-    for line in newEPWLines:
-        finalFile.write(line)
-    for line in originalEPWLines2: finalFile.write(line)
-    
-    finalFile.close()
-    originalFile.close()
-    newFile.close()
-    
-    #Delete the old epw file.
-    os.remove(newEPWFile)
-    
-    
-    return finalFilePath
-
-
-def main(workingDir, xmlFileName, epwFile, epwSiteParString, tempHeight, windHeight, boundLayerPar, analysisPeriodStr, stHOY, analysisPeriod, untouchablePar, df_textGen, lb_preparation):
-    #Extract the latitude, longitude, and start temperature for the analysis period fromt he EPW file.
-    locationData = lb_preparation.epwLocation(epwFile)
-    latitude = locationData[1]
-    longitude = locationData[2]
-    
-    dbTemp = []
-    epwfile = open(epwFile,"r")
-    lnum = 1 # line number
-    for line in epwfile:
-        if lnum > 8:
-            dbTemp.append(float(line.split(',')[6]))
-        lnum += 1
-    epwfile.close()
-    startTemp = dbTemp[stHOY]
-    
-    #Assemble the reference site string.
-    refSiteStr = '  <referenceSite>\n'
-    refSiteStr = refSiteStr + '    <latitude>' + str(latitude) + '</latitude>\n'
-    refSiteStr = refSiteStr + '    <longitude>' + str(longitude) + '</longitude>\n'
-    refSiteStr = refSiteStr + epwSiteParString
-    refSiteStr = refSiteStr + '  </referenceSite>\n'
-    
-    #Assemble the parameter string.
-    paramStr = '  <parameter>\n'
-    paramStr = paramStr + '    <tempHeight>' + str(tempHeight) + '</tempHeight>\n'
-    paramStr = paramStr + '    <windHeight>' + str(windHeight) + '</windHeight>\n'
-    paramStr = paramStr + untouchablePar
-    paramStr = paramStr + analysisPeriodStr
-    paramStr = paramStr + '  </parameter>\n'
-    
-    #Insert the boundary layer par.
-    if boundLayerPar:
-        UWGCitySplit = _UWGCity.split("    <daytimeBLHeight>700</daytimeBLHeight>\n    <nighttimeBLHeight>80</nighttimeBLHeight>\n    <refHeight>150</refHeight>\n")
-        UWGCity = UWGCitySplit[0] + boundLayerPar + UWGCitySplit[-1]
-    else:
-        UWGCity = _UWGCity
-    
-    #Bring the whole string together.
-    xmlStr = UWGCity + refSiteStr + paramStr + '</xml_input>'
-    
-    #Replace the starting temperatures in the UWGCity with the starting temperature of the EPWFile.
-    xmlStrSplit = xmlStr.split('setByEPW')
-    newXmlStr = xmlStrSplit[0]
-    for count, string in enumerate(xmlStrSplit):
-        if count != 0: newXmlStr = newXmlStr + str(startTemp) + string
-    xmlStr = newXmlStr
-    
-    #If the vegetation start and end months are supposed to be defined by the EPW, try to do that.
-    if 'findInEPW' in xmlStr:
-        #Define a average monthly temperature above which vegetation participates.
-        thresholdTemp = 10
-        
-        monthTemps = [[]]
-        monthNum = 0
-        monthTracker = 0
-        for count, temp in enumerate(dbTemp):
-            if monthTracker < 730:
-                monthTemps[monthNum].append(temp)
-                monthTracker += 1
-            else:
-                monthTracker = 0
-                monthNum +=1
-                monthTemps.append([])
-                monthTemps[monthNum].append(temp)
-        avgMonthTemps = []
-        for monthList in monthTemps:
-            avgMonthTemps.append(sum(monthList)/len(monthList))
-        
-        startVegMonth = None
-        endVegMonth = None
-        for monCount, temp in enumerate(avgMonthTemps):
-            if temp < thresholdTemp:
-                if startVegMonth != None and endVegMonth == None: endVegMonth = monCount+1
-            else:
-                if startVegMonth == None: startVegMonth = monCount+1
-        if endVegMonth == None: endVegMonth = 12
-        
-        xmlStrSplit = xmlStr.split('findInEPW')
-        newXmlStr = xmlStrSplit[0] + str(startVegMonth) + xmlStrSplit[1] + str(endVegMonth) + xmlStrSplit[2]
-        xmlStr = newXmlStr
-    
-    #Write the string into an XML file.
-    xmlFilePath = workingDir + xmlFileName
-    xmlFile = open(xmlFilePath, "w")
-    xmlFile.write(xmlStr)
-    xmlFile.close()
-    
-    #If the user has selected to run the UWG, run the XML and EPW through the UWG.
-    newEPWFileDirectory = None
-    if runUWG_:
-        #Copy the original epwfile into the direcotry.
-        newEPWFileName = xmlFileName.split('.xml')[0] + '_' + epwFile.split('\\')[-1]
-        newEPWFileDirectory = workingDir + newEPWFileName
-        writeBatchFile(workingDir, xmlFileName, epwFile, newEPWFileName, sc.sticky["dragonfly_folders"]["UWGPath"])
-        #If the analysis period is not set for the whole year, I have to place the simulated time period correctly in the new weather file
-        #(for some reason, the UWG likes to write the new time period from the start of the year.
-        #Replace " " with "" for items in analysisPeriod so that reads input with spaces.
-        if str(analysisPeriod[0]).replace(" ","") == '(1,1,1)' and str(analysisPeriod[1]).replace(" ","") == '(12,31,24)': pass
-        else: newEPWFileDirectory = reOrderEPWData(epwFile, newEPWFileDirectory, analysisPeriod, workingDir, lb_preparation)
-    
-    return xmlStr, xmlFilePath, newEPWFileDirectory
-
-
-
-#Check to be sure that Dragonfly is flying.
-initCheck = False
-if sc.sticky.has_key("dragonfly_release"):
-    df_textGen = sc.sticky["dragonfly_UWGText"]()
+def autocalcStartEndVegetation(epwFile):
     lb_preparation = sc.sticky["ladybug_Preparation"]()
-    initCheck = True
+    locationData = lb_preparation.epwLocation(epwFile)
+    temperatureData = lb_preparation.epwDataReader(epwFile, locationData[0])[0][7:]
+    
+    monthDays = [0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+    monthTemps = []
+    for month in range(1, 13):
+        stJD = lb_preparation.getJD(month, 1)
+        endJD = lb_preparation.getJD(month, monthDays[month])
+        monthlyData = temperatureData[lb_preparation.getHour(stJD, 1)-1 : lb_preparation.getHour(endJD , 24)]
+        monthTemps.append(sum(monthlyData)/len(monthlyData))
+    
+    thresholdTemp = 10
+    vegEnd = 12
+    vegStartSet = False
+    for i, t in enumerate(monthTemps):
+        if t > thresholdTemp and vegStartSet == False:
+            vegStart = i+1
+            vegStartSet = True
+        elif t < thresholdTemp and vegStartSet == True:
+            vegEnd = i+1
+            vegStartSet = False
+    
+    return vegStart, vegEnd
+
+def set_uwg_input(uwg, DFCity, epwSitePar, bndLayerPar, analysisPeriod, simTimestep):
+        """Assign all inputs to the UWG """
+        
+        # Define Simulation and Weather parameters
+        month, day, nDay = parse_ladybug_analysis_period(analysisPeriod)
+        uwg.Month = month
+        uwg.Day = day
+        uwg.nDay = nDay
+        if simTimestep is not None:
+            uwg.dtSim = simTimestep
+        else:
+            uwg.dtSim = 300
+        uwg.dtWeather = 3600
+        
+        # HVAC system and internal laod
+        uwg.autosize = 0
+        uwg.sensOcc = 100
+        uwg.LatFOcc = 0.3
+        uwg.RadFOcc = 0.2
+        uwg.RadFEquip = 0.5
+        uwg.RadFLight = 0.7
+        
+        # Define Urban microclimate parameters
+        uwg.h_ubl1 = bndLayerPar.day_boundary_layer_height
+        uwg.h_ubl2 = bndLayerPar.night_boundary_layer_height
+        uwg.h_ref = bndLayerPar.inversion_height
+        uwg.c_circ = bndLayerPar.circulation_coefficient
+        uwg.c_exch = bndLayerPar.exchange_coefficient
+        uwg.h_temp = epwSitePar.temp_measure_height
+        uwg.h_wind = epwSitePar.wind_measure_height
+        uwg.maxDay = 150
+        uwg.maxNight = 20
+        uwg.windMin = 1
+        uwg.h_obs = epwSitePar.average_obstacle_height
+        
+        # Urban characteristics
+        uwg.bldHeight = DFCity.average_bldg_height
+        uwg.h_mix = DFCity.fract_heat_to_canyon
+        uwg.bldDensity = DFCity.site_coverage_ratio
+        uwg.verToHor = DFCity.facade_to_site_ratio
+        uwg.charLength = DFCity.characteristic_length
+        uwg.sensAnth = DFCity.traffic_parameters.sensible_heat
+        uwg.SchTraffic = DFCity.traffic_parameters.get_uwg_matrix()
+        
+        # Define optional Building characteristics
+        uwg.bld = DFCity.get_uwg_matrix()
+        
+        # climate Zone
+        uwg.zone = DFCity._climate_zone
+        
+        # Vegetation parameters
+        uwg.vegCover = DFCity.grass_coverage_ratio
+        uwg.treeCoverage = DFCity.tree_coverage_ratio
+        uwg.albVeg = DFCity.vegetation_parameters.vegetation_albedo
+        uwg.rurVegCover = epwSitePar.vegetation_coverage
+        
+        if DFCity.vegetation_parameters.vegetation_start_month == 0 or DFCity.vegetation_parameters.vegetation_end_month == 0:
+            vegStart, vegEnd = autocalcStartEndVegetation(_epwFile)
+        if DFCity.vegetation_parameters.vegetation_start_month == 0:
+            uwg.vegStart = vegStart
+        else:
+            uwg.vegStart = DFCity.vegetation_parameters.vegetation_start_month
+        if DFCity.vegetation_parameters.vegetation_start_month == 0:
+            uwg.vegEnd = vegEnd
+        else:
+            uwg.vegEnd = DFCity.vegetation_parameters.vegetation_end_month
+        
+        # Define road
+        uwg.alb_road = DFCity.pavement_parameters.albedo
+        uwg.d_road = DFCity.pavement_parameters.thickness
+        uwg.kRoad = DFCity.pavement_parameters.conductivity
+        uwg.cRoad = DFCity.pavement_parameters.volumetric_heat_capacity
+        
+        # parameters that will be added in
+        uwg.r_glaze = DFCity.glz_ratio
+        uwg.SHGC = DFCity.shgc
+        uwg.alb_wall = DFCity.wall_albedo
+        uwg.h_floor = DFCity.floor_height
+        
+        # parameters that are not being used that are going away
+        uwg.latAnth = 0
+        uwg.latGrss = 0
+        uwg.latTree = 0
+        
+        return uwg
+
+
+# dragonfly check.
+initCheck = True
+if not sc.sticky.has_key('dragonfly_release') == True:
+    initCheck = False
+    print "You should first let Drafgonfly fly..."
+    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, "You should first let Drafgonfly fly...")
 else:
-    if not sc.sticky.has_key("ladybug_release"):
-        warning = "You need to let Ladybug fly to use this component."
-        print warning
-        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
-    if not sc.sticky.has_key("dragonfly_release"):
-        warning = "You need to let Dragonfly fly to use this component."
-        print warning
-        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+    if not sc.sticky['dragonfly_release'].isCompatible(ghenv.Component): initCheck = False
+    if sc.sticky['dragonfly_release'].isInputMissing(ghenv.Component): initCheck = False
+    df_RefEPWSitePar = sc.sticky["dragonfly_RefEpwPar"]
+    df_BndLayerPar = sc.sticky["dragonfly_BoundaryLayerPar"]
+    uwg_path = sc.sticky["dragonfly_UWGPath"]
+
+# ladybug check
+if not sc.sticky.has_key("ladybug_release") == True:
+    initCheck = False
+    warning = "You need to let Ladybug fly to use this component."
+    print warning
+    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
 
 
-
-if initCheck == True and _writeXML == True and _epwFile and _UWGCity:
-    checkData, workingDir, xmlFileName, epwFile, epwSiteParString, tempHeight, windHeight, boundLayerPar, analysisPeriodStr, stHOY, analysisPeriod, untouchablePar = checkTheInputs(df_textGen, lb_preparation)
-    if checkData == True:
-        xmlText, xmlFileAddress, epwFileAddress = main(workingDir, xmlFileName, epwFile, epwSiteParString, tempHeight, windHeight, boundLayerPar, analysisPeriodStr, stHOY, analysisPeriod, untouchablePar, df_textGen, lb_preparation)
-
+if initCheck == True and _write == True:
+    # check the epwSitePar and assign default if None.
+    if epwSitePar_ is not None:
+        assert (hasattr(epwSitePar_, 'isRefEPWSitePar')), 'epwSitePar_ must be a Dragonfly RefEPWSitePar object. Got {}'.format(type(epwSitePar_))
+        epwSitePar = epwSitePar_
+    else:
+        epwSitePar = df_RefEPWSitePar()
+    
+    # check the bndLayerPar and assign default if None.
+    if bndLayerPar_ is not None:
+        assert (hasattr(bndLayerPar_, 'isBoundaryLayerPar')), 'bndLayerPar_ must be a Dragonfly BoundaryLayerPar object. Got {}'.format(type(bndLayerPar_))
+        bndLayerPar = bndLayerPar_
+    else:
+        bndLayerPar = df_BndLayerPar()
+    
+    # check the DFcity object.
+    assert (hasattr(_DFCity, 'isDFCity')), '_DFCity must be a Dragonfly City object. Got {}'.format(type(_DFCity))
+    
+    # create a uwgObject from the dragonfly objects.
+    uwgObject, newEpwPath = create_uwg(_epwFile, _folder_, _name_)
+    uwgObject.RESOURCE_PATH = uwg_path
+    uwgObject = set_uwg_input(uwgObject, _DFCity, epwSitePar, bndLayerPar, _analysisPeriod_, _simTimestep_)
+    uwgObject.read_epw()
+    uwgObject.instantiate_input()
+    uwgObject.hvac_autosize()
+    
+    # run the UWG object if run is set to True.
+    if run_ == True:
+        uwgObject.simulate()
+        uwgObject.write_epw()
+        urbanEpw = newEpwPath
