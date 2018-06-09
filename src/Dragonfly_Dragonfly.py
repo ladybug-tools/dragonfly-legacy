@@ -38,7 +38,7 @@ Source code is available at: https://github.com/mostaphaRoudsari/ladybug
 -
 Provided by Dragonfly 0.0.02
     Args:
-        defaultFolder_: Optional input for Dragonfly default folder.
+        default_folder_: Optional input for Dragonfly default folder.
                        If empty default folder will be set to C:\ladybug or C:\Users\%USERNAME%\AppData\Roaming\Ladybug\
     Returns:
         report: Current Dragonfly mood!!!
@@ -46,7 +46,7 @@ Provided by Dragonfly 0.0.02
 
 ghenv.Component.Name = "Dragonfly_Dragonfly"
 ghenv.Component.NickName = 'Dragonfly'
-ghenv.Component.Message = 'VER 0.0.02\nJUN_08_2018'
+ghenv.Component.Message = 'VER 0.0.02\nJUN_09_2018'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "0 | Dragonfly"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -128,7 +128,7 @@ class CheckIn():
                     # make sure username doesn't have space
                     if (" " in username):
                         msg = "User name on this system: " + username + " has white space." + \
-                              " Default fodelr cannot be set.\nUse defaultFolder_ to set the path to another folder and try again!" + \
+                              " Default fodelr cannot be set.\nUse default_folder_ to set the path to another folder and try again!" + \
                               "\nDragonfly failed to fly! :("
                         print msg
                         ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
@@ -150,7 +150,7 @@ class CheckIn():
                     except AttributeError:
                         appdata = False
                     assert appdata, 'Failed to set up the folder.\n' \
-                        'Try to set it up manually using defaultFolder_ input.'
+                        'Try to set it up manually using default_folder_ input.'
                     sc.sticky["Dragonfly_DefaultFolder"] = os.path.join(appdata, "ladybug/")
             else:
                 raise PlatformError("Unsupported platform {}. Isn't Rhino only available for Windows and Mac?".format(sys.platform))
@@ -2257,7 +2257,7 @@ class BoundaryLayerPar(DFParameter):
 
 
 
-checkIn = CheckIn(defaultFolder_)
+checkIn = CheckIn(default_folder_)
 
 try:
     checkIn.checkForUpdates(True)
