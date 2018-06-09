@@ -1214,7 +1214,7 @@ class DFCity(DFObject):
             (including both pavement and roofs) that is covered by grass/vegetation.  The default is set to 0.
         vegetation_parameters: A dragonfly VegetationPar object that defines the behaviour of vegetation within an urban area.
         pavement_parameters: A dragonfly PavementPar object that defines the makeup of pavement within the urban area.
-        characteristic_length: A number representing the radius of a circle that encompasses the whole neighborhood in meters.
+        characteristic_length: A number representing the linear dimension of the side of a square that encompasses the neighborhood in meters.
             The default is set to 500 m, which was found to be the recomendation for a typical mid-density urban area.
             Street, Michael A. (2013). Comparison of simplified models of urban climate for improved prediction of building 
             energy use in cities. Thesis (S.M. in Building Technology)--Massachusetts Institute of Technology, Dept. of Architecture,
@@ -1636,7 +1636,7 @@ class DFTerrain(DFObject):
         assert isinstance(a, (float, int)), 'area must be a number got {}'.format(type(a))
         assert (a >= 0),"area must be greater than 0"
         self._area = a
-        self._characteristic_length = math.sqrt(self._area/math.pi)
+        self._characteristic_length = math.sqrt(self._area)
     
     @property
     def characteristic_length(self):
