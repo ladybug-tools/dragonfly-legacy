@@ -1,18 +1,18 @@
 
 Dragonfly for Grasshopper
 ========================================
-Dragonfly allows users to model large-scale climate phenomena like urban heat island, account for variation in weather from year to year by generating AMY files, and estimate the influence of climate factors like elevation above sea level.  The Dragonfly project intends to make many large-scale climate variables accessible to CAD interfaces and the other insects of [Ladybug Tools](https://github.com/ladybug-tools).
+Dragonfly allows users to model large-scale climate phenomena like urban heat island, account for variation in weather from year to year by generating AMY files, and estimate the influence of climate factors like elevation above sea level.  The Dragonfly intends to make many large-scale climate variables accessible to CAD interfaces and the other insects of [Ladybug Tools](https://github.com/ladybug-tools).
 
-You need to have [Ladybug](https://github.com/mostaphaRoudsari/Ladybug) installed in order to run Dragonfly.
+To install Dragonfly, [follow the instructions]().
 
-Dragonfly uses the [Urban Weather Generator (UWG)](https://github.com/ladybug-tools/urbanWeatherGen).
+Dragonfly uses the [Urban Weather Generator (UWG)](https://github.com/ladybug-tools/urbanWeatherGen) and [Ladybug (legacy version)](https://github.com/mostaphaRoudsari/Ladybug)
 
 
 License
 ========================================
 Dragonfly: A Plugin for Climate Data Generation (GPL) started by Chris Mackey
 
-Copyright, Chris Mackey
+Copyright, 2018 Ladybug Tools
 
 Dragonfly is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 3 of the License, or (at your option) any later version.
 
@@ -25,7 +25,7 @@ You should have received a copy of the GNU General Public License along with Dra
 
 Useful links
 ========================================
-[Dragonfly examples on Hydra](http://www.grasshopper3d.com/group/ladybug)
+[Dragonfly examples on Hydra](http://hydrashare.github.io/hydra/)
 
 
 Contributors(a-z):
