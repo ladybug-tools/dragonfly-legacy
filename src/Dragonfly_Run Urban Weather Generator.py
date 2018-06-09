@@ -23,6 +23,7 @@ Provided by Dragonfly 0.0.02
         epw_site_par_: Optional Reference EPW Site Parameters from the "Dragonfly_Reference EPW Site Par" component.
         bnd_layer_par_: Optional Boundary Layer Parameters from the "Dragonfly_Boundary Layer Par" component.
         _analysis_period_: An optional analysis period from the 'Ladybug_Analysis Period' component.  If no Analysis period is given, the Urban Weather Generator will be run for the enitre year.
+        _sim_timestep_: A number representing the timestep at which the simulation is run in seconds.  The default is set to 300 seconds (5 minutes).
         _folder_: An optional working directory to a folder on your system, into which the morphed EPW files will be written.  The default will write these files in the folder that contains the connected _epw_file.
         _name_: An optional text string which will be used to name of your morphed EPW files.  Change this to aviod over-writing results of previous runs of the Urban Weather Generator.
         _write: Set to "True" to have the component generate a UWG object from the connected DFCity and parameters. This object can be edited and smulated using a python component.
@@ -37,7 +38,7 @@ Provided by Dragonfly 0.0.02
 
 ghenv.Component.Name = "Dragonfly_Run Urban Weather Generator"
 ghenv.Component.NickName = 'RunUWG'
-ghenv.Component.Message = 'VER 0.0.02\nJUN_03_2018'
+ghenv.Component.Message = 'VER 0.0.02\nJUN_09_2018'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "1 | Urban Weather"
 #compatibleDFVersion = VER 0.0.02\nMAY_25_2018
@@ -228,7 +229,7 @@ if init_check == True and _write == True:
     # create a uwg_object from the dragonfly objects.
     uwg_object, new_epw_path = create_uwg(_epw_file, _folder_, _name_)
     uwg_object.RESOURCE_PATH = uwg_path
-    uwg_object = set_uwg_input(uwg_object, _DF_city, epw_site_par, bnd_layer_par, _analysis_period_, _simTimestep_)
+    uwg_object = set_uwg_input(uwg_object, _DF_city, epw_site_par, bnd_layer_par, _analysis_period_, _sim_timestep_)
     uwg_object.read_epw()
     uwg_object.instantiate_input()
     uwg_object.hvac_autosize()
