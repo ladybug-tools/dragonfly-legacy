@@ -28,7 +28,6 @@ Provided by Dragonfly 0.0.60
     
     Args:
         sourceDirectory_: An optional address to a folder on your computer that contains the updated Dragonfly userObjects. If no input is provided here, the component will download the latest version from GitHUB.
-        _updateThisFile: Set to "True" if you want this component to search through the current Grasshopper file and update Dragonfly components that have changed.
         _updateAllUObjects: Set to "True" to sync all the Dragonfly userObjects in your Grasshopper folder with the GitHUB.
     Returns:
         readMe!: ...
@@ -36,9 +35,9 @@ Provided by Dragonfly 0.0.60
 
 ghenv.Component.Name = "Dragonfly_Update Dragonfly"
 ghenv.Component.NickName = 'updateDragonfly'
-ghenv.Component.Message = 'VER 0.0.60\nSEP_13_2017'
+ghenv.Component.Message = 'VER 0.0.02\nJUN_08_2018'
 ghenv.Component.Category = "Dragonfly"
-ghenv.Component.SubCategory = "4 | Developers"
+ghenv.Component.SubCategory = "02 | Developers"
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
 except: pass
@@ -114,78 +113,6 @@ def getAllTheComponents(onlyGHPython = True):
     
     return components
 
-def updateTheComponent(component, newUOFolder, lb_preparation):
-    
-    def isNewerVersion(currentUO, component):
-        """
-        check if the component has a newer version than the current userObjects
-        """
-        # get the code insider the userObject
-        ghComponent = currentUO.InstantiateObject()
-        
-        # version of the connected component
-        if component.Message == None:
-            return True, ghComponent.Code
-        if len(component.Message.split("\n"))<2:
-            return True, ghComponent.Code
-        
-        ghVersion, ghDate = component.Message.split("\n")
-        ghCompVersion = map(int, ghVersion.split("VER ")[1].split("."))
-        month, day, ghYear  = ghDate.split("_")
-        # print version, date
-        month = lb_preparation.monthList.index(month.upper()) + 1
-        ghCompDate = int(lb_preparation.getJD(month, day))
-        
-        # this is not the best way but works for now!
-        # should be a better way to compute the component and get the message
-        componentCode = ghComponent.Code.split("\n")
-        UODate = ghCompDate - 1
-        # version of the file
-        for lineCount, line in enumerate(componentCode):
-            if lineCount > 200: break
-            if line.strip().startswith("ghenv.Component.Message"):
-                #print line
-                # print line.split("=")[1].strip().split("\n")
-                version, date = line.split("=")[1].strip().split("\\n")
-                
-                # in case the file doesn't have an standard Dragonfly message let it be updated
-                try:
-                    UOVersion = map(int, version.split("VER ")[1].split("."))
-                except Exception, e:
-                    return True, ghComponent.Code
-                month, day, UOYear  = date.split("_")
-                month = lb_preparation.monthList.index(month.upper()) + 1
-                UODate = int(lb_preparation.getJD(month, day))
-                break
-        
-        # check if the version of the code is newer
-        if int(ghYear.strip()) < int(UOYear[:-1].strip()):
-                return True, ghComponent.Code
-        elif ghCompDate < UODate:
-            return True, ghComponent.Code
-        elif ghCompDate == UODate:
-            for ghVer, UOVer in zip(UOVersion, UOVersion):
-                if ghVer > UOVer: return False, " "
-            return True, ghComponent.Code
-        else:
-            return False, " "
-    
-    # check if the userObject is already existed in the folder
-    try:
-        filePath = os.path.join(newUOFolder, component.Name + ".ghuser")
-        newUO = gh.GH_UserObject(filePath)
-    except:
-        # there is no newer userobject with the same name so just return
-        return
-    
-    # if is newer remove
-    isNewer, newCode = isNewerVersion(newUO, component)
-    # replace the code inside the component with userObject code
-    if isNewer:
-        component.Code = newCode
-        component.ExpireSolution(True)
-    
-
 def main(sourceDirectory, updateThisFile, updateAllUObjects):
     if not sc.sticky.has_key('dragonfly_release'): return "You need to let Dragonfly fly first!", False
     if not sc.sticky.has_key('ladybug_release'): return "You need to let Ladybug fly first!", False
@@ -199,17 +126,6 @@ def main(sourceDirectory, updateThisFile, updateAllUObjects):
     
     destinationDirectory = folders.ClusterFolders[0]
     
-    if updateThisFile:
-        # find all the userObjects
-        ghComps = getAllTheComponents()
-        
-        # for each of them check and see if there is a userObject with the same name is available
-        for ghComp in ghComps:
-            if ghComp.Name != "Dragonfly_Update Dragonfly":
-                updateTheComponent(ghComp, userObjectsFolder, lb_preparation)
-        
-        return "Done!", True
-        
     # copy files from source to destination
     if updateAllUObjects:
         if not userObjectsFolder  or not os.path.exists(userObjectsFolder):
@@ -245,8 +161,8 @@ def main(sourceDirectory, updateThisFile, updateAllUObjects):
         
         return "Done!" , True
 
-if _updateThisFile or _updateAllUObjects:
-    msg, success = main(sourceDirectory_, _updateThisFile, _updateAllUObjects)
+if _updateAllUObjects:
+    msg, success = main(sourceDirectory_, _updateAllUObjects)
     if not success:
         ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
     else:
