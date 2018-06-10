@@ -154,6 +154,8 @@ def set_uwg_input(uwg, DFCity, epw_site_par, bnd_layer_par, analysis_period, sim
         uwg.vegCover = DFCity.grass_coverage_ratio
         uwg.treeCoverage = DFCity.tree_coverage_ratio
         uwg.albVeg = DFCity.vegetation_parameters.vegetation_albedo
+        uwg.latTree = DFCity.vegetation_parameters.tree_latent_fraction
+        uwg.latGrss = DFCity.vegetation_parameters.grass_latent_fraction
         uwg.rurVegCover = epw_site_par.vegetation_coverage
         
         if DFCity.vegetation_parameters.vegetation_start_month == 0 or DFCity.vegetation_parameters.vegetation_end_month == 0:
@@ -178,9 +180,6 @@ def set_uwg_input(uwg, DFCity, epw_site_par, bnd_layer_par, analysis_period, sim
         uwg.SHGC = DFCity.shgc
         uwg.alb_wall = DFCity.wall_albedo
         uwg.h_floor = DFCity.floor_height
-        
-        uwg.latGrss = 0
-        uwg.latTree = 0
         
         return uwg
 
