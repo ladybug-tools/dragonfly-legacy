@@ -38,7 +38,7 @@ Provided by Dragonfly 0.0.02
 
 ghenv.Component.Name = "Dragonfly_Run Urban Weather Generator"
 ghenv.Component.NickName = 'RunUWG'
-ghenv.Component.Message = 'VER 0.0.02\nJUN_09_2018'
+ghenv.Component.Message = 'VER 0.0.02\nJUN_10_2018'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "1 | Urban Weather"
 #compatibleDFVersion = VER 0.0.02\nMAY_25_2018
@@ -111,12 +111,12 @@ def set_uwg_input(uwg, DFCity, epw_site_par, bnd_layer_par, analysis_period, sim
         if simTimestep is not None:
             uwg.dtSim = simTimestep
         else:
-            uwg.dtSim = 300
-        uwg.dtWeather = 3600
+            uwg.dtSim = 300.
+        uwg.dtWeather = 3600.
         
         # HVAC system and internal laod
         uwg.autosize = 0
-        uwg.sensOcc = 100
+        uwg.sensOcc = 100.
         uwg.LatFOcc = 0.3
         uwg.RadFOcc = 0.2
         uwg.RadFEquip = 0.5
@@ -130,9 +130,9 @@ def set_uwg_input(uwg, DFCity, epw_site_par, bnd_layer_par, analysis_period, sim
         uwg.c_exch = bnd_layer_par.exchange_coefficient
         uwg.h_temp = epw_site_par.temp_measure_height
         uwg.h_wind = epw_site_par.wind_measure_height
-        uwg.maxDay = 150
-        uwg.maxNight = 20
-        uwg.windMin = 1
+        uwg.maxDay = 150.
+        uwg.maxNight = 20.
+        uwg.windMin = 1.
         uwg.h_obs = epw_site_par.average_obstacle_height
         
         # Urban characteristics
@@ -179,8 +179,6 @@ def set_uwg_input(uwg, DFCity, epw_site_par, bnd_layer_par, analysis_period, sim
         uwg.alb_wall = DFCity.wall_albedo
         uwg.h_floor = DFCity.floor_height
         
-        # parameters that are not being used that are going away
-        uwg.latAnth = 0
         uwg.latGrss = 0
         uwg.latTree = 0
         
@@ -228,10 +226,10 @@ if init_check == True and _write == True:
     
     # create a uwg_object from the dragonfly objects.
     uwg_object, new_epw_path = create_uwg(_epw_file, _folder_, _name_)
-    uwg_object.RESOURCE_PATH = uwg_path
+    uwg_object.RESOURCE_PATH = os.path.join(uwg_path, 'refdata')
     uwg_object = set_uwg_input(uwg_object, _DF_city, epw_site_par, bnd_layer_par, _analysis_period_, _sim_timestep_)
     uwg_object.read_epw()
-    uwg_object.instantiate_input()
+    uwg_object.init_input_obj()
     uwg_object.hvac_autosize()
     
     # run the UWG object if run is set to True.

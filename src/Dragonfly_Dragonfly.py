@@ -46,7 +46,7 @@ Provided by Dragonfly 0.0.02
 
 ghenv.Component.Name = "Dragonfly_Dragonfly"
 ghenv.Component.NickName = 'Dragonfly'
-ghenv.Component.Message = 'VER 0.0.02\nJUN_09_2018'
+ghenv.Component.Message = 'VER 0.0.02\nJUN_10_2018'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "0 | Dragonfly"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -2276,7 +2276,7 @@ if checkIn.letItFly:
         username = os.getenv("USERNAME")
         rhinoScriptsDir = 'C:\\Users\\{}\\AppData\\Roaming\\McNeel\\Rhinoceros\\6.0\\scripts\\'.format(username)
         uwgClassDir = rhinoScriptsDir + 'UWG\\'
-        readDOE_file_path = os.path.join(uwgClassDir,"readDOE.pkl")
+        readDOE_file_path = os.path.join(uwgClassDir,"refdata","readDOE.pkl")
         if not os.path.isdir(rhinoScriptsDir):
             msg = "Dragonfly currently only works on Rhino 6."
             print msg

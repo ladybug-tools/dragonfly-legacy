@@ -22,7 +22,6 @@ import cPickle
 import copy
 import utilities
 import logging
-import progress_bar
 
 from simparam import SimParam
 from weather import  Weather
@@ -95,7 +94,7 @@ class UWG(object):
     WGMAX = 0.005 # maximum film water depth on horizontal surfaces (m)
 
     # File path parameter
-    RESOURCE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', "resources"))
+    RESOURCE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "resources"))
     CURRENT_PATH = os.path.abspath(os.path.dirname(__file__))
 
     def __init__(self, epwFileName, uwgParamFileName=None, epwDir=None, uwgParamDir=None, destinationDir=None, destinationFileName=None):
@@ -113,8 +112,9 @@ class UWG(object):
         self.uwgParamDir = uwgParamDir if uwgParamDir else os.path.join(self.RESOURCE_PATH,"parameters")
         self.destinationDir = destinationDir if destinationDir else os.path.join(self.RESOURCE_PATH,"epw_uwg")
 
-        # Serialized DOE reference data
-        self.readDOE_file_path = os.path.join(self.CURRENT_PATH,"readDOE.pkl")
+        # refdata: Serialized DOE reference data, z_meso height data
+        self.readDOE_file_path = os.path.join(self.CURRENT_PATH, "refdata", "readDOE.pkl")
+        self.z_meso_dir_path = os.path.join(self.CURRENT_PATH, "refdata")
 
         # EPW precision
         self.epw_precision = 1
@@ -174,9 +174,9 @@ class UWG(object):
         self.vegStart = None     # vegetation start month
         self.vegEnd = None       # vegetation end month
         self.albVeg = None       # Vegetation albedo
+        self.rurVegCover = None  # rural vegetation cover
         self.latGrss = None      # latent fraction of grass
         self.latTree = None      # latent fraction of tree
-        self.rurVegCover = None  # rural vegetation cover
 
         # Define Traffic schedule
         self.SchTraffic = None
@@ -189,8 +189,8 @@ class UWG(object):
         self.albRoof = None     # roof albedo (0 - 1)
         self.vegRoof = None     # Fraction of the roofs covered in grass/shrubs (0-1)
         self.glzR = None        # Glazing Ratio
-        self.hvac = None        # HVAC TYPE; 0 = Fully Conditioned (21C-24C); 1 = Mixed Mode Natural Ventilation (19C-29C + windows open >22C); 2 = Unconditioned (windows open >22C)
-
+        self.SHGC = None       # Solar Heat Gain Coefficient
+        self.albWall = None    # Wall albedo
 
     def __repr__(self):
         return "UWG: {} ".format(self.epwFileName)
@@ -290,7 +290,9 @@ class UWG(object):
                     row[0] == "albRoof" or \
                     row[0] == "vegRoof" or \
                     row[0] == "glzR" or \
-                    row[0] == "hvac"
+                    row[0] == "hvac" or \
+                    row[0] == "albWall" or \
+                    row[0] == "SHGC"
                     )
                 )
 
@@ -364,9 +366,9 @@ class UWG(object):
         if self.vegStart is None: self.vegStart = ipd['vegStart']
         if self.vegEnd is None: self.vegEnd = ipd['vegEnd']
         if self.albVeg is None: self.albVeg = ipd['albVeg']
+        if self.rurVegCover is None: self.rurVegCover = ipd['rurVegCover']
         if self.latGrss is None: self.latGrss = ipd['latGrss']
         if self.latTree is None: self.latTree = ipd['latTree']
-        if self.rurVegCover is None: self.rurVegCover = ipd['rurVegCover']
 
         # Define Traffic schedule
         if self.SchTraffic is None: self.SchTraffic = ipd['SchTraffic']
@@ -382,7 +384,8 @@ class UWG(object):
         if self.albRoof is None: self.albRoof = ipd['albRoof']
         if self.vegRoof is None: self.vegRoof = ipd['vegRoof']
         if self.glzR is None: self.glzR = ipd['glzR']
-        if self.hvac is None: self.hvac = ipd['hvac']
+        if self.albWall is None: self.albWall = ipd['albWall']
+        if self.SHGC is None: self.SHGC = ipd['SHGC']
 
     def set_input(self):
         """ Set inputs from .uwg input file if not already defined, the check if all
@@ -417,14 +420,15 @@ class UWG(object):
             type(self.d_road) == float and type(self.sensAnth) == float and \
             type(self.latAnth) == float and type(self.bld) == type([]) and \
             self.is_near_zero(len(self.bld)-16.0) and \
+            type(self.latTree) == float and type(self.latGrss) == float and \
             (type(self.zone) == float or type(self.zone) == int) and \
             (type(self.vegStart) == float or type(self.vegStart) == int) and \
             (type(self.vegEnd) == float or type(self.vegEnd) == int) and \
             type(self.vegCover) == float and type(self.treeCoverage) == float and \
-            type(self.albVeg) == float and type(self.latGrss) == float and \
-            type(self.latTree) == float and type(self.rurVegCover) == float and \
+            type(self.albVeg) == float and type(self.rurVegCover) == float and \
             type(self.kRoad) == float and type(self.cRoad) == float and \
             type(self.SchTraffic) == type([]) and self.is_near_zero(len(self.SchTraffic)-3.0)
+
 
         if not is_defined:
             raise Exception("The required parameters have not been defined correctly. Check input parameters and try again.")
@@ -432,7 +436,7 @@ class UWG(object):
         # Modify zone to be used as python index
         self.zone = int(self.zone)-1
 
-    def instantiate_input(self):
+    def init_input_obj(self):
         """Section 4 - Create UWG objects from input parameters
 
             self.simTime            # simulation time parameter obj
@@ -532,6 +536,10 @@ class UWG(object):
                         self.BEM[k].roof.albedo = self.albRoof
                     if self.vegRoof:
                         self.BEM[k].roof.vegCoverage = self.vegRoof
+                    if self.SHGC:
+                        self.BEM[k].building.shgc = self.SHGC
+                    if self.albWall:
+                        self.BEM[k].wall.albedo = self.albWall
 
                     # Keep track of total urban r_glaze, SHGC, and alb_wall for UCM model
                     r_glaze = r_glaze + self.BEM[k].frac * self.BEM[k].building.glazingRatio ##
@@ -542,8 +550,8 @@ class UWG(object):
                     k += 1
 
         # Reference site class (also include VDM)
-        self.RSM = RSMDef(self.lat,self.lon,self.GMT,self.h_obs,self.weather.staTemp[0],self.weather.staPres[0],self.geoParam,self.RESOURCE_PATH)
-        self.USM = RSMDef(self.lat,self.lon,self.GMT,self.bldHeight/10.,self.weather.staTemp[0],self.weather.staPres[0],self.geoParam, self.RESOURCE_PATH)
+        self.RSM = RSMDef(self.lat,self.lon,self.GMT,self.h_obs,self.weather.staTemp[0],self.weather.staPres[0],self.geoParam,self.z_meso_dir_path)
+        self.USM = RSMDef(self.lat,self.lon,self.GMT,self.bldHeight/10.,self.weather.staTemp[0],self.weather.staPres[0],self.geoParam, self.z_meso_dir_path)
 
         T_init = self.weather.staTemp[0]
         H_init = self.weather.staHum[0]
@@ -631,9 +639,6 @@ class UWG(object):
         print '\nSimulating new temperature and humidity values for {} days from {}/{}.\n'.format(
             int(self.nDay), int(self.Month), int(self.Day))
         self.logger.info("Start simulation")
-
-        # Start progress bar at zero
-        progress_bar.print_progress(0, 100.0, prefix = "Progress:", bar_length = 25)
 
         for it in range(1,self.simTime.nt,1):# for every simulation time-step (i.e 5 min) defined by uwg
             # Update water temperature (estimated)
@@ -758,9 +763,6 @@ class UWG(object):
                 self.logger.info("dpT = {}".format(self.UCMData[n].Tdp))
                 self.logger.info("RH  = {}".format(self.UCMData[n].canRHum))
 
-                # Print progress bar
-                sim_it = round((it/float(self.simTime.nt))*100.0,1)
-                progress_bar.print_progress(sim_it, 100.0, prefix = "Progress:", bar_length = 25)
 
                 n += 1
 
@@ -794,14 +796,14 @@ class UWG(object):
 
         epw_new_id.close()
 
-        print "\nNew climate file '{}' is generated at {}.".format(self.destinationFileName, self.destinationDir)
+        print "New climate file '{}' is generated at {}.".format(self.destinationFileName, self.destinationDir)
 
     def run(self):
 
         # run main class methods
         self.read_epw()
         self.set_input()
-        self.instantiate_input()
+        self.init_input_obj()
         self.hvac_autosize()
         self.simulate()
         self.write_epw()
