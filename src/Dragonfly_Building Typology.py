@@ -40,7 +40,7 @@ Provided by Dragonfly 0.0.02
     Returns:
         readMe!: ...
         -------------: ...
-        DF_typology: A Dragonfly building typology object that can be plugged into the "Dragonfly_City" component.
+        typology: A Dragonfly building typology object that can be plugged into the "Dragonfly_City" component.
         -------------: ...
         footprints: The building geometry as projected onto the world XY plane.  This is used to determine the site coverage ratio and to perform a weighted-average of the building heights.
         floors: A list of breps representing the floors of the typology.
@@ -70,5 +70,5 @@ else:
     df_BuildingTypology = sc.sticky["dragonfly_BuildingTypology"]
 
 if init_check == True and _run == True:
-    DF_typology, footprints, floors, facades = df_BuildingTypology.from_geometry(_geo, 
+    typology, footprints, floors, facades = df_BuildingTypology.from_geometry(_geo, 
         _program, _age, _flr_to_flr_, _glz_ratio_, _fract_canyon_)

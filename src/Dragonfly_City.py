@@ -14,7 +14,7 @@ The ouput of this component can be plugged into the 'Dragonfly_Run Urban Weather
 -
 Provided by Dragonfly 0.0.02
     Args:
-        _DF_typologies: One or more building typologies from the "Dragonfly_UWG Building Typology" component.
+        _typologies: One or more building typologies from the "Dragonfly_UWG Building Typology" component.
         _terrain: A brep or list of breps that represent the the terrian beneath the urban area, including all pavement, grass areas, and the region beneath the buildings.  Note that this  brep should just reflect the surface of the terrain and should not be a closed solid.  The outer limits of this surface will be used to determine the density of the urban area so including surface area that extends well beyond the buildings will cause the simulation to inacurately model the density.
         trees_: Either a list of horizontal surfaces that represent the tree canopies of the urban area or a number between 0 and 1 that represents that fraction of tree coverage over the entire urban area (including those over both roofs and pavement).  If breps are input, they will be projected to the ground plane to compute the area of tree coverage as seen from above.  Thus, simpler tree geometry like boxes that represent the tree canopies are preferred.  If nothing is input here, it will be assumed that there are no trees in the urban area.
         grass_: Either a list of surfaces that represent the grassy surfaces of the urban area or a number between 0 and 1 that represents that fraction of grass coverage over the entire urban area (including both green roofs and ground vegetation). If surfaces are input here, they should be coplanar with the terrainBrep. If nothing is input here, it will be assumed that there is no grass in the urban area.
@@ -28,7 +28,7 @@ Provided by Dragonfly 0.0.02
     Returns:
         read_me: ...
         ----------------: ...
-        DF_city: A Drafongfly city objectthat can be plugged into the "Dragonfly_Run Urban Weather Generator" component.
+        city: A Drafongfly city objectthat can be plugged into the "Dragonfly_Run Urban Weather Generator" component.
         ----------------: ...
         tree_proj: If tree breps are connected, this is the tree geometry as projected into the world XY plane.  This is used to determine the tree coverage.
         grass_proj: If grass breps are connected, this is the tree geometry as projected into the world XY plane.  This is used to determine the grass coverage.
@@ -79,6 +79,6 @@ if init_check == True and _run == True:
             grass_obj, grass_proj = df_Vegetation.from_geometry(grass_, False)
             g_cover = grass_obj.computeCoverage(terrain)
     
-    DF_city = df_City.from_typologies(_DF_typologies, terrain, _climate_zone,
+    city = df_City.from_typologies(_typologies, terrain, _climate_zone,
         _traffic_par, t_cover, g_cover, vegetation_par_, pavement_par_)
 

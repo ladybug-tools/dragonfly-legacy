@@ -264,7 +264,7 @@ class versionCheck(object):
         return isInputMissing
 
 
-class DFGeometry(object):
+class Geometry(object):
     
     def __init__(self):
         # transform to project things into the XY plane
@@ -696,7 +696,7 @@ class Utilities(object):
         else:
             return float(val)
 
-class DFBuildingTypes(object):
+class BuildingTypes(object):
     
     def __init__(self, readDOE_file_path):
         """Class that contains all of the accepted building typologies and contruction years"""
@@ -892,7 +892,7 @@ class DFParameter(object):
         """Return True."""
         return True
 
-class DFTypology(DFObject):
+class Typology(DFObject):
     """Represents a group of buildings of the same typology in an urban area.
     
     Properties:
@@ -986,7 +986,7 @@ class DFTypology(DFObject):
             footprintBreps: A list of breps representing the footprints of the buildings.
             facadeBreps: A list of breps representing the exposed facade surfaces of the typology.
         """
-        geometryLib = DFGeometry()
+        geometryLib = Geometry()
         avgBldgHeight, footprintArea, floorArea, facadeArea, footprintBreps, floorBreps, facadeBreps = geometryLib.calculateTypologyGeoParams(bldg_breps, floor_to_floor)
         
         typology = cls(avgBldgHeight, footprintArea, facadeArea, bldg_program, bldg_age, floor_to_floor, glz_ratio, fract_heat_to_canyon, floorArea)
@@ -1133,8 +1133,8 @@ class DFTypology(DFObject):
         return self._parent_city
     
     @property
-    def isDFTypology(self):
-        """Return True for DFTypology."""
+    def isTypology(self):
+        """Return True for Typology."""
         return True
     
     def get_default_shgc(self, climate_zone):
@@ -1154,8 +1154,8 @@ class DFTypology(DFObject):
             merged_typology: A Dragonfly typology representing the merged previous typologies.
         """
         # checks
-        assert (hasattr(typology_one, 'isDFTypology')), 'typology_one must be a Dragonfly typology. got {}'.format(type(typology_one))
-        assert (hasattr(typology_two, 'isDFTypology')), 'typology_two must be a Dragonfly typology. got {}'.format(type(typology_two))
+        assert (hasattr(typology_one, 'isTypology')), 'typology_one must be a Dragonfly typology. got {}'.format(type(typology_one))
+        assert (hasattr(typology_two, 'isTypology')), 'typology_two must be a Dragonfly typology. got {}'.format(type(typology_two))
         assert (typology_one.bldg_program == typology_two.bldg_program),"bldg_program of typology_one: {} does not match that of typology_two: {}".format(typology_one.bldg_program, typology_two.bldg_program)
         assert (typology_one.bldg_age == typology_two.bldg_age),"bldg_age of this typology_one: {} does not match that of typology_two: {}".format(typology_one.bldg_age, typology_two.bldg_age)
         
@@ -1182,7 +1182,7 @@ class DFTypology(DFObject):
     
     def __repr__(self):
         """Represnt Dragonfly typology."""
-        return 'Dragonfly Building Typology: ' + \
+        return 'Building Typology: ' + \
                '\n  ' + self._bldg_program + ", " + self._bldg_age + \
                '\n  Average Height: ' + str(int(self._average_height)) + " m" + \
                '\n  Number of Stories: ' + str(self.number_of_stories) + \
@@ -1191,7 +1191,7 @@ class DFTypology(DFObject):
                '\n  Facade Area: {:,.0f}'.format(self.facade_area) + " m2" + \
                '\n  Glazing Ratio: ' + str(int(self.glz_ratio*100)) + "%"
 
-class DFCity(DFObject):
+class City(DFObject):
     """Represents a an entire uban area inclluding buildings, pavement, vegetation, and traffic.
     
     Properties:
@@ -1283,7 +1283,7 @@ class DFCity(DFObject):
         mergedTypes = []
         uniqueCount = 0
         for bType in typologies:
-            assert hasattr(bType, 'isDFTypology'), 'typology is not a dragonfly typolgy object. Got {}'.format(type(bType))
+            assert hasattr(bType, 'isTypology'), 'typology is not a dragonfly typolgy object. Got {}'.format(type(bType))
             bTypeName = bType.bldg_program + ',' + bType.bldg_age
             if bTypeName not in bldgTypes.keys():
                 mergedTypes.append(bType)
@@ -1291,11 +1291,11 @@ class DFCity(DFObject):
                 uniqueCount += 1
             else:
                 typeToMerge = mergedTypes[bldgTypes[bTypeName]]
-                mergedType = DFTypology.create_merged_typology(bType, typeToMerge)
+                mergedType = Typology.create_merged_typology(bType, typeToMerge)
                 mergedTypes[bldgTypes[bTypeName]] = mergedType
         
         # process the terrain surface.
-        assert hasattr(terrian, 'isDFTerrain'), 'terrian is not a dragonfly terrian object. Got {}'.format(type(terrian))
+        assert hasattr(terrian, 'isTerrain'), 'terrian is not a dragonfly terrian object. Got {}'.format(type(terrian))
         terrainArea = terrian.area
         
         # compute the critical geometry variables for the city
@@ -1403,7 +1403,7 @@ class DFCity(DFObject):
                 site_area = math.pow(self.characteristic_length,2) * math.pi
                 footprint_area = site_area * self.site_coverage_ratio * cityFract
                 facade_area = site_area * self.facade_to_site_ratio * cityFract
-                newType = DFTypology(self.average_bldg_height, footprint_area, facade_area, bldg_program, bldg_age)
+                newType = Typology(self.average_bldg_height, footprint_area, facade_area, bldg_program, bldg_age)
                 newType._parent_city = self
                 newType._has_parent_city = True
                 self._building_typologies.append(newType)
@@ -1442,7 +1442,7 @@ class DFCity(DFObject):
             assert hasattr(p, 'isVegetationPar'), 'vegetation_parameters is not a dragonfly vegetation_parameters object. Got {}'.format(type(p))
             self._vegetation_parameters = p
         else:
-            self._vegetation_parameters = DFVegetationPar()
+            self._vegetation_parameters = VegetationPar()
     
     @property
     def pavement_parameters(self):
@@ -1455,7 +1455,7 @@ class DFCity(DFObject):
             assert hasattr(p, 'isPavementPar'), 'pavement_parameters is not a dragonfly pavement_parameters object. Got {}'.format(type(p))
             self._pavement_parameters = p
         else:
-            self._pavement_parameters = DFPavementPar()
+            self._pavement_parameters = PavementPar()
     
     @property
     def tree_coverage_ratio(self):
@@ -1539,8 +1539,8 @@ class DFCity(DFObject):
         return self._are_typologies_loaded
     
     @property
-    def isDFCity(self):
-        """Return True for DFCity."""
+    def isCity(self):
+        """Return True for City."""
         return True
     
     def get_uwg_matrix(self):
@@ -1587,7 +1587,7 @@ class DFCity(DFObject):
         typologyList = ''
         for x in self.bldg_types:
             typologyList = typologyList + '\n     ' + str(round(self.bldg_type_ratios[x], 2)) + ' - ' + x
-        return 'Dragonfly City: ' + \
+        return 'City: ' + \
                '\n  Average Bldg Height: ' + str(int(self._average_bldg_height)) + " m" + \
                '\n  Site Coverage Ratio: ' + str(round(self._site_coverage_ratio, 2)) + \
                '\n  Facade-to-Site Ratio: ' + str(round(self._facade_to_site_ratio, 2)) + \
@@ -1596,7 +1596,7 @@ class DFCity(DFObject):
                '\n  ------------------------' + \
                '\n  Building Typologies: ' + typologyList
 
-class DFTerrain(DFObject):
+class Terrain(DFObject):
     """Represents the terrain on which an urban area sits.
     
     Properties:
@@ -1620,7 +1620,7 @@ class DFTerrain(DFObject):
             terrain: The dragonfly terrain object.
             surfaceBreps: The srfBreps representing the terrain (projected into the XY plane).
         """
-        geometryLib = DFGeometry()
+        geometryLib = Geometry()
         surfaceArea, surfaceBreps = geometryLib.calculateFootprints(terrainSrfs)
         terrain = cls(surfaceArea)
         
@@ -1644,8 +1644,8 @@ class DFTerrain(DFObject):
         return self._characteristic_length
     
     @property
-    def isDFTerrain(self):
-        """Return True for DFTerrain."""
+    def isTerrain(self):
+        """Return True for Terrain."""
         return True
     
     def ToString(self):
@@ -1654,11 +1654,11 @@ class DFTerrain(DFObject):
     
     def __repr__(self):
         """Represnt Dragonfly terrain."""
-        return 'Dragonfly Terrain: ' + \
+        return 'Terrain: ' + \
                '\n  Area: ' + str(int(self._area)) + " m2" + \
                '\n  Radius: ' + str(int(self._characteristic_length)) + " m"
 
-class DFVegetation(DFObject):
+class Vegetation(DFObject):
     """Represents vegetation (either grass or trees) within an urban area.
     
     Properties:
@@ -1685,7 +1685,7 @@ class DFVegetation(DFObject):
             vegetation: The dragonfly vegetation object.
             projected_breps: The veg_breps projected into the XY plane.
         """
-        geometryLib = DFGeometry()
+        geometryLib = Geometry()
         surfaceArea, projected_breps = geometryLib.calculateFootprints(veg_breps)
         vegetation = cls(surfaceArea, is_trees)
         
@@ -1713,8 +1713,8 @@ class DFVegetation(DFObject):
         self._is_trees = a
     
     @property
-    def isDFVegetation(self):
-        """Return True for DFDFVegetation."""
+    def isVegetation(self):
+        """Return True for Vegetation."""
         return True
     
     def computeCoverage(self, terrain):
@@ -1727,7 +1727,7 @@ class DFVegetation(DFObject):
                 the terrain covered by the vegetation.
         """
         genChecks = Utilities()
-        if hasattr(terrain, 'isDFTerrain'):
+        if hasattr(terrain, 'isTerrain'):
             coverage = genChecks.in_range((self._area/terrain.area), 0, 1, 'vegetation_coverage')
         else:
             genChecks.make_type_error('terrian', 'Terrain')
@@ -1740,11 +1740,11 @@ class DFVegetation(DFObject):
     
     def __repr__(self):
         """Represnt Dragonfly vegetation."""
-        vegType = 'Dragonfly Trees' if self._is_trees else 'Dragonfly Grass'
+        vegType = 'Trees' if self._is_trees else 'Grass'
         return 'Vegetation: ' + vegType + \
                '\n  Area: ' + str(int(self._area)) + " m2"
 
-class DFTrafficPar(DFParameter):
+class TrafficPar(DFParameter):
     """Represents the traffic within an urban area.
     
     Properties:
@@ -1837,13 +1837,13 @@ class DFTrafficPar(DFParameter):
     
     def __repr__(self):
         """Represnt Dragonfly traffic parameters."""
-        return 'Dragonfly Traffic Parameters: ' + \
+        return 'Traffic Parameters: ' + \
                '\n  Max Heat: ' + str(self._sensible_heat) + ' W/m2' + \
                '\n  Weekday Avg Heat: ' + str(round(self._sensible_heat* (sum(self._weekday_schedule)/24),1)) + ' W/m2' + \
                '\n  Saturday Avg Heat: ' + str(round(self._sensible_heat* (sum(self._saturday_schedule)/24),1)) + ' W/m2' + \
                '\n  Sunday Avg Heat: ' + str(round(self._sensible_heat* (sum(self._sunday_schedule)/24),1)) + ' W/m2'
 
-class DFVegetationPar(DFParameter):
+class VegetationPar(DFParameter):
     """Represents the behaviour of vegetation within an urban area.
     
     Properties:
@@ -1971,13 +1971,13 @@ class DFVegetationPar(DFParameter):
     
     def __repr__(self):
         """Represnt Dragonfly vegetation parameters."""
-        return 'Dragonfly Vegetation Parameters: ' + \
+        return 'Vegetation Parameters: ' + \
                '\n  Albedo: ' + str(self._vegetation_albedo) + \
                '\n  Vegetation Time: ' + self.monthsDict[self._vegetation_start_month] + ' - ' + self.monthsDict[self._vegetation_end_month] + \
                '\n  Tree | Grass Latent: ' + str(self._tree_latent_fraction) + ' | ' + str(self._grass_latent_fraction)
 
 
-class DFPavementPar(DFParameter):
+class PavementPar(DFParameter):
     """Represents the makeup of pavement within the urban area.
     
     Properties:
@@ -2069,7 +2069,7 @@ class DFPavementPar(DFParameter):
     
     def __repr__(self):
         """Represnt Dragonfly pavement parameters."""
-        return 'Dragonfly Pavement Parameters: ' + \
+        return 'Pavement Parameters: ' + \
                '\n  Albedo: ' + str(self._albedo) + \
                '\n  Thickness: ' + str(self._thickness) + \
                '\n  Conductivity: ' + str(self._conductivity) + \
@@ -2168,7 +2168,7 @@ class RefEPWSitePar(DFParameter):
     
     def __repr__(self):
         """Represnt Dragonfly reference EPW site parameters."""
-        return 'Dragonfly Reference EPW Site Parameters: ' + \
+        return 'Reference EPW Site Parameters: ' + \
                '\n  Obstacle Height: ' + str(self._average_obstacle_height) + ' m' + \
                '\n  Vegetation Coverage: ' + str(self._vegetation_coverage) + \
                '\n  Measurement Height (Temp | Wind): ' + str(self._temp_measure_height) + \
@@ -2285,7 +2285,7 @@ class BoundaryLayerPar(DFParameter):
     
     def __repr__(self):
         """Represnt Dragonfly boundary layer parameters."""
-        return 'Dragonfly Boundary Layer Parameters: ' + \
+        return 'Boundary Layer Parameters: ' + \
                '\n  Boundary Height (Day | Night): ' + str(self.day_boundary_layer_height) + \
                     ' m | ' + str(self.night_boundary_layer_height) + ' m' +\
                '\n  Inversion Height: ' + str(self.inversion_height) + ' m' + \
@@ -2340,15 +2340,14 @@ if checkIn.letItFly:
         # copy the classes to memory
         if uwgClassDir != None:
             sc.sticky["dragonfly_UWGPath"] = uwgClassDir
-            sc.sticky["dragonfly_UWGBldgTypes"] = DFBuildingTypes(readDOE_file_path)
-        sc.sticky["dragonfly_DFGeometry"] = DFGeometry
-        sc.sticky["dragonfly_BuildingTypology"] = DFTypology
-        sc.sticky["dragonfly_City"] = DFCity
-        sc.sticky["dragonfly_Terrain"] = DFTerrain
-        sc.sticky["dragonfly_Vegetation"] = DFVegetation
-        sc.sticky["dragonfly_TrafficPar"] = DFTrafficPar
-        sc.sticky["dragonfly_VegetationPar"] = DFVegetationPar
-        sc.sticky["dragonfly_PavementPar"] = DFPavementPar
+            sc.sticky["dragonfly_UWGBldgTypes"] = BuildingTypes(readDOE_file_path)
+        sc.sticky["dragonfly_BuildingTypology"] = Typology
+        sc.sticky["dragonfly_City"] = City
+        sc.sticky["dragonfly_Terrain"] = Terrain
+        sc.sticky["dragonfly_Vegetation"] = Vegetation
+        sc.sticky["dragonfly_TrafficPar"] = TrafficPar
+        sc.sticky["dragonfly_VegetationPar"] = VegetationPar
+        sc.sticky["dragonfly_PavementPar"] = PavementPar
         sc.sticky["dragonfly_RefEpwPar"] = RefEPWSitePar
         sc.sticky["dragonfly_BoundaryLayerPar"] = BoundaryLayerPar
         

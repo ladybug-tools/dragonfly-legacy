@@ -19,7 +19,7 @@ http://urbanmicroclimate.scripts.mit.edu/publications.php
 Provided by Dragonfly 0.0.02
     Args:
         _epw_file: An .epw file path on your system.  This is the rural or airport file that will be morphed to reflect the climate conditions within an urban canyon.
-        _DF_city: A Dragonfly City object. This object can be generated with the "Dragonfly_City" component.
+        _city: A Dragonfly City object. This object can be generated with the "Dragonfly_City" component.
         epw_site_par_: Optional Reference EPW Site Parameters from the "Dragonfly_Reference EPW Site Par" component.
         bnd_layer_par_: Optional Boundary Layer Parameters from the "Dragonfly_Boundary Layer Par" component.
         _analysis_period_: An optional analysis period from the 'Ladybug_Analysis Period' component.  If no Analysis period is given, the Urban Weather Generator will be run for the enitre year.
@@ -221,12 +221,12 @@ if init_check == True and _write == True:
         bnd_layer_par = df_BndLayerPar()
     
     # check the DFcity object.
-    assert (hasattr(_DF_city, 'isDFCity')), '_DF_city must be a Dragonfly City object. Got {}'.format(type(_DF_city))
+    assert (hasattr(_city, 'isCity')), '_city must be a Dragonfly City object. Got {}'.format(type(_city))
     
     # create a uwg_object from the dragonfly objects.
     uwg_object, new_epw_path = create_uwg(_epw_file, _folder_, _name_)
     uwg_object.RESOURCE_PATH = os.path.join(uwg_path, 'refdata')
-    uwg_object = set_uwg_input(uwg_object, _DF_city, epw_site_par, bnd_layer_par, _analysis_period_, _sim_timestep_)
+    uwg_object = set_uwg_input(uwg_object, _city, epw_site_par, bnd_layer_par, _analysis_period_, _sim_timestep_)
     uwg_object.read_epw()
     uwg_object.init_input_obj()
     uwg_object.hvac_autosize()
