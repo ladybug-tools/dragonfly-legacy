@@ -60,6 +60,7 @@ ghenv.Component.AdditionalHelpFromDocStrings = "3"
 
 import scriptcontext as sc
 import Grasshopper.Kernel as gh
+from itertools import izip
 
 #Dragonfly check.
 initCheck = True
