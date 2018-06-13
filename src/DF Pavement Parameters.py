@@ -8,7 +8,7 @@
 
 
 """
-Use this component to generate parameters that describe the pavement of the urban area, which can be plugged into the "Dragonfly_UWG City" component.
+Use this component to generate parameters that describe the pavement of the urban area, which can be plugged into the "DF UWG City" component.
 -
 Provided by Dragonfly 0.0.02
     
@@ -18,13 +18,13 @@ Provided by Dragonfly 0.0.02
         _conductivity_:  A number representing the conductivity of the pavement material in W/m-K.  This is the heat flow in Watts across one meter thick of the material when the temperature difference on either side is 1 Kelvin. The default is set to 1 W/m-K, which is typical of asphalt.
         _vol_heat_cap_:  A number representing the volumetric heat capacity of the pavement material in J/m3-K.  This is the number of joules needed to raise one cubic meter of the material by 1 degree Kelvin.  The default is set to 1,600,000 J/m3-K, which is typical of asphalt.
     Returns:
-        pavement_par: Pavement parameters that can be plugged into the "Dragonfly_UWG City" component.
+        pavement_par: Pavement parameters that can be plugged into the "DF UWG City" component.
 
 """
 
-ghenv.Component.Name = "Dragonfly_Pavement Parameters"
+ghenv.Component.Name = "DF Pavement Parameters"
 ghenv.Component.NickName = 'PavementPar'
-ghenv.Component.Message = 'VER 0.0.02\nJUN_09_2018'
+ghenv.Component.Message = 'VER 0.0.02\nJUN_12_2018'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "1 | Urban Weather"
 #compatibleDFVersion = VER 0.0.02\nMAY_20_2018

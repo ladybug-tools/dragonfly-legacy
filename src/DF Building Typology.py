@@ -7,12 +7,12 @@
 # @license GPL-3.0+ <http://spdx.org/licenses/GPL-3.0+>
 
 """
-Use this component to generate a default building typology to be used with the "Dragonfly_City" component.  The specific characteristcs of these typologies are based on the US Department of Energy (DoE) Building types.
+Use this component to generate a default building typology to be used with the "DF City" component.  The specific characteristcs of these typologies are based on the US Department of Energy (DoE) Building types.
 -
 Provided by Dragonfly 0.0.02
     Args:
         _geo: A list of closed breps that represent the geometry of the buildings in the urban area that fall under this typology.
-        _program: One of the 16 building programs listed from the "Dragonfly_Bldg Programs" component.  The following options are available:
+        _program: One of the 16 building programs listed from the "DF Bldg Programs" component.  The following options are available:
             FullServiceRestaurant
             Hospital
             LargeHotel
@@ -34,22 +34,20 @@ Provided by Dragonfly 0.0.02
             1980's-Present
             New Construction
         _flr_to_flr_: A number that sets the average distance between floors for the building typology.  This will be used to compute the total floor area of the building, which ultimately determines the influence that the typology has on the urban microclimate.
-        _glz_ratio_: A number between 0 and 1 that represents the fraction of the exterior wall surface occupied by windows.  If no value is input here, a default will be used that comes from the DoE building template connected to the _bldgProgram and _bldgAge.
         _fract_canyon_: A number between 0 and 1 that represents the fraction of the building's waste heat from air conditioning that gets rejected into the urban canyon (as opposed to through rooftop equipment or into a ground source loop).  The default is set to 0.5.
         _run: Set to "True" to run the component and generate a building typology.
     Returns:
-        readMe!: ...
-        -------------: ...
-        typology: A Dragonfly building typology object that can be plugged into the "Dragonfly_City" component.
+        read_me: ...
+        typology: A Dragonfly building typology object that can be plugged into the "DF City" component.
         -------------: ...
         footprints: The building geometry as projected onto the world XY plane.  This is used to determine the site coverage ratio and to perform a weighted-average of the building heights.
         floors: A list of breps representing the floors of the typology.
         facades: A list of breps representing the exposed facade area of the building breps.  These will be used to calculate the facade-to-site ratio.
 """
 
-ghenv.Component.Name = "Dragonfly_Building Typology"
+ghenv.Component.Name = "DF Building Typology"
 ghenv.Component.NickName = 'BldgTypology'
-ghenv.Component.Message = 'VER 0.0.02\nJUN_03_2018'
+ghenv.Component.Message = 'VER 0.0.02\nJUN_12_2018'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "1 | Urban Weather"
 #compatibleDFVersion = VER 0.0.02\nMAY_12_2018
@@ -71,4 +69,4 @@ else:
 
 if init_check == True and _run == True:
     typology, footprints, floors, facades = df_BuildingTypology.from_geometry(_geo, 
-        _program, _age, _flr_to_flr_, _glz_ratio_, _fract_canyon_)
+        _program, _age, _flr_to_flr_, _fract_canyon_)

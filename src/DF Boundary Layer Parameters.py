@@ -8,7 +8,7 @@
 
 
 """
-Use this component to generate boundary layer parameters that can be plugged into the "Dragonfly_Run Urban Weather Generator" component.  This component is mostly for climatologists, meteorologists and urban weather experts and probably does not have to be used for most simulations.
+Use this component to generate boundary layer parameters that can be plugged into the "DF Run Urban Weather Generator" component.  This component is mostly for climatologists, meteorologists and urban weather experts and probably does not have to be used for most simulations.
 -
 Provided by Dragonfly 0.0.02
     Args:
@@ -18,12 +18,12 @@ Provided by Dragonfly 0.0.02
         _circulation_coeff_: A number that represents the circulation coefficient.  The default is 1.2 per Bueno, Bruno (2012).
         _exchange_coeff_: A number that represents the exchange coefficient.  The default is 1.0 per Bueno, Bruno (2014).
     Returns:
-        bnd_layer_par: A list of refernce EPW site parameters that can be plugged into the "Dragonfly_Run Urban Weather Generator" component.
+        bnd_layer_par: A list of refernce EPW site parameters that can be plugged into the "DF Run Urban Weather Generator" component.
 """
 
-ghenv.Component.Name = "Dragonfly_Boundary Layer Parameters"
+ghenv.Component.Name = "DF Boundary Layer Parameters"
 ghenv.Component.NickName = 'BndLayerPar'
-ghenv.Component.Message = 'VER 0.0.02\nJUN_09_2018'
+ghenv.Component.Message = 'VER 0.0.02\nJUN_12_2018'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "1 | Urban Weather"
 #compatibleDFVersion = VER 0.0.02\nMAY_13_2018

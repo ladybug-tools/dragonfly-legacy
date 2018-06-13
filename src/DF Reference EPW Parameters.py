@@ -8,7 +8,7 @@
 
 
 """
-Use this component to generate refernce EPW site parameters that can be plugged into the "Dragonfly_Run Urban Weather Generator" component.  If you are using standard files from the US Department of Energy, you should never need to use this component.  This component is onyl for when your data was recorded using non-standard means, such as an experiment that you have run in an actual urban canyon.
+Use this component to generate refernce EPW site parameters that can be plugged into the "DF Run Urban Weather Generator" component.  If you are using standard files from the US Department of Energy, you should never need to use this component.  This component is onyl for when your data was recorded using non-standard means, such as an experiment that you have run in an actual urban canyon.
 -
 Provided by Dragonfly 0.0.02
     Args:
@@ -17,12 +17,12 @@ Provided by Dragonfly 0.0.02
         _temp_height_: A number that represents the height in meters at which temperature is measured on the weather station.  The default is set to 10 meters as this is the standard measurement height for US Department of Energy EPW files.
         _wind_height_: A number that represents the height in meters at which wind speed is measured on the weather station.  The default is set to 10 meters as this is the standard measurement height for US Department of Energy EPW files.
     Returns:
-        epw_site_par: Refernce EPW site parameters that can be plugged into the "Dragonfly_Run Urban Weather Generator" component.
+        epw_site_par: Refernce EPW site parameters that can be plugged into the "DF Run Urban Weather Generator" component.
 """
 
-ghenv.Component.Name = "Dragonfly_Reference EPW Parameters"
+ghenv.Component.Name = "DF Reference EPW Parameters"
 ghenv.Component.NickName = 'RefEPWPar'
-ghenv.Component.Message = 'VER 0.0.02\nJUN_09_2018'
+ghenv.Component.Message = 'VER 0.0.02\nJUN_12_2018'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "1 | Urban Weather"
 #compatibleDFVersion = VER 0.0.02\nMAY_13_2018

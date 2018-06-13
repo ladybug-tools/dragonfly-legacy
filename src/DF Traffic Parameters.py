@@ -8,7 +8,7 @@
 
 
 """
-Use this component to generate traffic parameters that can be plugged into the "Dragonfly_UWG City" component.
+Use this component to generate traffic parameters that can be plugged into the "DF UWG City" component.
 -
 Provided by Dragonfly 0.0.02
     Args:
@@ -26,12 +26,12 @@ Provided by Dragonfly 0.0.02
         _sun_sch_: A list of 24 values between 0 and 1 that sets the fraction of the anthropogenic heat that occurs at each hour of the typical Sunday.  If no value is input here, a typical schedule for a commercial area will be used:
                 0.2,0.2,0.2,0.2,0.2,0.3,0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.3,0.3,0.2,0.2
     Returns:
-        traffic_par: Traffic parameters that can be plugged into the "Dragonfly_UWG City" component.
+        traffic_par: Traffic parameters that can be plugged into the "DF UWG City" component.
 """
 
-ghenv.Component.Name = "Dragonfly_Traffic Parameters"
+ghenv.Component.Name = "DF Traffic Parameters"
 ghenv.Component.NickName = 'TrafficPar'
-ghenv.Component.Message = 'VER 0.0.02\nJUN_09_2018'
+ghenv.Component.Message = 'VER 0.0.02\nJUN_12_2018'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "1 | Urban Weather"
 #compatibleDFVersion = VER 0.0.02\nMAY_20_2018

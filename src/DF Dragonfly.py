@@ -41,19 +41,18 @@ Provided by Dragonfly 0.0.02
         default_folder_: Optional input for Dragonfly default folder.
                        If empty default folder will be set to C:\ladybug or C:\Users\%USERNAME%\AppData\Roaming\Ladybug\
     Returns:
-        report: Current Dragonfly mood!!!
+        report: ...
 """
 
-ghenv.Component.Name = "Dragonfly_Dragonfly"
+ghenv.Component.Name = "DF Dragonfly"
 ghenv.Component.NickName = 'Dragonfly'
-ghenv.Component.Message = 'VER 0.0.02\nJUN_10_2018'
+ghenv.Component.Message = 'VER 0.0.02\nJUN_12_2018'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "0 | Dragonfly"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
 except: pass
 
 
-import rhinoscriptsyntax as rs
 import Rhino as rc
 import scriptcontext as sc
 import Grasshopper.Kernel as gh
@@ -795,6 +794,33 @@ class BuildingTypes(object):
             '8C': 15
         }
         
+        # dictionary to go from UWG building type to Dragonfly convention.
+        self.uwg_bldg_type = {
+            'FullServiceRestaurant': 'FullServiceRestaurant',
+            'Hospital': 'Hospital',
+            'LargeHotel': 'LargeHotel',
+            'LargeOffice': 'LargeOffice',
+            'MedOffice': 'MedOffice',
+            'MidRiseApartment': 'MidRiseApartment',
+            'OutPatient': 'OutPatient',
+            'PrimarySchool': 'PrimarySchool',
+            'QuickServiceRestaurant': 'QuickServiceRestaurant',
+            'SecondarySchool': 'SecondarySchool',
+            'SmallHotel': 'SmallHotel',
+            'SmallOffice': 'SmallOffice',
+            'StandAloneRetail': 'StandAloneRetail',
+            'StripMall': 'StripMall',
+            'SuperMarket': 'SuperMarket',
+            'WareHouse': 'Warehouse'
+            }
+        
+        # dictionary to go from UWG construction era to Dragonfly convention.
+        self.uwg_built_era = {
+            'Pre80': 'Pre1980s',
+            'Pst80': '1980sPresent',
+            'New': 'NewConstruction'
+            }
+        
         # dictionary of acceptable building program inputs.
         self.programsDict = {
             'FULLSERVICERESTAURANT': 'FullServiceRestaurant',
@@ -926,20 +952,19 @@ class Typology(DFObject):
                 NewConstruction
         floor_to_floor: A number that represents the average distance between floors for the building
             typology.  The default is set to 3.05 meters.
+        fract_heat_to_canyon: A number from 0 to 1 that represents the fraction the building's waste 
+            heat from air conditioning that gets rejected into the urban canyon. The default is set to 0.5.
         glz_ratio: An optional number from 0 to 1 that represents the fraction of the walls of the building typology
             that are glazed. If no value is input here, a default will be used that comes from the DoE building 
             template from the bldg_program and bldg_age.
-        fract_heat_to_canyon: A number from 0 to 1 that represents the fraction the building's waste 
-            heat from air conditioning that gets rejected into the urban canyon. The default is set to 0.5.
-        wall_albedo: the exterior albedo of the typology's walls.
         floor_area: A number that represents the floor area of the buiding in square meteres. The default is auto-calculated
             using the footprint_area, average_height, and floor_to_floor.
         number_of_stories: An integer that represents the average number of stories for the building typology.
     """
     
     def __init__(self, average_height, footprint_area, facade_area, bldg_program, 
-                bldg_age, floor_to_floor=None, glz_ratio=None,
-                fract_heat_to_canyon=None, floor_area=None):
+                bldg_age, floor_to_floor=None, fract_heat_to_canyon=None,
+                glz_ratio=None, floor_area=None):
         """Initialize a dragonfly building typology"""
         # get dependencies
         self.bldgTypes = sc.sticky["dragonfly_UWGBldgTypes"]
@@ -961,13 +986,16 @@ class Typology(DFObject):
         self.bldg_age = bldg_age
         
         # optional parameters with default values set by program.
-        self.glz_ratio = glz_ratio
-        self.wall_albedo = None
         self.fract_heat_to_canyon = fract_heat_to_canyon
+        self.glz_ratio = glz_ratio
+        self.shgc = None
+        self.wall_albedo = None
+        self.roof_albedo = None
+        self.roof_veg_fraction = None
     
     @classmethod
     def from_geometry(cls, bldg_breps, bldg_program, bldg_age, floor_to_floor=None,
-        glz_ratio=None,fract_heat_to_canyon=None):
+        fract_heat_to_canyon=None, glz_ratio=None):
         """Initialize a building typology from closed building brep geometry
         
         Args:
@@ -989,7 +1017,7 @@ class Typology(DFObject):
         geometryLib = Geometry()
         avgBldgHeight, footprintArea, floorArea, facadeArea, footprintBreps, floorBreps, facadeBreps = geometryLib.calculateTypologyGeoParams(bldg_breps, floor_to_floor)
         
-        typology = cls(avgBldgHeight, footprintArea, facadeArea, bldg_program, bldg_age, floor_to_floor, glz_ratio, fract_heat_to_canyon, floorArea)
+        typology = cls(avgBldgHeight, footprintArea, facadeArea, bldg_program, bldg_age, floor_to_floor, fract_heat_to_canyon, glz_ratio, floorArea)
         
         return typology, footprintBreps, floorBreps, facadeBreps
     
@@ -1086,6 +1114,19 @@ class Typology(DFObject):
         self._bldg_age = self.bldgTypes.check_age(age)
     
     @property
+    def fract_heat_to_canyon(self):
+        """Get or set the fraction of the building's heat that is rejected to the urban canyon."""
+        return self._fract_heat_to_canyon
+    
+    @fract_heat_to_canyon.setter
+    def fract_heat_to_canyon(self, x):
+        if x is not None:
+            assert isinstance(x, (float, int)), 'fract_heat_to_canyon must be a number got {}'.format(type(x))
+            self._fract_heat_to_canyon = self.genChecks.in_range(x, 0, 1, 'fract_heat_to_canyon')
+        else:
+            self._fract_heat_to_canyon = 0.5
+    
+    @property
     def glz_ratio(self):
         """Get or set the glazing ratio of the buildings in the typology."""
         return self._glz_ratio
@@ -1097,6 +1138,23 @@ class Typology(DFObject):
             self._glz_ratio = self.genChecks.in_range(x, 0, 1, 'glz_ratio')
         else:
             self._glz_ratio = float(self.bldgTypes.refBEM[self.bldgTypes.bldgtype[self.bldg_program]][self.bldgTypes.builtera[self.bldg_age]][0].building.glazingRatio)
+    
+    @property
+    def shgc(self):
+        """Get or set the SHGC of the buildings in the typology."""
+        return self._shgc
+    
+    @shgc.setter
+    def shgc(self, x):
+        self._shgc = None
+        if x is not None:
+            assert isinstance(x, (float, int)), 'shgc must be a number got {}'.format(type(x))
+            self._shgc = self.genChecks.in_range(x, 0, 1, 'shgc')
+    
+    def get_default_shgc(self, climate_zone):
+        """Get the solar heat gain coefficient of the buildings in the typology given the climate climate_zone."""
+        zoneIndex = self.bldgTypes.check_cimate_zone(climate_zone)
+        return float(self.bldgTypes.refBEM[self.bldgTypes.bldgtype[self.bldg_program]][self.bldgTypes.builtera[self.bldg_age]][zoneIndex].building.shgc)
     
     @property
     def wall_albedo(self):
@@ -1112,17 +1170,30 @@ class Typology(DFObject):
             self._wall_albedo = float(self.bldgTypes.refBEM[self.bldgTypes.bldgtype[self.bldg_program]][self.bldgTypes.builtera[self.bldg_age]][0].wall.albedo)
     
     @property
-    def fract_heat_to_canyon(self):
-        """Get or set the fraction of the building's heat that is rejected to the urban canyon."""
-        return self._fract_heat_to_canyon
+    def roof_albedo(self):
+        """Get or set the exterior roof albedo of the buildings in the typology."""
+        return self._roof_albedo
     
-    @fract_heat_to_canyon.setter
-    def fract_heat_to_canyon(self, x):
+    @roof_albedo.setter
+    def roof_albedo(self, x):
         if x is not None:
-            assert isinstance(x, (float, int)), 'fract_heat_to_canyon must be a number got {}'.format(type(x))
-            self._fract_heat_to_canyon = self.genChecks.in_range(x, 0, 1, 'fract_heat_to_canyon')
+            assert isinstance(x, (float, int)), 'roof_albedo must be a number got {}'.format(type(x))
+            self._roof_albedo = self.genChecks.in_range(x, 0, 1, 'roof_albedo')
         else:
-            self._fract_heat_to_canyon = 0.5
+            self._roof_albedo = float(self.bldgTypes.refBEM[self.bldgTypes.bldgtype[self.bldg_program]][self.bldgTypes.builtera[self.bldg_age]][0].roof.albedo)
+    
+    @property
+    def roof_veg_fraction(self):
+        """Get or set the roof vegetation fraction of the buildings in the typology."""
+        return self._roof_albedo
+    
+    @roof_veg_fraction.setter
+    def roof_veg_fraction(self, x):
+        if x is not None:
+            assert isinstance(x, (float, int)), 'roof_veg_fraction must be a number got {}'.format(type(x))
+            self._roof_veg_fraction = self.genChecks.in_range(x, 0, 1, 'roof_veg_fraction')
+        else:
+            self._roof_veg_fraction = 0.
     
     @property
     def has_parent_city(self):
@@ -1136,11 +1207,6 @@ class Typology(DFObject):
     def isTypology(self):
         """Return True for Typology."""
         return True
-    
-    def get_default_shgc(self, climate_zone):
-        """Get the solar heat gain coefficient of the buildings in the typology given the climate climate_zone."""
-        zoneIndex = self.bldgTypes.check_cimate_zone(climate_zone)
-        return float(self.bldgTypes.refBEM[self.bldgTypes.bldgtype[self.bldg_program]][self.bldgTypes.builtera[self.bldg_age]][zoneIndex].building.shgc)
     
     @classmethod
     def create_merged_typology(cls, typology_one, typology_two):
@@ -1171,7 +1237,7 @@ class Typology(DFObject):
         new_glz_ratio = (typology_one.glz_ratio*typology_one.facade_area + typology_two.glz_ratio*typology_two.facade_area)/new_facade_area
         new_wall_albedo = (typology_one.wall_albedo*typology_one.facade_area + typology_two.wall_albedo*typology_two.facade_area)/new_facade_area
         
-        newtypology = cls(new_average_height, new_footprint_area, new_facade_area, typology_one.bldg_program, typology_one.bldg_age, new_floor_to_floor, new_glz_ratio, new_fract_heat_to_canyon, new_floor_area)
+        newtypology = cls(new_average_height, new_footprint_area, new_facade_area, typology_one.bldg_program, typology_one.bldg_age, new_floor_to_floor, new_fract_heat_to_canyon, new_glz_ratio, new_floor_area)
         newtypology.wall_albedo = new_wall_albedo
         
         return newtypology
@@ -1484,54 +1550,76 @@ class City(DFObject):
             self._grass_coverage_ratio = 0
     
     @property
+    def floor_height(self):
+        """Get the average floor height of the buildings in the typology."""
+        weighted_sum = 0
+        totalFloorArea = 0
+        for bldgType in self.building_typologies:
+            weighted_sum += bldgType.floor_to_floor * bldgType.floor_area
+            totalFloorArea += bldgType.floor_area
+        return weighted_sum / totalFloorArea
+    
+    @property
     def fract_heat_to_canyon(self):
         """Return the fraction of the building's heat that is rejected to the urban canyon."""
-        weightedSum = 0
+        weighted_sum = 0
         totalFlrArea = 0
         for bldgType in self.building_typologies:
-            weightedSum += bldgType.fract_heat_to_canyon*bldgType.floor_area
+            weighted_sum += bldgType.fract_heat_to_canyon * bldgType.floor_area
             totalFlrArea += bldgType.floor_area
-        return weightedSum/totalFlrArea
+        return weighted_sum / totalFlrArea
     
     @property
     def glz_ratio(self):
         """Return the average glazing ratio of the buildings in the city."""
-        weightedSum = 0
+        weighted_sum = 0
         totalFacadeArea = 0
         for bldgType in self.building_typologies:
-            weightedSum += bldgType.glz_ratio*bldgType.facade_area
+            weighted_sum += bldgType.glz_ratio*bldgType.facade_area
             totalFacadeArea += bldgType.facade_area
-        return weightedSum/totalFacadeArea
-    
-    @property
-    def wall_albedo(self):
-        """Return the average wall albedo of the buildings in the city."""
-        weightedSum = 0
-        totalFacadeArea = 0
-        for bldgType in self.building_typologies:
-            weightedSum += bldgType.wall_albedo*bldgType.facade_area
-            totalFacadeArea += bldgType.facade_area
-        return weightedSum/totalFacadeArea
+        return weighted_sum / totalFacadeArea
     
     @property
     def shgc(self):
         """Get the solar heat gain coefficient of the buildings in the typology."""
-        weightedSum = 0
+        weighted_sum = 0
         totalFacadeArea = 0
         for bldgType in self.building_typologies:
-            weightedSum += bldgType.get_default_shgc(self.climate_zone)*bldgType.facade_area
+            if bldgType.shgc is None:
+                bldgType.shgc = bldgType.get_default_shgc(self.climate_zone)
+            weighted_sum += bldgType.shgc * bldgType.facade_area
             totalFacadeArea += bldgType.facade_area
-        return weightedSum/totalFacadeArea
+        return weighted_sum / totalFacadeArea
     
     @property
-    def floor_height(self):
-        """Get the average floor height of the buildings in the typology."""
-        weightedSum = 0
-        totalFloorArea = 0
+    def wall_albedo(self):
+        """Return the average wall albedo of the buildings in the city."""
+        weighted_sum = 0
+        totalFacadeArea = 0
         for bldgType in self.building_typologies:
-            weightedSum += bldgType.floor_to_floor * bldgType.floor_area
-            totalFloorArea += bldgType.floor_area
-        return weightedSum/totalFloorArea
+            weighted_sum += bldgType.wall_albedo * bldgType.facade_area
+            totalFacadeArea += bldgType.facade_area
+        return weighted_sum / totalFacadeArea
+    
+    @property
+    def roof_albedo(self):
+        """Return the average roof albedo of the buildings in the city."""
+        weighted_sum = 0
+        total_roof_area = 0
+        for bldg_type in self.building_typologies:
+            weighted_sum += bldg_type.roof_albedo * bldg_type.footprint_area
+            total_roof_area += bldg_type.footprint_area
+        return weighted_sum / total_roof_area
+    
+    @property
+    def roof_veg_fraction(self):
+        """Return the average roof vegetated fraction of the buildings in the city."""
+        weighted_sum = 0
+        total_roof_area = 0
+        for bldg_type in self.building_typologies:
+            weighted_sum += bldg_type.roof_veg_fraction * bldg_type.footprint_area
+            total_roof_area += bldg_type.footprint_area
+        return weighted_sum / total_roof_area
     
     @property
     def are_typologies_loaded(self):
@@ -1564,7 +1652,7 @@ class City(DFObject):
         fullTypeNames = []
         for bType in self.building_typologies:
             totalFootprintArea += bType.footprint_area
-            weightedHeightSum += bType.average_height*bType.footprint_area
+            weightedHeightSum += bType.average_height * bType.footprint_area
             totalFacadeArea += bType.facade_area
             floorAreas.append(bType.floor_area)
             fullTypeNames.append(bType.bldg_program + ',' + bType.bldg_age)
@@ -2321,7 +2409,7 @@ if checkIn.letItFly:
         notWorkingUWGmsg = "You will not be able to run simulations to account for urban heat island. \n" + \
             "Use the Dragonfly installer component to (re)install the UWG or download \n" + \
             "the most recent version from here: \n" + \
-            "https://github.com/ladybug-tools/urbanWeatherGen \n" + \
+            "https://github.com/chriswmackey/Dragonfly/tree/master/UWG \n" + \
             "and copy the UWG folder to here: \n" + uwgClassDir
         if not os.path.isdir(uwgClassDir):
             msg = "The Urban Weather Generator (UWG) is not currently installed. \n" + notWorkingUWGmsg

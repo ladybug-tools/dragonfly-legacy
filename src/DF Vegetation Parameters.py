@@ -8,7 +8,7 @@
 
 
 """
-Use this component to generate vegetation parameters that can be plugged into the "Dragonfly_UWG City" component.
+Use this component to generate vegetation parameters that can be plugged into the "DF UWG City" component.
 -
 Provided by Dragonfly 0.0.02
     Args:
@@ -35,12 +35,12 @@ Provided by Dragonfly 0.0.02
             this does not affect the moisture balance in the UWG but it will affect the temperature.
             If no value is input here, a typical value of 0.5 will be assumed.
     Returns:
-        vegetation_par: Vegetation parameters that can be plugged into the "Dragonfly_UWG City" component.
+        vegetation_par: Vegetation parameters that can be plugged into the "DF UWG City" component.
 """
 
-ghenv.Component.Name = "Dragonfly_Vegetation Parameters"
+ghenv.Component.Name = "DF Vegetation Parameters"
 ghenv.Component.NickName = 'VegPar'
-ghenv.Component.Message = 'VER 0.0.02\nJUN_10_2018'
+ghenv.Component.Message = 'VER 0.0.02\nJUN_12_2018'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "1 | Urban Weather"
 #compatibleDFVersion = VER 0.0.02\nMAY_20_2018

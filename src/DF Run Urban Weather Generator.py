@@ -19,9 +19,9 @@ http://urbanmicroclimate.scripts.mit.edu/publications.php
 Provided by Dragonfly 0.0.02
     Args:
         _epw_file: An .epw file path on your system.  This is the rural or airport file that will be morphed to reflect the climate conditions within an urban canyon.
-        _city: A Dragonfly City object. This object can be generated with the "Dragonfly_City" component.
-        epw_site_par_: Optional Reference EPW Site Parameters from the "Dragonfly_Reference EPW Site Par" component.
-        bnd_layer_par_: Optional Boundary Layer Parameters from the "Dragonfly_Boundary Layer Par" component.
+        _city: A Dragonfly City object. This object can be generated with the "DF City" component.
+        epw_site_par_: Optional Reference EPW Site Parameters from the "DF Reference EPW Site Par" component.
+        bnd_layer_par_: Optional Boundary Layer Parameters from the "DF Boundary Layer Par" component.
         _analysis_period_: An optional analysis period from the 'Ladybug_Analysis Period' component.  If no Analysis period is given, the Urban Weather Generator will be run for the enitre year.
         _sim_timestep_: A number representing the timestep at which the simulation is run in seconds.  The default is set to 300 seconds (5 minutes).
         _folder_: An optional working directory to a folder on your system, into which the morphed EPW files will be written.  The default will write these files in the folder that contains the connected _epw_file.
@@ -36,9 +36,9 @@ Provided by Dragonfly 0.0.02
         uwg_object: The python UWG object that can be edited and simulated using the methods on the UWG.
 """
 
-ghenv.Component.Name = "Dragonfly_Run Urban Weather Generator"
+ghenv.Component.Name = "DF Run Urban Weather Generator"
 ghenv.Component.NickName = 'RunUWG'
-ghenv.Component.Message = 'VER 0.0.02\nJUN_10_2018'
+ghenv.Component.Message = 'VER 0.0.02\nJUN_12_2018'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "1 | Urban Weather"
 #compatibleDFVersion = VER 0.0.02\nMAY_25_2018
@@ -48,6 +48,7 @@ ghenv.Component.AdditionalHelpFromDocStrings = "1"
 import scriptcontext as sc
 import Grasshopper.Kernel as gh
 import os
+import itertools
 
 try:
     from UWG import UWG
@@ -176,12 +177,32 @@ def set_uwg_input(uwg, DFCity, epw_site_par, bnd_layer_par, analysis_period, sim
         uwg.cRoad = DFCity.pavement_parameters.volumetric_heat_capacity
         
         # parameters that will be added in
-        uwg.r_glaze = DFCity.glz_ratio
+        uwg.glzR = DFCity.glz_ratio
         uwg.SHGC = DFCity.shgc
-        uwg.alb_wall = DFCity.wall_albedo
-        uwg.h_floor = DFCity.floor_height
+        uwg.albWall = DFCity.wall_albedo
+        uwg.albRoof = DFCity.roof_albedo
+        uwg.vegRoof = DFCity.roof_veg_fraction
+        uwg.flr_h = DFCity.floor_height
         
         return uwg
+
+def set_individual_typologies(uwg, city):
+    bldg_conversion = sc.sticky["dragonfly_UWGBldgTypes"]
+    
+    city_typologies = city.building_typologies
+    city_typNames = [','.join([typ.bldg_program, typ.bldg_age]) for typ in city_typologies]
+    typology_dict = dict(itertools.izip(city_typNames, city_typologies))
+    for uwg_typology in uwg.BEM:
+        df_typology = typology_dict[','.join([bldg_conversion.uwg_bldg_type[uwg_typology.building.Type], bldg_conversion.uwg_built_era[uwg_typology.building.Era]])]
+        uwg_typology.floorHeight = df_typology.floor_to_floor
+        uwg_typology.building.canyon_fraction = df_typology.fract_heat_to_canyon
+        uwg_typology.building.glazingRatio = df_typology.glz_ratio
+        uwg_typology.building.shgc = df_typology.shgc
+        uwg_typology.wall.albedo = df_typology.wall_albedo
+        uwg_typology.roof.albedo = df_typology.roof_albedo
+        uwg_typology.roof.vegCoverage = df_typology.roof_veg_fraction
+    
+    return uwg
 
 
 # dragonfly check.
@@ -229,6 +250,7 @@ if init_check == True and _write == True:
     uwg_object = set_uwg_input(uwg_object, _city, epw_site_par, bnd_layer_par, _analysis_period_, _sim_timestep_)
     uwg_object.read_epw()
     uwg_object.init_input_obj()
+    uwg_object = set_individual_typologies(uwg_object, _city)
     uwg_object.hvac_autosize()
     
     # run the UWG object if run is set to True.
