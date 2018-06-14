@@ -46,7 +46,7 @@ Provided by Dragonfly 0.0.02
 
 ghenv.Component.Name = "DF Dragonfly"
 ghenv.Component.NickName = 'Dragonfly'
-ghenv.Component.Message = 'VER 0.0.02\nJUN_12_2018'
+ghenv.Component.Message = 'VER 0.0.02\nJUN_13_2018'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "0 | Dragonfly"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -590,7 +590,7 @@ class Geometry(object):
         return facadeArea, facadeBreps
     
     def calculateTypologyGeoParams(self, bldgBreps, floorHeight=3.05, maxRoofAngle=45, maxFloorAngle=60):
-        """Extracts building footprint and footprint area
+        """Extracts all properties needed to create a typology from closed solid building breps.
         
         Args:
             bldgBreps: A list of closed rhino brep representing buildings of the same typology.
@@ -656,6 +656,37 @@ class Geometry(object):
         facadeArea = facadeArea * self.areaConversionFac
         
         return avgBldgHeight, footprintArea, floorArea, facadeArea, footprintBreps, floorBreps, facadeBreps
+    
+    def calculateFootprintGeoParams(self, footprint_breps):
+        """Extracts all properties needed to create a typology from footprint breps.
+        
+        Args:
+            footprint_breps: A list of surface rhino breps representing the building footprints of the typology.
+        
+        Returns:
+            footprint_area: The footprint area of the buildings in this typology.
+            perimeter_length: The length of the exterior-exposed perimeters of the footprints.
+            perimeter_curves: The exterior-exposed curves of the footprints.
+        """
+        # join the footprint breps
+        joined_footprints = rc.Geometry.Brep.JoinBreps(footprint_breps, sc.doc.ModelAbsoluteTolerance)
+        
+        # extract the relevant paramters.
+        footprint_area = 0
+        perimeter_length = 0
+        perimeter_curves = []
+        for f_print in joined_footprints:
+            footprint_area += rc.Geometry.AreaMassProperties.Compute(f_print).Area
+            perim_cs = rc.Geometry.Curve.JoinCurves(f_print.DuplicateNakedEdgeCurves(True, True))
+            for crv in perim_cs:
+                perimeter_length += crv.GetLength()
+            perimeter_curves.extend(perim_cs)
+        
+        # account for Rhino model units.
+        footprint_area = footprint_area * self.areaConversionFac
+        perimeter_length = perimeter_length * self.linearConversionFac
+        
+        return footprint_area, perimeter_length, perimeter_curves
 
 class Utilities(object):
     
@@ -1011,15 +1042,54 @@ class Typology(DFObject):
         
         Returns:
             typology: The dragonfly typology object
-            footprintBreps: A list of breps representing the footprints of the buildings.
-            facadeBreps: A list of breps representing the exposed facade surfaces of the typology.
+            footprint_breps: A list of breps representing the footprints of the buildings.
+            floor_breps: A list of breps representing the floors of the buildings in the typology.
+            facade_breps: A list of breps representing the exposed facade surfaces of the typology.
         """
         geometryLib = Geometry()
-        avgBldgHeight, footprintArea, floorArea, facadeArea, footprintBreps, floorBreps, facadeBreps = geometryLib.calculateTypologyGeoParams(bldg_breps, floor_to_floor)
+        avgBldgHeight, footprintArea, floorArea, facadeArea, footprint_breps, floor_breps, facade_breps = geometryLib.calculateTypologyGeoParams(bldg_breps, floor_to_floor)
         
         typology = cls(avgBldgHeight, footprintArea, facadeArea, bldg_program, bldg_age, floor_to_floor, fract_heat_to_canyon, glz_ratio, floorArea)
         
-        return typology, footprintBreps, floorBreps, facadeBreps
+        return typology, footprint_breps, floor_breps, facade_breps
+    
+    @classmethod
+    def from_footprint_geometry(cls, bldg_footprint_breps, num_stories, bldg_program, bldg_age, floor_to_floor=None,
+        fract_heat_to_canyon=None, glz_ratio=None):
+        """Initialize a building typology from closed building brep geometry
+        
+        Args:
+            bldg_footprint_breps: A list of surface rhino breps representing the building footprints of the typology.
+            num_stories: A float value (greater than 1) that represents the average number of stories of the
+                buildings in the typology.
+            bldg_program: A text string representing one of the 16 DOE building program types to be 
+                used as a template for this typology.
+            bldg_age: A text string that sets the age of the buildings represented by this typology.
+            floor_to_floor: A number that represents the average distance between floors. Default is set to 3.05 meters.
+            glz_ratio: An optional number from 0 to 1 that represents the fraction of the walls of the building typology
+                that are glazed. Default will come from the DoE building template from the bldg_program and bldg_age.
+            fract_heat_to_canyon: An optional number from 0 to 1 that represents the fraction the building's waste 
+                heat from air conditioning that gets rejected into the urban canyon. The default is set to 0.5.
+        
+        Returns:
+            typology: The dragonfly typology object
+            perimeter_curves: The exterior-exposed curves of the footprints.
+        """
+        assert num_stories >= 1, 'num_stories must be greater than or equal to 1. Got {}'.format(str(num_stories))
+        
+        geometryLib = Geometry()
+        footprint_area, perimeter_length, perimeter_curves = geometryLib.calculateFootprintGeoParams(bldg_footprint_breps)
+        
+        if floor_to_floor is not None:
+            avg_bldg_height = floor_to_floor * num_stories
+        else:
+            avg_bldg_height = 3.05  * num_stories
+        facade_area = perimeter_length * avg_bldg_height
+        floor_area = footprint_area * num_stories
+        
+        typology = cls(avg_bldg_height, footprint_area, facade_area, bldg_program, bldg_age, floor_to_floor, fract_heat_to_canyon, glz_ratio, floor_area)
+        
+        return typology, perimeter_curves
     
     @property
     def average_height(self):
@@ -1077,7 +1147,7 @@ class Typology(DFObject):
     @property
     def number_of_stories(self):
         """Return the average number of stories in the buildings."""
-        return int(math.floor(self.average_height / self.floor_to_floor))
+        return int(round(self.average_height / self.floor_to_floor))
     
     @property
     def floor_area(self):
