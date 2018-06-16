@@ -193,8 +193,33 @@ class UWG(object):
         self.SHGC = None       # Solar Heat Gain Coefficient
         self.albWall = None    # Wall albedo
 
+
+    def ToString(self):
+        """Overwrite .NET ToString method."""
+        return self.__repr__()
+
     def __repr__(self):
-        return "UWG: {} ".format(self.epwFileName)
+        def _print_tab(s):
+            s = s.split(":")
+            return s[0] + ":\n  " + s[1].replace(",","\n  ")
+        def _print_list(b):
+            return reduce(lambda a,b: a+"\n"+b, [_print_tab(_b.__repr__()) for _b in b])
+
+        return "UWG for {}:\n\n{}\n{}\n{}\n{}\nRural {}\nUrban {}\n{}\n{}".format(
+            self.epwFileName,
+            _print_tab(self.simTime.__repr__()),
+            _print_tab(self.weather.__repr__()),
+            _print_tab(self.geoParam.__repr__()),
+            _print_tab(self.UBL.__repr__()),
+            _print_tab(self.RSM.__repr__()),
+            _print_tab(self.USM.__repr__()),
+            _print_tab(self.UCM.__repr__()),
+            _print_list(self.BEM)
+            )
+            #pp self.BEM
+
+
+
 
     def is_near_zero(self,num,eps=1e-10):
         return abs(float(num)) < eps
@@ -541,6 +566,8 @@ class UWG(object):
                         self.BEM[k].building.shgc = self.SHGC
                     if self.albWall:
                         self.BEM[k].wall.albedo = self.albWall
+                    if self.flr_h:
+                        self.BEM[k].building.floorHeight = self.flr_h
 
                     # Keep track of total urban r_glaze, SHGC, and alb_wall for UCM model
                     r_glaze = r_glaze + self.BEM[k].frac * self.BEM[k].building.glazingRatio ##
@@ -778,7 +805,7 @@ class UWG(object):
             self.epwinput[iJ+self.simTime.timeInitial-8][6] = "{0:.{1}f}".format(self.UCMData[iJ].canTemp - 273.15, epw_prec) # dry bulb temperature  [?C]
             self.epwinput[iJ+self.simTime.timeInitial-8][7] = "{0:.{1}f}".format(self.UCMData[iJ].Tdp, epw_prec)              # dew point temperature [?C]
             self.epwinput[iJ+self.simTime.timeInitial-8][8] = "{0:.{1}f}".format(self.UCMData[iJ].canRHum, epw_prec)          # relative humidity     [%]
-            self.epwinput[iJ+self.simTime.timeInitial-8][21] = "{0:.{1}f}".format(float(self.WeatherData[iJ].wind), epw_prec)        # wind speed [m/s]
+            self.epwinput[iJ+self.simTime.timeInitial-8][21] = "{0:.{1}f}".format(self.WeatherData[iJ].wind, epw_prec)        # wind speed [m/s]
 
         # Writing new EPW file
         epw_new_id = open(self.newPathName, "w")
