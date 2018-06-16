@@ -46,7 +46,7 @@ Provided by Dragonfly 0.0.02
 
 ghenv.Component.Name = "DF Dragonfly"
 ghenv.Component.NickName = 'Dragonfly'
-ghenv.Component.Message = 'VER 0.0.02\nJUN_13_2018'
+ghenv.Component.Message = 'VER 0.0.02\nJUN_15_2018'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "0 | Dragonfly"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -361,6 +361,17 @@ class Geometry(object):
                 sideNormals.append((90 - angle2Z)/90)
         
         return down, up, side, sideNormals, roofNormals, bottomNormVectors, bottomCentPts
+    
+    def calculate_area(self, area_srfs):
+        """Calculate the area of a surface.
+        
+        Args:
+            area_srfs: A Rhino surface.
+        
+        Returns:
+            result: The area of the surface.
+        """
+        return rc.Geometry.AreaMassProperties.Compute(area_srfs).Area
     
     def unionAllBreps(self, bldgBreps):
         """Unioned breps into one so that correct facade areas can be computed.
@@ -1054,13 +1065,13 @@ class Typology(DFObject):
         return typology, footprint_breps, floor_breps, facade_breps
     
     @classmethod
-    def from_footprint_geometry(cls, bldg_footprint_breps, num_stories, bldg_program, bldg_age, floor_to_floor=None,
+    def from_footprints(cls, bldg_footprint_breps, num_stories, bldg_program, bldg_age, floor_to_floor=None,
         fract_heat_to_canyon=None, glz_ratio=None):
-        """Initialize a building typology from closed building brep geometry
+        """Initialize a building typology from surfaces representing building footprints and an average number of stories.
         
         Args:
             bldg_footprint_breps: A list of surface rhino breps representing the building footprints of the typology.
-            num_stories: A float value (greater than 1) that represents the average number of stories of the
+            num_stories: A float value (greater than or equal to 1) that represents the average number of stories of the
                 buildings in the typology.
             bldg_program: A text string representing one of the 16 DOE building program types to be 
                 used as a template for this typology.
@@ -1090,6 +1101,40 @@ class Typology(DFObject):
         typology = cls(avg_bldg_height, footprint_area, facade_area, bldg_program, bldg_age, floor_to_floor, fract_heat_to_canyon, glz_ratio, floor_area)
         
         return typology, perimeter_curves
+    
+    @classmethod
+    def from_footprints_and_stories(cls, bldg_footprint_breps, num_stories, bldg_program, bldg_age, floor_to_floor=None,
+        fract_heat_to_canyon=None, glz_ratio=None):
+        """Initialize a building typology from surfaces representing building footprints and corresponding list of building stories.
+        
+        Args:
+            bldg_footprint_breps: A list of surface rhino breps representing the building footprints of the typology.
+            num_stories: A list of integer values (all greater than or equal to 1) that represent the
+                number of stories for each of the surfaces in the bldg_footprint_breps.
+            bldg_program: A text string representing one of the 16 DOE building program types to be 
+                used as a template for this typology.
+            bldg_age: A text string that sets the age of the buildings represented by this typology.
+            floor_to_floor: A number that represents the average distance between floors. Default is set to 3.05 meters.
+            glz_ratio: An optional number from 0 to 1 that represents the fraction of the walls of the building typology
+                that are glazed. Default will come from the DoE building template from the bldg_program and bldg_age.
+            fract_heat_to_canyon: An optional number from 0 to 1 that represents the fraction the building's waste 
+                heat from air conditioning that gets rejected into the urban canyon. The default is set to 0.5.
+        
+        Returns:
+            typology: The dragonfly typology object
+            perimeter_curves: The exterior-exposed curves of the footprints.
+        """
+        geometry_lib = Geometry()
+        weighted_num_stories = 0
+        total_ftp_area = 0
+        for i, floor_srf in enumerate(bldg_footprint_breps):
+            f_area = geometry_lib.calculate_area(floor_srf)
+            weighted_num_stories += f_area * num_stories[i]
+            total_ftp_area += f_area
+        avg_num_stories = weighted_num_stories / total_ftp_area
+        
+        return cls.from_footprints(bldg_footprint_breps, avg_num_stories, bldg_program,
+            bldg_age, floor_to_floor, fract_heat_to_canyon, glz_ratio)
     
     @property
     def average_height(self):

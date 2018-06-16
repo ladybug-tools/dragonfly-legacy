@@ -13,7 +13,7 @@ Provided by Dragonfly 0.0.02
     Args:
         _geo: A list of surface breps that represent the footprint geometry of the buildings in the urban area that fall under this typology.
         _num_floors: A float number (greater than 1) that represents the average number of stories of the
-                buildings in the typology.
+                buildings in the typology.  Alternatively, this can be a list of numbers with a number of stories for each footprint in _geo above.
         _program: One of the 16 building programs listed from the "DF Bldg Programs" component.  The following options are available:
             FullServiceRestaurant
             Hospital
@@ -48,7 +48,7 @@ Provided by Dragonfly 0.0.02
 
 ghenv.Component.Name = "DF Typology from Footprints"
 ghenv.Component.NickName = 'FootprintTypology'
-ghenv.Component.Message = 'VER 0.0.02\nJUN_13_2018'
+ghenv.Component.Message = 'VER 0.0.02\nJUN_15_2018'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "1 | Urban Weather"
 #compatibleDFVersion = VER 0.0.02\nMAY_12_2018
@@ -69,5 +69,11 @@ else:
     df_BuildingTypology = sc.sticky["dragonfly_BuildingTypology"]
 
 if init_check == True and _run == True:
-    typology, perim_crvs = df_BuildingTypology.from_footprint_geometry(_geo, _num_floors,
-        _program, _age, _flr_to_flr_, _fract_canyon_)
+    if len(_num_floors) == 1:
+        typology, perim_crvs = df_BuildingTypology.from_footprints(_geo, _num_floors[0],
+            _program, _age, _flr_to_flr_, _fract_canyon_)
+    elif len(_num_floors) == len(_geo):
+        typology, perim_crvs = df_BuildingTypology.from_footprints_and_stories(_geo, _num_floors[0],
+            _program, _age, _flr_to_flr_, _fract_canyon_)
+    else:
+        raise IndexError('_num_floors must either be a single value or a list of values that match the surfaces in _geo')
