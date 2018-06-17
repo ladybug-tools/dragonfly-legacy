@@ -38,7 +38,7 @@ Provided by Dragonfly 0.0.02
 
 ghenv.Component.Name = "DF Run Urban Weather Generator"
 ghenv.Component.NickName = 'RunUWG'
-ghenv.Component.Message = 'VER 0.0.02\nJUN_12_2018'
+ghenv.Component.Message = 'VER 0.0.02\nJUN_15_2018'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "1 | Urban Weather"
 #compatibleDFVersion = VER 0.0.02\nMAY_25_2018
@@ -59,9 +59,11 @@ def create_uwg(epw_file, end_folder, name):
     start_folder, epw_name = os.path.split(epw_file)
     epw_name = epw_name.replace('.epw', '')
     if end_folder is None:
-        end_folder = start_folder
+        end_folder = start_folder + '\\URBAN\\'
     if name is None:
         name = epw_name + '_URBAN.epw'
+    if not os.path.isdir(end_folder):
+        os.mkdir(end_folder)
     return UWG(epw_name, None, start_folder, None, end_folder, name), end_folder + '\\' + name
 
 def parse_ladybug_analysis_period(analysis_period):
