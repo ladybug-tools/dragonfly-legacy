@@ -38,7 +38,7 @@ Provided by Dragonfly 0.0.02
 
 ghenv.Component.Name = "DF Run Urban Weather Generator"
 ghenv.Component.NickName = 'RunUWG'
-ghenv.Component.Message = 'VER 0.0.02\nJUN_15_2018'
+ghenv.Component.Message = 'VER 0.0.02\nJUN_24_2018'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "1 | Urban Weather"
 #compatibleDFVersion = VER 0.0.02\nMAY_25_2018
@@ -178,22 +178,17 @@ def set_uwg_input(uwg, DFCity, epw_site_par, bnd_layer_par, analysis_period, sim
         uwg.kRoad = DFCity.pavement_parameters.conductivity
         uwg.cRoad = DFCity.pavement_parameters.volumetric_heat_capacity
         
-        # parameters that will be added in
-        uwg.glzR = DFCity.glz_ratio
-        uwg.SHGC = DFCity.shgc
-        uwg.albWall = DFCity.wall_albedo
-        uwg.albRoof = DFCity.roof_albedo
-        uwg.vegRoof = DFCity.roof_veg_fraction
-        uwg.flr_h = DFCity.floor_height
-        
         return uwg
 
 def set_individual_typologies(uwg, city):
     bldg_conversion = sc.sticky["dragonfly_UWGBldgTypes"]
     
+    # create a dictonary to convert between the df_city and uwg typologies
     city_typologies = city.building_typologies
     city_typNames = [','.join([typ.bldg_program, typ.bldg_age]) for typ in city_typologies]
     typology_dict = dict(itertools.izip(city_typNames, city_typologies))
+    
+    # update each typology
     for uwg_typology in uwg.BEM:
         df_typology = typology_dict[','.join([bldg_conversion.uwg_bldg_type[uwg_typology.building.Type], bldg_conversion.uwg_built_era[uwg_typology.building.Era]])]
         uwg_typology.floorHeight = df_typology.floor_to_floor
@@ -203,6 +198,19 @@ def set_individual_typologies(uwg, city):
         uwg_typology.wall.albedo = df_typology.wall_albedo
         uwg_typology.roof.albedo = df_typology.roof_albedo
         uwg_typology.roof.vegCoverage = df_typology.roof_veg_fraction
+    
+    return uwg
+
+def set_global_facade_props(uwg, DFCity):
+    # parameters for the UCMdef that must be overwritten
+    uwg.r_glaze_total = DFCity.glz_ratio
+    uwg.SHGC_total = DFCity.shgc
+    uwg.alb_wall_total = DFCity.wall_albedo
+    
+    # parameters that are already corrected on the set_individual_typologies that I am overwriting for visual reasons
+    uwg.albRoof = DFCity.roof_albedo
+    uwg.vegRoof = DFCity.roof_veg_fraction
+    uwg.flr_h = DFCity.floor_height
     
     return uwg
 
@@ -248,11 +256,14 @@ if init_check == True and _write == True:
     
     # create a uwg_object from the dragonfly objects.
     uwg_object, new_epw_path = create_uwg(_epw_file, _folder_, _name_)
-    uwg_object.RESOURCE_PATH = os.path.join(uwg_path, 'refdata')
     uwg_object = set_uwg_input(uwg_object, _city, epw_site_par, bnd_layer_par, _analysis_period_, _sim_timestep_)
+    uwg_object.init_BEM_obj()
+    uwg_object = set_individual_typologies(uwg_object, _city)
+    uwg_object = set_global_facade_props(uwg_object, _city)
+    
+    # get the object ready to simulate
     uwg_object.read_epw()
     uwg_object.init_input_obj()
-    uwg_object = set_individual_typologies(uwg_object, _city)
     uwg_object.hvac_autosize()
     
     # run the UWG object if run is set to True.

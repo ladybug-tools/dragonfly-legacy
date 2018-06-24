@@ -199,11 +199,14 @@ class SolarCalcs(object):
                 self.tanzen = math.tan(0.5*math.pi+1e-6);
 
         elif (abs(self.zenith) <  1e-6):
-            #TODO: Need to translate sign(1.,zenith) from matlab
-            raise Exception("Error at zenith calc.")
-            #tanzen = sign(1.,zenith)*math.tan(1e-6);
+            # lim x->0 tan(x) -> 0 which results in division by zero error
+            # when calculating the critical canyon angle
+            # so set tanzen to 1e-6 which will result in critical canyon angle = 90
+            self.tanzen = 1e-6
+
         else:
             self.tanzen = math.tan(self.zenith)
 
         # critical canyon angle for which solar radiation reaches the road
+        # has to do with street canyon orientation for given solar angle
         self.critOrient = math.asin(min(abs( 1./self.tanzen)/canAspect, 1. ))

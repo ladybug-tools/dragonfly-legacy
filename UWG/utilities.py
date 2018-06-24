@@ -16,12 +16,14 @@ def read_csv(file_name_):
     if os.path.exists(file_name_):
         file_ = open(file_name_,"r")
         gen_ = csv_reader(file_, delimiter=",")
-        L = map(lambda r: r,gen_)
+        L = [r for r in gen_]
         file_.close()
         return L
     else:
         raise Exception("File name: '{}' does not exist.".format(file_name_))
 
+def is_near_zero(num, eps=1e-10):
+    return abs(num) < eps
 
 def str2fl(x):
     """Recurses through lists and converts lists of string to float
