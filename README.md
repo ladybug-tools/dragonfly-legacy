@@ -1,3 +1,4 @@
+![Screenshot](https://github.com/chriswmackey/Dragonfly/blob/master/dragonfly.png)
 
 Dragonfly for Grasshopper
 ========================================
