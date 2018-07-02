@@ -46,7 +46,7 @@ Provided by Dragonfly 0.0.02
 
 ghenv.Component.Name = "DF Dragonfly"
 ghenv.Component.NickName = 'Dragonfly'
-ghenv.Component.Message = 'VER 0.0.02\nJUN_15_2018'
+ghenv.Component.Message = 'VER 0.0.02\nJUL_02_2018'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "0 | Dragonfly"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -1511,6 +1511,8 @@ class City(DFObject):
         for bTyp in mergedTypes:
             bTyp._has_parent_city = True
             bTyp._parent_city = dfCity
+            if bTyp.shgc == None:
+                bTyp.shgc = bTyp.get_default_shgc(dfCity.climate_zone)
         dfCity._building_typologies = mergedTypes
         dfCity._are_typologies_loaded = True
         
@@ -1587,6 +1589,7 @@ class City(DFObject):
                 newType = Typology(self.average_bldg_height, footprint_area, facade_area, bldg_program, bldg_age)
                 newType._parent_city = self
                 newType._has_parent_city = True
+                newType.shgc = newType.get_default_shgc(self.climate_zone)
                 self._building_typologies.append(newType)
             self._are_typologies_loaded = True
             return self._building_typologies
