@@ -8,13 +8,13 @@
 
 
 """
-Use this component to generate vegetation parameters that can be plugged into the "DF UWG City" component.
+Use this component to generate vegetation parameters that can be plugged into the "DF uwg City" component.
 -
 Provided by Dragonfly 0.0.02
     Args:
         _albedo_: A number between 0 and 1 that represents the ratio of reflected radiation from
             vegetated surfaces to incident radiation upon them.  If no value is input here, the
-            UWG will assume a typical vegetation albedo of 0.25.  This number may be higher for
+            uwg will assume a typical vegetation albedo of 0.25.  This number may be higher for
             bright green grass or lower for coniferous trees.
         _start_month_: An integer from 1 to 12 that represents the first month after winter when
             vegetation begins to participate in the energy balance of the urban area (though
@@ -28,14 +28,14 @@ Provided by Dragonfly 0.0.02
             in the EPW file that you are altering.
         _tree_latent_: A number between 0 and 1 that represents the the fraction of absorbed 
             solar energy by trees that is given off as latent heat (evapotranspiration). Currently, 
-            this does not affect the moisture balance in the UWG but it will affect the temperature.
+            this does not affect the moisture balance in the uwg but it will affect the temperature.
             If no value is input here, a typical value of 0.7 will be assumed.
         _grass_latent_: A number between 0 and 1 that represents the the fraction of absorbed solar 
             energy by grass that is given off as latent heat (evapotranspiration). Currently, 
-            this does not affect the moisture balance in the UWG but it will affect the temperature.
+            this does not affect the moisture balance in the uwg but it will affect the temperature.
             If no value is input here, a typical value of 0.5 will be assumed.
     Returns:
-        vegetation_par: Vegetation parameters that can be plugged into the "DF UWG City" component.
+        vegetation_par: Vegetation parameters that can be plugged into the "DF uwg City" component.
 """
 
 ghenv.Component.Name = "DF Vegetation Parameters"

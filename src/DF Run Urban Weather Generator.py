@@ -51,9 +51,9 @@ import os
 import itertools
 
 try:
-    from UWG import UWG
+    from uwg import uwg
 except ImportError as e:
-    raise ImportError('\nFailed to import the UWG:\n\t{}'.format(e))
+    raise ImportError('\nFailed to import the uwg:\n\t{}'.format(e))
 
 def create_uwg(epw_file, end_folder, name):
     start_folder, epw_name = os.path.split(epw_file)
@@ -64,7 +64,7 @@ def create_uwg(epw_file, end_folder, name):
         name = epw_name + '_URBAN.epw'
     if not os.path.isdir(end_folder):
         os.mkdir(end_folder)
-    return UWG(epw_name, None, start_folder, None, end_folder, name), end_folder + '\\' + name
+    return uwg(epw_name, None, start_folder, None, end_folder, name), end_folder + '\\' + name
 
 def parse_ladybug_analysis_period(analysis_period):
     if analysis_period is not None:
@@ -104,7 +104,7 @@ def autocalcStartEndVegetation(epw_file):
     return vegStart, vegEnd
 
 def set_uwg_input(uwg, DFCity, epw_site_par, bnd_layer_par, analysis_period, simTimestep):
-        """Assign all inputs to the UWG """
+        """Assign all inputs to the uwg """
         
         # Define Simulation and Weather parameters
         month, day, nDay = parse_ladybug_analysis_period(analysis_period)

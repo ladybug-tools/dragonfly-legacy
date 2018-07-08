@@ -3,7 +3,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Dragonfly; If not, see <http://www.gnu.org/licenses/>.
-# 
+#
 # @license GPL-3.0+ <http://spdx.org/licenses/GPL-3.0+>
 
 
@@ -24,7 +24,7 @@ Provided by Dragonfly 0.0.02
         vegetation_par_: An optional set of vegetation parameters from the "DF Vegetation Parameters" component.  If no vegetation parameters are input here, the Dragonfly will use a vegetation albedo of 0.25, tree latent fraction of 0.7, and grass latent fraction of 0.6.  Furthermore, Dragonfly will attempt to determine the months in which vegetation is active by looking at the average monthly temperatures in the EPW file.
         pavement_par_: An optional set of pavement parameters from the "DF Pavement Parameters" component.  If no paramters are plugged in here, it will be assumed that all pavement is asphalt.
         --------------------: ...
-        _run: Set to 'True' to run the component and generate the UWG city from the connected inputs.
+        _run: Set to 'True' to run the component and generate the uwg city from the connected inputs.
     Returns:
         read_me: ...
         ----------------: ...
@@ -62,7 +62,7 @@ else:
 
 if init_check == True and _run == True:
     terrain, terrainSrf = df_Terrain.from_geometry(_terrain)
-    
+
     t_cover = 0
     if trees_ != []:
         try:
@@ -70,7 +70,7 @@ if init_check == True and _run == True:
         except:
             tree_obj, tree_proj = df_Vegetation.from_geometry(trees_, True)
             t_cover = tree_obj.computeCoverage(terrain)
-    
+
     g_cover = 0
     if grass_ != []:
         try:
@@ -78,7 +78,6 @@ if init_check == True and _run == True:
         except:
             grass_obj, grass_proj = df_Vegetation.from_geometry(grass_, False)
             g_cover = grass_obj.computeCoverage(terrain)
-    
+
     city = df_City.from_typologies(_typologies, terrain, _climate_zone,
         _traffic_par, t_cover, g_cover, vegetation_par_, pavement_par_)
-

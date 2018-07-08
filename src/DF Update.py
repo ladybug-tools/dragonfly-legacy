@@ -7,10 +7,10 @@
 # @license GPL-3.0+ <http://spdx.org/licenses/GPL-3.0+>
 
 """
-This component installs the UWG libraries to:
+This component installs the uwg libraries to:
 C:\Users\%USERNAME%\AppData\Roaming\McNeel\Rhinoceros\6.0\scripts\UEG
 
-The grasshopper file should be in the same folder as the UWG libraries and dragonfly userobjects folder to work correctly.
+The grasshopper file should be in the same folder as the uwg libraries and dragonfly userobjects folder to work correctly.
 You can download the package from the Dragonfly github.
 
 -
@@ -38,10 +38,10 @@ System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolTyp
 def updateDragonfly():
     
     """
-    This code will download the UWG library from github to:
+    This code will download the uwg library from github to:
         C:\Users\%USERNAME%\AppData\Roaming\McNeel\Rhinoceros\6.0\scripts\honeybee
     """
-    folders = ['UWG']
+    folders = ['uwg']
     repos = ['Dragonfly']
 
     targetDirectory = [p for p in sys.path if p.find('scripts')!= -1][0]
@@ -97,8 +97,8 @@ def updateDragonfly():
     
     # copy files to folder.
     for f in folders:
-        sourceFolder = os.path.join(targetDirectory, "Dragonfly-master", 'UWG')
-        libFolder = os.path.join(targetDirectory, 'UWG')
+        sourceFolder = os.path.join(targetDirectory, "Dragonfly-master", 'uwg')
+        libFolder = os.path.join(targetDirectory, 'uwg')
         print 'Copying {} source code to {}'.format(f, libFolder)
         try:
             shutil.copytree(sourceFolder, libFolder)
@@ -161,11 +161,11 @@ if _update:
         raise Exception("Failed to update Dragonfly:\n{}".format(e))
     else:
         try:
-            import UWG
+            import uwg
         except ImportError as e:
-            raise ImportError('Failed to import the UWG:\n{}'.format(e))
+            raise ImportError('Failed to import the uwg:\n{}'.format(e))
         else:
-            print "\n\nImported UWG! \nVviiiizzzz..."
+            print "\n\nImported uwg! \nVviiiizzzz..."
             print "Restart Grasshopper and Rhino to load the new library."
 else:
-    print 'Set update to True to update Dragonfly and the UWG!'
+    print 'Set update to True to update Dragonfly and the uwg!'
