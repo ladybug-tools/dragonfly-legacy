@@ -1,9 +1,9 @@
-# Dragonfly: A Plugin for Climate Modeling (GPL) started by Chris Mackey <chris@ladybug.tools> 
+# Dragonfly: A Plugin for Climate Modeling (GPL) started by Chris Mackey <chris@ladybug.tools>
 # This file is part of Dragonfly.
 #
 # You should have received a copy of the GNU General Public License
 # along with Dragonfly; If not, see <http://www.gnu.org/licenses/>.
-# 
+#
 # @license GPL-3.0+ <http://spdx.org/licenses/GPL-3.0+>
 
 
@@ -26,14 +26,14 @@ Provided by Dragonfly 0.0.02
         _sim_timestep_: A number representing the timestep at which the simulation is run in seconds.  The default is set to 300 seconds (5 minutes).
         _folder_: An optional working directory to a folder on your system, into which the morphed EPW files will be written.  The default will write these files in the folder that contains the connected _epw_file.
         _name_: An optional text string which will be used to name of your morphed EPW files.  Change this to aviod over-writing results of previous runs of the Urban Weather Generator.
-        _write: Set to "True" to have the component generate a UWG object from the connected DFCity and parameters. This object can be edited and smulated using a python component.
-        run_: Set to "True" to simulate the uwg_object and morph the EPW using the Urban Weather Generator (UWG).
+        _write: Set to "True" to have the component generate a uwg object from the connected DFCity and parameters. This object can be edited and smulated using a python component.
+        run_: Set to "True" to simulate the uwg_object and morph the EPW using the Urban Weather Generator (uwg).
     Returns:
         readMe!: ...
         ---------------: ...
         urban_epw: The file path of the morphed EPW file that has been generated on your machine.
         ---------------: ...
-        uwg_object: The python UWG object that can be edited and simulated using the methods on the UWG.
+        uwg_object: The python uwg object that can be edited and simulated using the methods on the uwg.
 """
 
 ghenv.Component.Name = "DF Run Urban Weather Generator"
@@ -51,9 +51,9 @@ import os
 import itertools
 
 try:
-    from UWG import UWG
+    from uwg import uwg
 except ImportError as e:
-    raise ImportError('\nFailed to import the UWG:\n\t{}'.format(e))
+    raise ImportError('\nFailed to import the uwg:\n\t{}'.format(e))
 
 def create_uwg(epw_file, end_folder, name):
     start_folder, epw_name = os.path.split(epw_file)
@@ -64,7 +64,7 @@ def create_uwg(epw_file, end_folder, name):
         name = epw_name + '_URBAN.epw'
     if not os.path.isdir(end_folder):
         os.mkdir(end_folder)
-    return UWG(epw_name, None, start_folder, None, end_folder, name), end_folder + '\\' + name
+    return uwg(epw_name, None, start_folder, None, end_folder, name), end_folder + '\\' + name
 
 def parse_ladybug_analysis_period(analysis_period):
     if analysis_period is not None:
@@ -81,7 +81,7 @@ def autocalcStartEndVegetation(epw_file):
     lb_preparation = sc.sticky["ladybug_Preparation"]()
     locationData = lb_preparation.epwLocation(epw_file)
     temperatureData = lb_preparation.epwDataReader(epw_file, locationData[0])[0][7:]
-    
+
     monthDays = [0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
     monthTemps = []
     for month in range(1, 13):
@@ -89,7 +89,7 @@ def autocalcStartEndVegetation(epw_file):
         endJD = lb_preparation.getJD(month, monthDays[month])
         monthlyData = temperatureData[lb_preparation.getHour(stJD, 1)-1 : lb_preparation.getHour(endJD , 24)]
         monthTemps.append(sum(monthlyData)/len(monthlyData))
-    
+
     thresholdTemp = 10
     vegEnd = 12
     vegStartSet = False
@@ -100,12 +100,12 @@ def autocalcStartEndVegetation(epw_file):
         elif t < thresholdTemp and vegStartSet == True:
             vegEnd = i+1
             vegStartSet = False
-    
+
     return vegStart, vegEnd
 
 def set_uwg_input(uwg, DFCity, epw_site_par, bnd_layer_par, analysis_period, simTimestep):
-        """Assign all inputs to the UWG """
-        
+        """Assign all inputs to the uwg """
+
         # Define Simulation and Weather parameters
         month, day, nDay = parse_ladybug_analysis_period(analysis_period)
         uwg.Month = month
@@ -116,7 +116,7 @@ def set_uwg_input(uwg, DFCity, epw_site_par, bnd_layer_par, analysis_period, sim
         else:
             uwg.dtSim = 300.
         uwg.dtWeather = 3600.
-        
+
         # HVAC system and internal laod
         uwg.autosize = 0
         uwg.sensOcc = 100.
@@ -124,7 +124,7 @@ def set_uwg_input(uwg, DFCity, epw_site_par, bnd_layer_par, analysis_period, sim
         uwg.RadFOcc = 0.2
         uwg.RadFEquip = 0.5
         uwg.RadFLight = 0.7
-        
+
         # Define Urban microclimate parameters
         uwg.h_ubl1 = bnd_layer_par.day_boundary_layer_height
         uwg.h_ubl2 = bnd_layer_par.night_boundary_layer_height
@@ -137,7 +137,7 @@ def set_uwg_input(uwg, DFCity, epw_site_par, bnd_layer_par, analysis_period, sim
         uwg.maxNight = 20.
         uwg.windMin = 1.
         uwg.h_obs = epw_site_par.average_obstacle_height
-        
+
         # Urban characteristics
         uwg.bldHeight = DFCity.average_bldg_height
         uwg.h_mix = DFCity.fract_heat_to_canyon
@@ -146,13 +146,13 @@ def set_uwg_input(uwg, DFCity, epw_site_par, bnd_layer_par, analysis_period, sim
         uwg.charLength = DFCity.characteristic_length
         uwg.sensAnth = DFCity.traffic_parameters.sensible_heat
         uwg.SchTraffic = DFCity.traffic_parameters.get_uwg_matrix()
-        
+
         # Define optional Building characteristics
         uwg.bld = DFCity.get_uwg_matrix()
-        
+
         # climate Zone
         uwg.zone = DFCity._climate_zone
-        
+
         # Vegetation parameters
         uwg.vegCover = DFCity.grass_coverage_ratio
         uwg.treeCoverage = DFCity.tree_coverage_ratio
@@ -160,7 +160,7 @@ def set_uwg_input(uwg, DFCity, epw_site_par, bnd_layer_par, analysis_period, sim
         uwg.latTree = DFCity.vegetation_parameters.tree_latent_fraction
         uwg.latGrss = DFCity.vegetation_parameters.grass_latent_fraction
         uwg.rurVegCover = epw_site_par.vegetation_coverage
-        
+
         if DFCity.vegetation_parameters.vegetation_start_month == 0 or DFCity.vegetation_parameters.vegetation_end_month == 0:
             vegStart, vegEnd = autocalcStartEndVegetation(_epw_file)
         if DFCity.vegetation_parameters.vegetation_start_month == 0:
@@ -171,23 +171,23 @@ def set_uwg_input(uwg, DFCity, epw_site_par, bnd_layer_par, analysis_period, sim
             uwg.vegEnd = vegEnd
         else:
             uwg.vegEnd = DFCity.vegetation_parameters.vegetation_end_month
-        
+
         # Define road
         uwg.alb_road = DFCity.pavement_parameters.albedo
         uwg.d_road = DFCity.pavement_parameters.thickness
         uwg.kRoad = DFCity.pavement_parameters.conductivity
         uwg.cRoad = DFCity.pavement_parameters.volumetric_heat_capacity
-        
+
         return uwg
 
 def set_individual_typologies(uwg, city):
     bldg_conversion = sc.sticky["dragonfly_UWGBldgTypes"]
-    
+
     # create a dictonary to convert between the df_city and uwg typologies
     city_typologies = city.building_typologies
     city_typNames = [','.join([typ.bldg_program, typ.bldg_age]) for typ in city_typologies]
     typology_dict = dict(itertools.izip(city_typNames, city_typologies))
-    
+
     # update each typology
     for uwg_typology in uwg.BEM:
         df_typology = typology_dict[','.join([bldg_conversion.uwg_bldg_type[uwg_typology.building.Type], bldg_conversion.uwg_built_era[uwg_typology.building.Era]])]
@@ -198,7 +198,7 @@ def set_individual_typologies(uwg, city):
         uwg_typology.wall.albedo = df_typology.wall_albedo
         uwg_typology.roof.albedo = df_typology.roof_albedo
         uwg_typology.roof.vegCoverage = df_typology.roof_veg_fraction
-    
+
     return uwg
 
 def set_global_facade_props(uwg, DFCity):
@@ -206,12 +206,12 @@ def set_global_facade_props(uwg, DFCity):
     uwg.r_glaze_total = DFCity.glz_ratio
     uwg.SHGC_total = DFCity.shgc
     uwg.alb_wall_total = DFCity.wall_albedo
-    
+
     # parameters that are already corrected on the set_individual_typologies that I am overwriting for visual reasons
     uwg.albRoof = DFCity.roof_albedo
     uwg.vegRoof = DFCity.roof_veg_fraction
     uwg.flr_h = DFCity.floor_height
-    
+
     return uwg
 
 
@@ -243,30 +243,30 @@ if init_check == True and _write == True:
         epw_site_par = epw_site_par_
     else:
         epw_site_par = df_RefEPWSitePar()
-    
+
     # check the bnd_layer_par and assign default if None.
     if bnd_layer_par_ is not None:
         assert (hasattr(bnd_layer_par_, 'isBoundaryLayerPar')), 'bnd_layer_par_ must be a Dragonfly BoundaryLayerPar object. Got {}'.format(type(bnd_layer_par_))
         bnd_layer_par = bnd_layer_par_
     else:
         bnd_layer_par = df_BndLayerPar()
-    
+
     # check the DFcity object.
     assert (hasattr(_city, 'isCity')), '_city must be a Dragonfly City object. Got {}'.format(type(_city))
-    
+
     # create a uwg_object from the dragonfly objects.
     uwg_object, new_epw_path = create_uwg(_epw_file, _folder_, _name_)
     uwg_object = set_uwg_input(uwg_object, _city, epw_site_par, bnd_layer_par, _analysis_period_, _sim_timestep_)
     uwg_object.init_BEM_obj()
     uwg_object = set_individual_typologies(uwg_object, _city)
     uwg_object = set_global_facade_props(uwg_object, _city)
-    
+
     # get the object ready to simulate
     uwg_object.read_epw()
     uwg_object.init_input_obj()
     uwg_object.hvac_autosize()
-    
-    # run the UWG object if run is set to True.
+
+    # run the uwg object if run is set to True.
     if run_ == True:
         uwg_object.simulate()
         uwg_object.write_epw()
