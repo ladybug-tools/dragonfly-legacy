@@ -21,7 +21,7 @@ You can download the package from the Dragonfly github.
 
 ghenv.Component.Name = "DF Update"
 ghenv.Component.NickName = "DFUpdate"
-ghenv.Component.Message = 'VER 0.0.02\nJUN_15_2018'
+ghenv.Component.Message = 'VER 0.0.03\nJUL_08_2018'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "3 | Developers"
 ghenv.Component.AdditionalHelpFromDocStrings = "1"

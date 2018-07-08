@@ -10,7 +10,7 @@
 """
 Use this component to generate refernce EPW site parameters that can be plugged into the "DF Run Urban Weather Generator" component.  If you are using standard files from the US Department of Energy, you should never need to use this component.  This component is onyl for when your data was recorded using non-standard means, such as an experiment that you have run in an actual urban canyon.
 -
-Provided by Dragonfly 0.0.02
+Provided by Dragonfly 0.0.03
     Args:
         obstacle_height_: A number that represents the height in meters of objects that obstruct the view to the sky at the weather station site, such as trees and buildings.  The default is set to 0.1.
         _veg_coverage_: A number between 0 and 1 that represents that fraction of the reference EPW site that is covered in grass. If nothing is input here, a defailt of 0.9 will be used.
@@ -22,7 +22,7 @@ Provided by Dragonfly 0.0.02
 
 ghenv.Component.Name = "DF Reference EPW Parameters"
 ghenv.Component.NickName = 'RefEPWPar'
-ghenv.Component.Message = 'VER 0.0.02\nJUN_12_2018'
+ghenv.Component.Message = 'VER 0.0.03\nJUL_08_2018'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "1 | Urban Weather"
 #compatibleDFVersion = VER 0.0.02\nMAY_13_2018

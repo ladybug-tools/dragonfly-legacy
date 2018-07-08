@@ -30,7 +30,7 @@ _
 The front page of the NCDC database can be found here:
 http://www.ncdc.noaa.gov/cdo-web/
 -
-Provided by Dragonfly 0.0.01
+Provided by Dragonfly 0.0.03
     Args:
         _NCDCDataFile: A text string representing the file path of an annual NCDC data file that you have downloaded and unzipped to your system.  This is the file ending in 'dat.txt' in the unzipped folder that you have downloaded.  You can download NCDC data files by picking a location on this online map: http://gis.ncdc.noaa.gov/map/viewer/#app=cdo&cfg=cdo&theme=hourly&layers=1&node=gi.
         _originalEPW: An text string representing an .epw file path on your system.  This EPW should be for the same location as the NCDC file above.
@@ -48,7 +48,7 @@ import Grasshopper.Kernel as gh
 
 ghenv.Component.Name = "DF AMY from NCDC Data"
 ghenv.Component.NickName = 'AMYfromNCDC'
-ghenv.Component.Message = 'VER 0.0.02\nJUN_12_2018'
+ghenv.Component.Message = 'VER 0.0.03\nJUL_08_2018'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "2 | Alternative Climate Data"
 #compatibleLBVersion = VER 0.0.59\nNOV_30_2015

@@ -29,7 +29,7 @@ Use this component to import a LADNSAT image that has been downloaded from GloVi
     4) Vegetation Index (NDVI)
     5) Radiance at 6 Different Portions of the Electromagnetic Spectrum
 -
-Provided by Dragonfly 0.0.01
+Provided by Dragonfly 0.0.03
     Args:
         _landsatImgFolder: The file path to the folder on your computer into which the LANDSAT image has been decompressed.
         dataType_: An integer from 0 to 10 representing the type of data that you would like to import into Grasshopper from the LANDSAT image.  Choose from the following options:
@@ -66,7 +66,7 @@ Provided by Dragonfly 0.0.01
 
 ghenv.Component.Name = "DF Import LANDSAT Image"
 ghenv.Component.NickName = 'ImportLANDSATImg'
-ghenv.Component.Message = 'VER 0.0.02\nJUN_12_2018'
+ghenv.Component.Message = 'VER 0.0.03\nJUL_08_2018'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "2 | Alternative Climate Data"
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015

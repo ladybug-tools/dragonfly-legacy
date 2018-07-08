@@ -9,7 +9,7 @@
 """
 Use this component to generate a default building typology to be used with the "DF City" component.  The specific characteristcs of these typologies are based on the US Department of Energy (DoE) Building types.
 -
-Provided by Dragonfly 0.0.02
+Provided by Dragonfly 0.0.03
     Args:
         _avg_height: The average height of the buildings of this typology in meters.
         _footprint_area: The footprint area of the buildings of this typology in square meteres.
@@ -50,7 +50,7 @@ Provided by Dragonfly 0.0.02
 
 ghenv.Component.Name = "DF Typology From Params"
 ghenv.Component.NickName = 'ParamTypology'
-ghenv.Component.Message = 'VER 0.0.02\nJUN_13_2018'
+ghenv.Component.Message = 'VER 0.0.03\nJUL_08_2018'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "1 | Urban Weather"
 #compatibleDFVersion = VER 0.0.02\nMAY_12_2018

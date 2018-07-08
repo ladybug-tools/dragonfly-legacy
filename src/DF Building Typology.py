@@ -9,7 +9,7 @@
 """
 Use this component to generate a default building typology to be used with the "DF City" component.  The specific characteristcs of these typologies are based on the US Department of Energy (DoE) Building types.
 -
-Provided by Dragonfly 0.0.02
+Provided by Dragonfly 0.0.03
     Args:
         _geo: A list of closed breps that represent the geometry of the buildings in the urban area that fall under this typology.
         _program: One of the 16 building programs listed from the "DF Bldg Programs" component.  The following options are available:
@@ -47,7 +47,7 @@ Provided by Dragonfly 0.0.02
 
 ghenv.Component.Name = "DF Building Typology"
 ghenv.Component.NickName = 'BldgTypology'
-ghenv.Component.Message = 'VER 0.0.02\nJUN_12_2018'
+ghenv.Component.Message = 'VER 0.0.03\nJUL_08_2018'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "1 | Urban Weather"
 #compatibleDFVersion = VER 0.0.02\nMAY_12_2018
