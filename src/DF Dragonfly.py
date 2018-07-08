@@ -36,7 +36,7 @@ along with Dragonfly; If not, see <http://www.gnu.org/licenses/>.
 Source code is available at: https://github.com/mostaphaRoudsari/ladybug
 
 -
-Provided by Dragonfly 0.0.02
+Provided by Dragonfly 0.0.03
     Args:
         default_folder_: Optional input for Dragonfly default folder.
                        If empty default folder will be set to C:\ladybug or C:\Users\%USERNAME%\AppData\Roaming\Ladybug\
@@ -46,7 +46,7 @@ Provided by Dragonfly 0.0.02
 
 ghenv.Component.Name = "DF Dragonfly"
 ghenv.Component.NickName = 'Dragonfly'
-ghenv.Component.Message = 'VER 0.0.02\nJUL_02_2018'
+ghenv.Component.Message = 'VER 0.0.03\nJUL_08_2018'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "0 | Dragonfly"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -1932,11 +1932,11 @@ class Vegetation(DFObject):
             coverage: A number between 0 and 1 representing the fraction of
                 the terrain covered by the vegetation.
         """
+        assert hasattr(terrain, 'isTerrain'), \
+            'terrain must be Df terrain. Got {}'.format(type(terrain))
+
         genChecks = Utilities()
-        if hasattr(terrain, 'isTerrain'):
-            coverage = genChecks.in_range((self._area/terrain.area), 0, 1, 'vegetation_coverage')
-        else:
-            genChecks.make_type_error('terrian', 'Terrain')
+        coverage = genChecks.in_range((self._area/terrain.area), 0, 1, 'vegetation_coverage')
 
         return coverage
 
