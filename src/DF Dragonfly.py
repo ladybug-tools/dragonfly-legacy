@@ -46,7 +46,7 @@ Provided by Dragonfly 0.0.03
 
 ghenv.Component.Name = "DF Dragonfly"
 ghenv.Component.NickName = 'Dragonfly'
-ghenv.Component.Message = 'VER 0.0.03\nJUL_08_2018'
+ghenv.Component.Message = 'VER 0.0.03\nJUL_11_2018'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "0 | Dragonfly"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -1877,7 +1877,7 @@ class Vegetation(DFObject):
     def __init__(self, area, is_trees=False):
         """Initialize a dragonfly vegetation object"""
         self.area = area
-        self._s_trees = is_trees
+        self._is_trees = is_trees
 
     @classmethod
     def from_geometry(cls, veg_breps, is_trees=False):
@@ -2112,7 +2112,8 @@ class VegetationPar(DFParameter):
         if month is not None:
             assert isinstance(month, (float, int)), 'vegetation_start_month must be a number got {}'.format(type(month))
             self._vegetation_start_month = self.genChecks.in_range(int(month), 0, 12, 'vegetation_start_month')
-        self._vegetation_start_month = 0
+        else:
+            self._vegetation_start_month = 0
 
     @property
     def vegetation_end_month(self):
