@@ -1300,7 +1300,7 @@ class Typology(DFObject):
     @property
     def roof_veg_fraction(self):
         """Get or set the roof vegetation fraction of the buildings in the typology."""
-        return self._roof_albedo
+        return self._roof_veg_fraction
 
     @roof_veg_fraction.setter
     def roof_veg_fraction(self, x):
@@ -2020,7 +2020,7 @@ class TrafficPar(DFParameter):
         """Get or set the Sunday traffic schedule as a list."""
         return self._sunday_schedule
 
-    @saturday_schedule.setter
+    @sunday_schedule.setter
     def sunday_schedule(self, sched):
         if sched != []:
             self._sunday_schedule = self.genChecks.checkSchedule(sched)
