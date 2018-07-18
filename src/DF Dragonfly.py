@@ -1353,6 +1353,8 @@ class Typology(DFObject):
         new_wall_albedo = (typology_one.wall_albedo*typology_one.facade_area + typology_two.wall_albedo*typology_two.facade_area)/new_facade_area
 
         newtypology = cls(new_average_height, new_footprint_area, new_facade_area, typology_one.bldg_program, typology_one.bldg_age, new_floor_to_floor, new_fract_heat_to_canyon, new_glz_ratio, new_floor_area)
+        newtypology.roof_albedo = (typology_one.roof_albedo*typology_one.footprint_area + typology_two.roof_albedo*typology_two.footprint_area)/new_footprint_area
+        newtypology.roof_veg_fraction = (typology_one.roof_veg_fraction*typology_one.footprint_area + typology_two.roof_veg_fraction*typology_two.footprint_area)/new_footprint_area
         newtypology.wall_albedo = new_wall_albedo
 
         return newtypology
@@ -1563,7 +1565,6 @@ class City(DFObject):
                 bldg_program, bldg_age = type.split(',')
                 _bldg_program = self.bldgTypes.check_program(bldg_program)
                 _bldg_age = self.bldgTypes.check_age(bldg_age)
-                self._bldg_types.append(_bldg_program + ',' + _bldg_age)
             except:
                 raise Exception (
                     "Building Type {} is not in the correct format of BuildingProgram,BuildingAge.".format('"' + str(type) + '"')
