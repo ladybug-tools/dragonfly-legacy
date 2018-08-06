@@ -10,7 +10,7 @@
 """
 Use this component to generate vegetation parameters that can be plugged into the "DF uwg City" component.
 -
-Provided by Dragonfly 0.0.02
+Provided by Dragonfly 0.0.03
     Args:
         _albedo_: A number between 0 and 1 that represents the ratio of reflected radiation from
             vegetated surfaces to incident radiation upon them.  If no value is input here, the
@@ -40,7 +40,7 @@ Provided by Dragonfly 0.0.02
 
 ghenv.Component.Name = "DF Vegetation Parameters"
 ghenv.Component.NickName = 'VegPar'
-ghenv.Component.Message = 'VER 0.0.02\nJUN_12_2018'
+ghenv.Component.Message = 'VER 0.0.03\nJUL_08_2018'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "1 | Urban Weather"
 #compatibleDFVersion = VER 0.0.02\nMAY_20_2018

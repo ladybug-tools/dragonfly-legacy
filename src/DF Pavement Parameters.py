@@ -10,7 +10,7 @@
 """
 Use this component to generate parameters that describe the pavement of the urban area, which can be plugged into the "DF uwg City" component.
 -
-Provided by Dragonfly 0.0.02
+Provided by Dragonfly 0.0.03
     
     Args:
         _albedo_: A number between 0 and 1 that represents the surface albedo (or reflectivity) of the pavement.  The default is set to 0.1, which is typical of fresh asphalt.
@@ -24,7 +24,7 @@ Provided by Dragonfly 0.0.02
 
 ghenv.Component.Name = "DF Pavement Parameters"
 ghenv.Component.NickName = 'PavementPar'
-ghenv.Component.Message = 'VER 0.0.02\nJUN_12_2018'
+ghenv.Component.Message = 'VER 0.0.03\nJUL_08_2018'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "1 | Urban Weather"
 #compatibleDFVersion = VER 0.0.02\nMAY_20_2018

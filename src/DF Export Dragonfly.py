@@ -12,7 +12,7 @@ Code Developers of Dragonfly can use this component to export Dragonfly user obj
 This eases and automates the steps before commiting new components to the Github.
 This component was written thanks to Giulio Piacentino a really helpful example.
 -
-Provided by Dragonfly 0.0.02
+Provided by Dragonfly 0.0.03
 
     Args:
         _components: Any output from a new Dragonfly component that you wish to export. Right now, only one component can be connected at a time but you can input a "*" (without quotation marsk) to search all changed Dragonfly components on a grasshopper canvas.
@@ -24,7 +24,7 @@ Provided by Dragonfly 0.0.02
 
 ghenv.Component.Name = "DF Export Dragonfly"
 ghenv.Component.NickName = 'ExportDragonfly'
-ghenv.Component.Message = 'VER 0.0.66\nJUN_12_2018'
+ghenv.Component.Message = 'VER 0.0.03\nJUL_08_2018'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "3 | Developers"
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015

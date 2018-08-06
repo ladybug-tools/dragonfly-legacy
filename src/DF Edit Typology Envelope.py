@@ -9,7 +9,7 @@
 """
 Use this component to generate a default building typology to be used with the "DF City" component.  The specific characteristcs of these typologies are based on the US Department of Energy (DoE) Building types.
 -
-Provided by Dragonfly 0.0.02
+Provided by Dragonfly 0.0.03
     Args:
         _typology: A building typology from the "DF Building Typology" component.
         _glz_ratio_: A number between 0 and 1 that represents the fraction of the exterior wall surface occupied by windows.  If no value is input here, a default will be used that comes from the DoE building template connected to the _bldgProgram and _bldgAge.
@@ -24,7 +24,7 @@ Provided by Dragonfly 0.0.02
 
 ghenv.Component.Name = "DF Edit Typology Envelope"
 ghenv.Component.NickName = 'TypeEnvelope'
-ghenv.Component.Message = 'VER 0.0.02\nJUN_12_2018'
+ghenv.Component.Message = 'VER 0.0.03\nJUL_08_2018'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "1 | Urban Weather"
 #compatibleDFVersion = VER 0.0.02\nMAY_12_2018

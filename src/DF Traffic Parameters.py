@@ -10,7 +10,7 @@
 """
 Use this component to generate traffic parameters that can be plugged into the "DF uwg City" component.
 -
-Provided by Dragonfly 0.0.02
+Provided by Dragonfly 0.0.03
     Args:
         _sensible_heat: A number that represents the sensible anthropogenic heat generated in the urban canyon in Watts per square meter of pavement (W/m2).  This is specifcally the heat that DOES NOT originate from buildings and mostly includes heat originating from automobiles, street lighting, and human metabolism.  Typical values are:
         _
@@ -31,7 +31,7 @@ Provided by Dragonfly 0.0.02
 
 ghenv.Component.Name = "DF Traffic Parameters"
 ghenv.Component.NickName = 'TrafficPar'
-ghenv.Component.Message = 'VER 0.0.02\nJUN_12_2018'
+ghenv.Component.Message = 'VER 0.0.03\nJUL_08_2018'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "1 | Urban Weather"
 #compatibleDFVersion = VER 0.0.02\nMAY_20_2018

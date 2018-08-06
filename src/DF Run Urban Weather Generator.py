@@ -16,7 +16,7 @@ _
 For a full list of publications on the Urban Weather Generator, please see this page of the MIT Urban Microclimate Group:
 http://urbanmicroclimate.scripts.mit.edu/publications.php
 -
-Provided by Dragonfly 0.0.02
+Provided by Dragonfly 0.0.03
     Args:
         _epw_file: An .epw file path on your system.  This is the rural or airport file that will be morphed to reflect the climate conditions within an urban canyon.
         _city: A Dragonfly City object. This object can be generated with the "DF City" component.
@@ -38,7 +38,7 @@ Provided by Dragonfly 0.0.02
 
 ghenv.Component.Name = "DF Run Urban Weather Generator"
 ghenv.Component.NickName = 'RunUWG'
-ghenv.Component.Message = 'VER 0.0.02\nJUN_24_2018'
+ghenv.Component.Message = 'VER 0.0.03\nJUL_11_2018'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "1 | Urban Weather"
 #compatibleDFVersion = VER 0.0.02\nMAY_25_2018
@@ -92,6 +92,7 @@ def autocalcStartEndVegetation(epw_file):
     
     thresholdTemp = 10
     vegEnd = 12
+    vegStart = 1
     vegStartSet = False
     for i, t in enumerate(monthTemps):
         if t > thresholdTemp and vegStartSet == False:
@@ -167,7 +168,7 @@ def set_uwg_input(uwg, DFCity, epw_site_par, bnd_layer_par, analysis_period, sim
             uwg.vegStart = vegStart
         else:
             uwg.vegStart = DFCity.vegetation_parameters.vegetation_start_month
-        if DFCity.vegetation_parameters.vegetation_start_month == 0:
+        if DFCity.vegetation_parameters.vegetation_end_month == 0:
             uwg.vegEnd = vegEnd
         else:
             uwg.vegEnd = DFCity.vegetation_parameters.vegetation_end_month

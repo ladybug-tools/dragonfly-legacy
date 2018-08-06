@@ -9,7 +9,7 @@
 """
 Use this component to generate a building typology to be used with the "DF City" component from footprint geometry.
 -
-Provided by Dragonfly 0.0.02
+Provided by Dragonfly 0.0.03
     Args:
         _geo: A list of surface breps that represent the footprint geometry of the buildings in the urban area that fall under this typology.
         _num_floors: A float number (greater than 1) that represents the average number of stories of the
@@ -48,7 +48,7 @@ Provided by Dragonfly 0.0.02
 
 ghenv.Component.Name = "DF Typology from Footprints"
 ghenv.Component.NickName = 'FootprintTypology'
-ghenv.Component.Message = 'VER 0.0.02\nJUN_15_2018'
+ghenv.Component.Message = 'VER 0.0.03\nJUL_08_2018'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "1 | Urban Weather"
 #compatibleDFVersion = VER 0.0.02\nMAY_12_2018

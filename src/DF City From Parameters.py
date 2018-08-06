@@ -12,7 +12,7 @@ Use this component to generate a Dragonfly City object from numerical parameters
 _
 The ouput of this component can be plugged into the 'Dragonfly_Run Urban Weather Generator' component to morph a rural/airport weather file to reflect the urban climate.
 -
-Provided by Dragonfly 0.0.02
+Provided by Dragonfly 0.0.03
     Args:
         _avg_height: The average height of the buildings in the city in meters.
         _site_coverage:  A number between 0 and 1 that represents the fraction of the city terrain that
@@ -51,7 +51,7 @@ Provided by Dragonfly 0.0.02
 
 ghenv.Component.Name = "DF City From Parameters"
 ghenv.Component.NickName = 'CityFromPar'
-ghenv.Component.Message = 'VER 0.0.02\nJUN_12_2018'
+ghenv.Component.Message = 'VER 0.0.03\nJUL_08_2018'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "1 | Urban Weather"
 #compatibleDFVersion = VER 0.0.02\nMAY_12_2018

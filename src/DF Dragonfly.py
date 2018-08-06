@@ -36,7 +36,7 @@ along with Dragonfly; If not, see <http://www.gnu.org/licenses/>.
 Source code is available at: https://github.com/mostaphaRoudsari/ladybug
 
 -
-Provided by Dragonfly 0.0.02
+Provided by Dragonfly 0.0.03
     Args:
         default_folder_: Optional input for Dragonfly default folder.
                        If empty default folder will be set to C:\ladybug or C:\Users\%USERNAME%\AppData\Roaming\Ladybug\
@@ -46,7 +46,7 @@ Provided by Dragonfly 0.0.02
 
 ghenv.Component.Name = "DF Dragonfly"
 ghenv.Component.NickName = 'Dragonfly'
-ghenv.Component.Message = 'VER 0.0.02\nJUL_02_2018'
+ghenv.Component.Message = 'VER 0.0.03\nJUL_11_2018'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "0 | Dragonfly"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -1300,7 +1300,7 @@ class Typology(DFObject):
     @property
     def roof_veg_fraction(self):
         """Get or set the roof vegetation fraction of the buildings in the typology."""
-        return self._roof_albedo
+        return self._roof_veg_fraction
 
     @roof_veg_fraction.setter
     def roof_veg_fraction(self, x):
@@ -1353,6 +1353,8 @@ class Typology(DFObject):
         new_wall_albedo = (typology_one.wall_albedo*typology_one.facade_area + typology_two.wall_albedo*typology_two.facade_area)/new_facade_area
 
         newtypology = cls(new_average_height, new_footprint_area, new_facade_area, typology_one.bldg_program, typology_one.bldg_age, new_floor_to_floor, new_fract_heat_to_canyon, new_glz_ratio, new_floor_area)
+        newtypology.roof_albedo = (typology_one.roof_albedo*typology_one.footprint_area + typology_two.roof_albedo*typology_two.footprint_area)/new_footprint_area
+        newtypology.roof_veg_fraction = (typology_one.roof_veg_fraction*typology_one.footprint_area + typology_two.roof_veg_fraction*typology_two.footprint_area)/new_footprint_area
         newtypology.wall_albedo = new_wall_albedo
 
         return newtypology
@@ -1563,7 +1565,6 @@ class City(DFObject):
                 bldg_program, bldg_age = type.split(',')
                 _bldg_program = self.bldgTypes.check_program(bldg_program)
                 _bldg_age = self.bldgTypes.check_age(bldg_age)
-                self._bldg_types.append(_bldg_program + ',' + _bldg_age)
             except:
                 raise Exception (
                     "Building Type {} is not in the correct format of BuildingProgram,BuildingAge.".format('"' + str(type) + '"')
@@ -1877,7 +1878,7 @@ class Vegetation(DFObject):
     def __init__(self, area, is_trees=False):
         """Initialize a dragonfly vegetation object"""
         self.area = area
-        self._s_trees = is_trees
+        self._is_trees = is_trees
 
     @classmethod
     def from_geometry(cls, veg_breps, is_trees=False):
@@ -1932,11 +1933,11 @@ class Vegetation(DFObject):
             coverage: A number between 0 and 1 representing the fraction of
                 the terrain covered by the vegetation.
         """
+        assert hasattr(terrain, 'isTerrain'), \
+            'terrain must be Df terrain. Got {}'.format(type(terrain))
+
         genChecks = Utilities()
-        if hasattr(terrain, 'isTerrain'):
-            coverage = genChecks.in_range((self._area/terrain.area), 0, 1, 'vegetation_coverage')
-        else:
-            genChecks.make_type_error('terrian', 'Terrain')
+        coverage = genChecks.in_range((self._area/terrain.area), 0, 1, 'vegetation_coverage')
 
         return coverage
 
@@ -2020,7 +2021,7 @@ class TrafficPar(DFParameter):
         """Get or set the Sunday traffic schedule as a list."""
         return self._sunday_schedule
 
-    @saturday_schedule.setter
+    @sunday_schedule.setter
     def sunday_schedule(self, sched):
         if sched != []:
             self._sunday_schedule = self.genChecks.checkSchedule(sched)
@@ -2112,7 +2113,8 @@ class VegetationPar(DFParameter):
         if month is not None:
             assert isinstance(month, (float, int)), 'vegetation_start_month must be a number got {}'.format(type(month))
             self._vegetation_start_month = self.genChecks.in_range(int(month), 0, 12, 'vegetation_start_month')
-        self._vegetation_start_month = 0
+        else:
+            self._vegetation_start_month = 0
 
     @property
     def vegetation_end_month(self):
