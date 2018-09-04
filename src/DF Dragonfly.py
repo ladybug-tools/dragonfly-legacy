@@ -1344,6 +1344,8 @@ class Typology(DFObject):
         new_footprint_area = typology_one.footprint_area + typology_two.footprint_area
         new_facade_area = typology_one.facade_area + typology_two.facade_area
         new_floor_area = typology_one.floor_area + typology_two.floor_area
+        _typology_one_glz_area = typology_one.facade_area * typology_one.glz_ratio # for window properties
+        _typology_two_glz_area = typology_two.facade_area * typology_two.glz_ratio
 
         # atributes that get weighted averaged.
         new_average_height = (typology_one.average_height*typology_one.footprint_area + typology_two.average_height*typology_two.footprint_area)/new_footprint_area
@@ -1351,11 +1353,15 @@ class Typology(DFObject):
         new_fract_heat_to_canyon = (typology_one.fract_heat_to_canyon*typology_one.floor_area + typology_two.fract_heat_to_canyon*typology_two.floor_area)/new_floor_area
         new_glz_ratio = (typology_one.glz_ratio*typology_one.facade_area + typology_two.glz_ratio*typology_two.facade_area)/new_facade_area
         new_wall_albedo = (typology_one.wall_albedo*typology_one.facade_area + typology_two.wall_albedo*typology_two.facade_area)/new_facade_area
+        new_roof_albedo = (typology_one.roof_albedo*typology_one.footprint_area + typology_two.roof_albedo*typology_two.footprint_area)/new_footprint_area
+        new_roof_veg_fraction = (typology_one.roof_veg_fraction*typology_one.footprint_area + typology_two.roof_veg_fraction*typology_two.footprint_area)/new_footprint_area
+        new_shgc = (typology_one.shgc*_typology_one_glz_area + typology_two.shgc*_typology_two_glz_area)/(_typology_one_glz_area + _typology_two_glz_area)
 
         newtypology = cls(new_average_height, new_footprint_area, new_facade_area, typology_one.bldg_program, typology_one.bldg_age, new_floor_to_floor, new_fract_heat_to_canyon, new_glz_ratio, new_floor_area)
-        newtypology.roof_albedo = (typology_one.roof_albedo*typology_one.footprint_area + typology_two.roof_albedo*typology_two.footprint_area)/new_footprint_area
-        newtypology.roof_veg_fraction = (typology_one.roof_veg_fraction*typology_one.footprint_area + typology_two.roof_veg_fraction*typology_two.footprint_area)/new_footprint_area
+        newtypology.roof_albedo = new_roof_albedo
+        newtypology.roof_veg_fraction = new_roof_veg_fraction
         newtypology.wall_albedo = new_wall_albedo
+        newtypology.shgc = new_shgc
 
         return newtypology
 
