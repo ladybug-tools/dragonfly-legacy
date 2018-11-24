@@ -1,4 +1,12 @@
+from __future__ import division, print_function
+
+try:
+    range = xrange
+except NameError:
+    pass
+
 import math
+
 
 class SimParam(object):
     """
@@ -24,6 +32,7 @@ class SimParam(object):
         inobis        % julian day at the end of each month
         julian        % julian day
     """
+    TIMESTEP_CONFLICT_MSG = "TIMESTEP ERROR! Timestep must be a factor of 3600."
 
     def __init__(self,dt,timefor,M,DAY,days):
         self.dt = dt                                                        # uwg time simulation time step
@@ -58,12 +67,17 @@ class SimParam(object):
 
     def UpdateDate(self):
         self.secDay = self.secDay + self.dt
+
         if self.is_near_zero(self.secDay - 3600*24):
             self.day += 1
             self.julian = self.julian + 1
             self.secDay = 0.
-            for j in xrange(12):
+            for j in range(12):
                 if self.is_near_zero(self.julian - self.inobis[j]):
                     self.month = self.month + 1
                     self.day = 1
+
+        if self.secDay > (3600*24):
+            raise Exception("{}. CURRENTLY AT {}.".format(self.TIMESTEP_CONFLICT_MSG, self.dt))
+
         self.hourDay = int(math.floor(self.secDay/3600.))       # 0 - 23hr
