@@ -46,7 +46,7 @@ Provided by Dragonfly 0.0.03
 
 ghenv.Component.Name = "DF Dragonfly"
 ghenv.Component.NickName = 'Dragonfly'
-ghenv.Component.Message = 'VER 0.0.03\nJUL_11_2018'
+ghenv.Component.Message = 'VER 0.0.03\nNOV_05_2018'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "0 | Dragonfly"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -448,8 +448,9 @@ class Geometry(object):
                 floorBrep = rc.Geometry.Brep.CreatePlanarBreps(floorCrvs, sc.doc.ModelAbsoluteTolerance)
             except TypeError:
                 floorBrep = rc.Geometry.Brep.CreatePlanarBreps(floorCrvs)
-            floorArea += rc.Geometry.AreaMassProperties.Compute(floorBrep).Area
-            floorBreps.extend(floorBrep)
+            if floorBrep is not None:
+                floorArea += rc.Geometry.AreaMassProperties.Compute(floorBrep).Area
+                floorBreps.extend(floorBrep)
 
         return floorArea, floorBreps
 
