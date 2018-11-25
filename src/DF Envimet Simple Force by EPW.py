@@ -34,7 +34,7 @@ ghenv.Component.NickName = 'DFenvimetSimpleForceByEPW'
 ghenv.Component.Message = 'VER 0.0.03\nNOV_26_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Dragonfly"
-ghenv.Component.SubCategory = "4 | Envimet"
+ghenv.Component.SubCategory = "3 | Envimet"
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "4"
 except: pass
