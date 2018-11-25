@@ -24,9 +24,9 @@ Provided by Dragonfly 0.0.03
 
 ghenv.Component.Name = "DF Export Dragonfly"
 ghenv.Component.NickName = 'ExportDragonfly'
-ghenv.Component.Message = 'VER 0.0.03\nJUL_08_2018'
+ghenv.Component.Message = 'VER 0.0.03\nNOV_25_2018'
 ghenv.Component.Category = "Dragonfly"
-ghenv.Component.SubCategory = "3 | Developers"
+ghenv.Component.SubCategory = "4 | Developers"
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
 except: pass
