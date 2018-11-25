@@ -15,31 +15,41 @@ The urban weather generator, Journal of Building Performance Simulation. 6:4,269
 doi: 10.1080/19401493.2012.718797
 =========================================================================
 """
+from __future__ import division, print_function
+from functools import reduce
+
+try:
+    range = xrange
+except NameError:
+    pass
 
 import os
 import math
-import cPickle
 import copy
-import utilities
 import logging
 
-from simparam import SimParam
-from weather import Weather
-from building import Building
-from material import Material
-from element import Element
-from BEMDef import BEMDef
-from schdef import SchDef
-from param import Param
-from UCMDef import UCMDef
-from forcing import Forcing
-from UBLDef import UBLDef
-from RSMDef import RSMDef
-from solarcalcs import SolarCalcs
-import urbflux
-from psychrometrics import psychrometrics
-from readDOE import readDOE
-from urbflux import urbflux
+try:
+    import cPickle as pickle
+except ImportError:
+    import pickle
+
+from .simparam import SimParam
+from .weather import Weather
+from .building import Building
+from .material import Material
+from .element import Element
+from .BEMDef import BEMDef
+from .schdef import SchDef
+from .param import Param
+from .UCMDef import UCMDef
+from .forcing import Forcing
+from .UBLDef import UBLDef
+from .RSMDef import RSMDef
+from .solarcalcs import SolarCalcs
+from .psychrometrics import psychrometrics
+from .readDOE import readDOE
+from .urbflux import urbflux
+from . import utilities
 
 # For debugging only
 #from pprint import pprint
@@ -275,10 +285,10 @@ class uwg(object):
         self.depth_soil = utilities.zeros(self.nSoil, 1)   # nSoil x 1 matrix for soil depth (m)
 
         # Read monthly data for each layer of soil from EPW file
-        for i in xrange(self.nSoil):
+        for i in range(self.nSoil):
             self.depth_soil[i][0] = float(soilData[2 + (i*16)])  # get soil depth for each nSoil
             # Monthly data
-            for j in xrange(12):
+            for j in range(12):
                 # 12 months of soil T for specific depth
                 self.Tsoil[i][j] = float(soilData[6 + (i*16) + j]) + 273.15
 
@@ -316,7 +326,7 @@ class uwg(object):
         count = 0
         while count < len(uwg_param_data):
             row = uwg_param_data[count]
-            row = [row[i].replace(" ", "") for i in xrange(len(row))]  # strip white spaces
+            row = [row[i].replace(" ", "") for i in range(len(row))]  # strip white spaces
 
             # Optional parameters might be empty so handle separately
             is_optional_parameter = (
@@ -330,26 +340,28 @@ class uwg(object):
                     row[0] == "SHGC"
                 )
             )
-
-            if row == [] or "#" in row[0]:
-                count += 1
-                continue
-            elif row[0] == "SchTraffic":
-                # SchTraffic: 3 x 24 matrix
-                trafficrows = uwg_param_data[count+1:count+4]
-                self._init_param_dict[row[0]] = [utilities.str2fl(r[:24]) for r in trafficrows]
-                count += 4
-            elif row[0] == "bld":
-                # bld: 17 x 3 matrix
-                bldrows = uwg_param_data[count+1:count+17]
-                self._init_param_dict[row[0]] = [utilities.str2fl(r[:3]) for r in bldrows]
-                count += 17
-            elif is_optional_parameter:
-                self._init_param_dict[row[0]] = float(row[1]) if row[1] != "" else None
-                count += 1
-            else:
-                self._init_param_dict[row[0]] = float(row[1])
-                count += 1
+            try:
+                if row == [] or "#" in row[0]:
+                    count += 1
+                    continue
+                elif row[0] == "SchTraffic":
+                    # SchTraffic: 3 x 24 matrix
+                    trafficrows = uwg_param_data[count+1:count+4]
+                    self._init_param_dict[row[0]] = [utilities.str2fl(r[:24]) for r in trafficrows]
+                    count += 4
+                elif row[0] == "bld":
+                    # bld: 17 x 3 matrix
+                    bldrows = uwg_param_data[count+1:count+17]
+                    self._init_param_dict[row[0]] = [utilities.str2fl(r[:3]) for r in bldrows]
+                    count += 17
+                elif is_optional_parameter:
+                    self._init_param_dict[row[0]] = float(row[1]) if row[1] != "" else None
+                    count += 1
+                else:
+                    self._init_param_dict[row[0]] = float(row[1])
+                    count += 1
+            except ValueError:
+                print("Error while reading parameter at {} {}".format(count, row))
 
         ipd = self._init_param_dict
 
@@ -422,19 +434,7 @@ class uwg(object):
         if self.albWall is None: self.albWall = ipd['albWall']
         if self.SHGC is None: self.SHGC = ipd['SHGC']
 
-    def set_input(self):
-        """ Set inputs from .uwg input file if not already defined, the check if all
-        the required input parameters are there.
-        """
-
-        # If a uwgParamFileName is set, then read inputs from .uwg file.
-        # User-defined class properties will override the inputs from the .uwg file.
-        if self.uwgParamFileName is not None:
-            print "\nReading uwg file input."
-            self.read_input()
-        else:
-            print "\nNo .uwg file input."
-
+    def check_required_inputs(self):
         # Required parameters
         is_defined = (type(self.Month) == float or type(self.Month) == int) and \
             (type(self.Day) == float or type(self.Day) == int) and \
@@ -468,6 +468,21 @@ class uwg(object):
             raise Exception(
                 "The required parameters have not been defined correctly. Check input parameters and try again.")
 
+    def set_input(self):
+        """ Set inputs from .uwg input file if not already defined, the check if all
+        the required input parameters are there.
+        """
+
+        # If a uwgParamFileName is set, then read inputs from .uwg file.
+        # User-defined class properties will override the inputs from the .uwg file.
+        if self.uwgParamFileName is not None:
+            print("\nReading uwg file input.")
+            self.read_input()
+        else:
+            print("\nNo .uwg file input.")
+
+        self.check_required_inputs()
+
         # Modify zone to be used as python index
         self.zone = int(self.zone)-1
 
@@ -484,9 +499,9 @@ class uwg(object):
             raise Exception("readDOE.pkl file: '{}' does not exist.".format(readDOE_file_path))
 
         readDOE_file = open(self.readDOE_file_path, 'rb')  # open pickle file in binary form
-        refDOE = cPickle.load(readDOE_file)
-        refBEM = cPickle.load(readDOE_file)
-        refSchedule = cPickle.load(readDOE_file)
+        refDOE = pickle.load(readDOE_file)
+        refBEM = pickle.load(readDOE_file)
+        refSchedule = pickle.load(readDOE_file)
         readDOE_file.close()
 
         # Define building energy models
@@ -503,8 +518,8 @@ class uwg(object):
         self.BEM = []           # list of BEMDef objects
         self.Sch = []           # list of Schedule objects
 
-        for i in xrange(16):    # 16 building types
-            for j in xrange(3):  # 3 built eras
+        for i in range(16):    # 16 building types
+            for j in range(3):  # 3 built eras
                 if self.bld[i][j] > 0.:
                     # Add to BEM list
                     self.BEM.append(refBEM[i][j][self.zone])
@@ -588,8 +603,8 @@ class uwg(object):
         # define road layers
         road_layer_num = int(math.ceil(self.d_road/0.05))
         # 0.5/0.05 ~ 10 x 1 matrix of 0.05 thickness
-        thickness_vector = [0.05 for r in xrange(road_layer_num)]
-        material_vector = [asphalt for r in xrange(road_layer_num)]
+        thickness_vector = [0.05 for r in range(road_layer_num)]
+        material_vector = [asphalt for r in range(road_layer_num)]
 
         self.road = Element(self.alb_road, emis, thickness_vector, material_vector, road_veg_coverage,
                             road_T_init, road_horizontal, name="urban_road")
@@ -614,7 +629,7 @@ class uwg(object):
         # Define Road Element & buffer to match ground temperature depth
         roadMat, newthickness = procMat(self.road, self.MAXTHICKNESS, self.MINTHICKNESS)
 
-        for i in xrange(self.nSoil):
+        for i in range(self.nSoil):
             # if soil depth is greater then the thickness of the road
             # we add new slices of soil at max thickness until road is greater or equal
 
@@ -633,7 +648,7 @@ class uwg(object):
         # Define Rural Element
         ruralMat, newthickness = procMat(self.rural, self.MAXTHICKNESS, self.MINTHICKNESS)
 
-        for i in xrange(self.nSoil):
+        for i in range(self.nSoil):
             # if soil depth is greater then the thickness of the road
             # we add new slices of soil at max thickness until road is greater or equal
 
@@ -653,7 +668,7 @@ class uwg(object):
     def hvac_autosize(self):
         """ Section 6 - HVAC Autosizing (unlimited cooling & heating) """
 
-        for i in xrange(len(self.BEM)):
+        for i in range(len(self.BEM)):
             if self.is_near_zero(self.autosize) == False:
                 self.BEM[i].building.coolCap = 9999.
                 self.BEM[i].building.heatCap = 9999.
@@ -681,14 +696,14 @@ class uwg(object):
         # Data dump variables
         time = range(self.N)
 
-        self.WeatherData = [None for x in xrange(self.N)]
-        self.UCMData = [None for x in xrange(self.N)]
-        self.UBLData = [None for x in xrange(self.N)]
-        self.RSMData = [None for x in xrange(self.N)]
-        self.USMData = [None for x in xrange(self.N)]
+        self.WeatherData = [None for x in range(self.N)]
+        self.UCMData = [None for x in range(self.N)]
+        self.UBLData = [None for x in range(self.N)]
+        self.RSMData = [None for x in range(self.N)]
+        self.USMData = [None for x in range(self.N)]
 
-        print '\nSimulating new temperature and humidity values for {} days from {}/{}.\n'.format(
-            int(self.nDay), int(self.Month), int(self.Day))
+        print('\nSimulating new temperature and humidity values for {} days from {}/{}.\n'.format(
+            int(self.nDay), int(self.Month), int(self.Day)))
         self.logger.info("Start simulation")
 
         for it in range(1, self.simTime.nt, 1):  # for every simulation time-step (i.e 5 min) defined by uwg
@@ -746,11 +761,10 @@ class uwg(object):
                 self.dayType = 1                                        # Weekday
 
             # Update anthropogenic heat load for each hour (building & UCM)
-            self.UCM.sensAnthrop = self.sensAnth * \
-                (self.SchTraffic[self.dayType-1][self.simTime.hourDay])
+            self.UCM.sensAnthrop = self.sensAnth * (self.SchTraffic[self.dayType-1][self.simTime.hourDay])
 
             # Update the energy components for building types defined in initialize.uwg
-            for i in xrange(len(self.BEM)):
+            for i in range(len(self.BEM)):
                 # Set temperature
                 self.BEM[i].building.coolSetpointDay = self.Sch[i].Cool[self.dayType -
                                                                         1][self.simTime.hourDay] + 273.15  # add from temperature schedule for cooling
@@ -853,7 +867,7 @@ class uwg(object):
         """
         epw_prec = self.epw_precision  # precision of epw file input
 
-        for iJ in xrange(len(self.UCMData)):
+        for iJ in range(len(self.UCMData)):
             # [iJ+self.simTime.timeInitial-8] = increments along every weather timestep in epw
             # [6 to 21]                       = column data of epw
             self.epwinput[iJ+self.simTime.timeInitial-8][6] = "{0:.{1}f}".format(
@@ -870,22 +884,22 @@ class uwg(object):
         # Writing new EPW file
         epw_new_id = open(self.newPathName, "w")
 
-        for i in xrange(8):
-            new_epw_line = '{}\r\n'.format(reduce(lambda x, y: x+","+y, self._header[i]))
+        for i in range(8):
+            new_epw_line = '{}\n'.format(reduce(lambda x, y: x+","+y, self._header[i]))
             epw_new_id.write(new_epw_line)
 
-        for i in xrange(len(self.epwinput)):
+        for i in range(len(self.epwinput)):
             printme = ""
-            for ei in xrange(34):
+            for ei in range(34):
                 printme += "{}".format(self.epwinput[i][ei]) + ','
             printme = printme + "{}".format(self.epwinput[i][ei])
-            new_epw_line = "{0}\r\n".format(printme)
+            new_epw_line = "{0}\n".format(printme)
             epw_new_id.write(new_epw_line)
 
         epw_new_id.close()
 
-        print "New climate file '{}' is generated at {}.".format(
-            self.destinationFileName, self.destinationDir)
+        print("New climate file '{}' is generated at {}.".format(
+            self.destinationFileName, self.destinationDir))
 
     def run(self):
 
@@ -911,16 +925,16 @@ def procMat(materials, max_thickness, min_thickness):
 
     if len(materials.layerThickness) > 1:
 
-        for j in xrange(len(materials.layerThickness)):
+        for j in range(len(materials.layerThickness)):
             # Break up each layer that's more than max thickness (0.05m)
             if materials.layerThickness[j] > max_thickness:
                 nlayers = math.ceil(materials.layerThickness[j]/float(max_thickness))
-                for i in xrange(int(nlayers)):
+                for i in range(int(nlayers)):
                     newmat.append(Material(k[j], Vhc[j], name=materials._name))
                     newthickness.append(materials.layerThickness[j]/float(nlayers))
             # Material that's less then min_thickness is not added.
             elif materials.layerThickness[j] < min_thickness:
-                print "WARNING: Material '{}' layer found too thin (<{:.2f}cm), ignored.".format(
+                print("WARNING: Material '{}' layer found too thin (<{:.2f}cm), ignored.").format(
                     materials._name, min_thickness*100)
             else:
                 newmat.append(Material(k[j], Vhc[j], name=materials._name))
@@ -931,7 +945,7 @@ def procMat(materials, max_thickness, min_thickness):
         # Divide single layer into two (uwg assumes at least 2 layers)
         if materials.layerThickness[0] > max_thickness:
             nlayers = math.ceil(materials.layerThickness[0]/float(max_thickness))
-            for i in xrange(int(nlayers)):
+            for i in range(int(nlayers)):
                 newmat.append(Material(k[0], Vhc[0], name=materials._name))
                 newthickness.append(materials.layerThickness[0]/float(nlayers))
         # Material should be at least 1cm thick, so if we're here,
@@ -940,8 +954,8 @@ def procMat(materials, max_thickness, min_thickness):
             newthickness = [min_thickness/2., min_thickness/2.]
             newmat = [Material(k[0], Vhc[0], name=materials._name),
                       Material(k[0], Vhc[0], name=materials._name)]
-            print "WARNING: a thin (<2cm) single material '{}' layer found. May cause error.".format(
-                materials._name)
+            print("WARNING: a thin (<2cm) single material '{}' layer found. May cause error.".format(
+                materials._name))
         else:
             newthickness = [materials.layerThickness[0]/2., materials.layerThickness[0]/2.]
             newmat = [Material(k[0], Vhc[0], name=materials._name),
