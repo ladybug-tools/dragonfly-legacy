@@ -20,6 +20,8 @@ Contributors:
 
 [Saeran Vasanthakumar](https://github.com/saeranv)
 
+[Antonello Di Nunzio](https://github.com/antonellodn)
+
 [Joseph Yang](https://github.com/hansukyang)
 
 [Mostapha Roudsari](https://github.com/mostapharoudsari)
