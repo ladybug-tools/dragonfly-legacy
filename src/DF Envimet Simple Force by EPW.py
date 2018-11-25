@@ -1,22 +1,8 @@
-# DF Envimet Simple Force by EPW
+# Dragonfly: A Plugin for Climate Modeling (GPL) started by Chris Mackey <chris@ladybug.tools>, Antonello Di Nunzio <antonellodinunzio@gmail.com> 
+# This file is part of Dragonfly.
 #
-# Ladybug: A Plugin for Environmental Analysis (GPL) started by Mostapha Sadeghipour Roudsari
-# 
-# This file is part of Ladybug.
-# 
-# Copyright (c) 2013-2018, Antonello Di Nunzio <antonellodinunzio@gmail.com> 
-# Ladybug is free software; you can redistribute it and/or modify 
-# it under the terms of the GNU General Public License as published 
-# by the Free Software Foundation; either version 3 of the License, 
-# or (at your option) any later version. 
-# 
-# Ladybug is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of 
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the 
-# GNU General Public License for more details.
-# 
 # You should have received a copy of the GNU General Public License
-# along with Ladybug; If not, see <http://www.gnu.org/licenses/>.
+# along with Dragonfly; If not, see <http://www.gnu.org/licenses/>.
 # 
 # @license GPL-3.0+ <http://spdx.org/licenses/GPL-3.0+>
 
@@ -45,11 +31,11 @@ Provided by Dragonfly 0.0.03
 
 ghenv.Component.Name = "DF Envimet Simple Force by EPW"
 ghenv.Component.NickName = 'DFenvimetSimpleForceByEPW'
-ghenv.Component.Message = 'VER 0.0.03\nJUL_08_2018'
+ghenv.Component.Message = 'VER 0.0.03\nNOV_26_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "6 | Utility Envimet"
-#compatibleLBVersion = VER 0.0.59\nFEB_01_2015
+#compatibleLBVersion = VER 0.0.59\nNOV_26_2018
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
 except: pass
 
