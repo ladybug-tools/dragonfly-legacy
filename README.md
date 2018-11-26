@@ -16,7 +16,7 @@ Installation
 Contributors (in alphabetical order):
 ========================================
 
-[Anna Song](ttps://github.com/annasong20)
+[Anna Song](https://github.com/annasong20)
 
 [Antonello Di Nunzio](https://github.com/antonellodn)
 
