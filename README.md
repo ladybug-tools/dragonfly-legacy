@@ -13,16 +13,20 @@ Installation
 [See requirements and installation instructions on our Wiki pages](https://github.com/chriswmackey/Dragonfly/wiki)
 
 
-Contributors:
+Contributors (in alphabetical order):
 ========================================
 
-[Chris Mackey](https://github.com/chriswmackey)
+[Anna Song](https://github.com/annasong20)
 
-[Saeran Vasanthakumar](https://github.com/saeranv)
+[Antonello Di Nunzio](https://github.com/antonellodn)
+
+[Chris Mackey](https://github.com/chriswmackey)
 
 [Joseph Yang](https://github.com/hansukyang)
 
 [Mostapha Roudsari](https://github.com/mostapharoudsari)
+
+[Saeran Vasanthakumar](https://github.com/saeranv)
 
 
 Many thanks are due to the [Urban Microclimate Group at MIT](http://urbanmicroclimate.scripts.mit.edu/index.php) and Bruno Bueno et al.,

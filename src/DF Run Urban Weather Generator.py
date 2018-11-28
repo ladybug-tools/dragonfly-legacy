@@ -38,7 +38,7 @@ Provided by Dragonfly 0.0.03
 
 ghenv.Component.Name = "DF Run Urban Weather Generator"
 ghenv.Component.NickName = 'RunUWG'
-ghenv.Component.Message = 'VER 0.0.03\nJUL_11_2018'
+ghenv.Component.Message = 'VER 0.0.03\nNOV_25_2018'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "1 | Urban Weather"
 #compatibleDFVersion = VER 0.0.02\nMAY_25_2018
@@ -192,7 +192,7 @@ def set_individual_typologies(uwg, city):
     # update each typology
     for uwg_typology in uwg.BEM:
         df_typology = typology_dict[','.join([bldg_conversion.uwg_bldg_type[uwg_typology.building.Type], bldg_conversion.uwg_built_era[uwg_typology.building.Era]])]
-        uwg_typology.floorHeight = df_typology.floor_to_floor
+        uwg_typology.building.floorHeight = df_typology.floor_to_floor
         uwg_typology.building.canyon_fraction = df_typology.fract_heat_to_canyon
         uwg_typology.building.glazingRatio = df_typology.glz_ratio
         uwg_typology.building.shgc = df_typology.shgc

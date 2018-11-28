@@ -21,9 +21,9 @@ You can download the package from the Dragonfly github.
 
 ghenv.Component.Name = "DF Update"
 ghenv.Component.NickName = "DFUpdate"
-ghenv.Component.Message = 'VER 0.0.03\nJUL_08_2018'
+ghenv.Component.Message = 'VER 0.0.03\nNOV_25_2018'
 ghenv.Component.Category = "Dragonfly"
-ghenv.Component.SubCategory = "3 | Developers"
+ghenv.Component.SubCategory = "4 | Developers"
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
 
 import os
@@ -32,6 +32,7 @@ import sys
 import zipfile
 import shutil
 from Grasshopper.Folders import UserObjectFolders
+from Grasshopper.Folders import AssemblyFolders
 System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12
 
 
@@ -146,6 +147,27 @@ def updateDragonfly():
     for f in os.listdir(userObjectsFolder):
         shutil.copyfile(os.path.join(userObjectsFolder, f),
                         os.path.join(plus_uofolder, f))
+
+    # copy gha files and dlls
+    asfolder, aslist = os.path.split(str(AssemblyFolders[1]))
+    assemblyFolder = os.path.join(
+        targetDirectory,
+        r"{}-master\envimet".format(pl))
+    df_asfolder = os.path.join(asfolder, pl)
+
+    if not os.path.isdir(df_asfolder):
+        os.mkdir(df_asfolder)
+
+    for f in os.listdir(df_asfolder):
+        try:
+            os.remove(os.path.join(df_asfolder, f))
+        except:
+            print('Failed to remove {}'.format(os.path.join(df_asfolder, f)))
+    print 'Copying Dragonfly envimet assemblies to {}.'.format(asfolder)
+
+    for f in os.listdir(assemblyFolder):
+        shutil.copyfile(os.path.join(assemblyFolder, f),
+                        os.path.join(df_asfolder, f))
 
     # try to clean up
     for r in repos:
