@@ -38,7 +38,7 @@ Provided by Dragonfly 0.0.03
 
 ghenv.Component.Name = "DF Run Urban Weather Generator"
 ghenv.Component.NickName = 'RunUWG'
-ghenv.Component.Message = 'VER 0.0.03\nNOV_25_2018'
+ghenv.Component.Message = 'VER 0.0.03\nNOV_30_2018'
 ghenv.Component.Category = "Dragonfly"
 ghenv.Component.SubCategory = "1 | Urban Weather"
 #compatibleDFVersion = VER 0.0.02\nMAY_25_2018
@@ -127,25 +127,25 @@ def set_uwg_input(uwg, DFCity, epw_site_par, bnd_layer_par, analysis_period, sim
         uwg.RadFLight = 0.7
         
         # Define Urban microclimate parameters
-        uwg.h_ubl1 = bnd_layer_par.day_boundary_layer_height
-        uwg.h_ubl2 = bnd_layer_par.night_boundary_layer_height
-        uwg.h_ref = bnd_layer_par.inversion_height
+        uwg.h_ubl1 = float(bnd_layer_par.day_boundary_layer_height)
+        uwg.h_ubl2 = float(bnd_layer_par.night_boundary_layer_height)
+        uwg.h_ref = float(bnd_layer_par.inversion_height)
         uwg.c_circ = bnd_layer_par.circulation_coefficient
         uwg.c_exch = bnd_layer_par.exchange_coefficient
-        uwg.h_temp = epw_site_par.temp_measure_height
-        uwg.h_wind = epw_site_par.wind_measure_height
+        uwg.h_temp = float(epw_site_par.temp_measure_height)
+        uwg.h_wind = float(epw_site_par.wind_measure_height)
         uwg.maxDay = 150.
         uwg.maxNight = 20.
         uwg.windMin = 1.
-        uwg.h_obs = epw_site_par.average_obstacle_height
+        uwg.h_obs = float(epw_site_par.average_obstacle_height)
         
         # Urban characteristics
-        uwg.bldHeight = DFCity.average_bldg_height
-        uwg.h_mix = DFCity.fract_heat_to_canyon
-        uwg.bldDensity = DFCity.site_coverage_ratio
-        uwg.verToHor = DFCity.facade_to_site_ratio
-        uwg.charLength = DFCity.characteristic_length
-        uwg.sensAnth = DFCity.traffic_parameters.sensible_heat
+        uwg.bldHeight = float(DFCity.average_bldg_height)
+        uwg.h_mix = float(DFCity.fract_heat_to_canyon)
+        uwg.bldDensity = float(DFCity.site_coverage_ratio)
+        uwg.verToHor = float(DFCity.facade_to_site_ratio)
+        uwg.charLength = float(DFCity.characteristic_length)
+        uwg.sensAnth = float(DFCity.traffic_parameters.sensible_heat)
         uwg.SchTraffic = DFCity.traffic_parameters.get_uwg_matrix()
         
         # Define optional Building characteristics
@@ -155,12 +155,12 @@ def set_uwg_input(uwg, DFCity, epw_site_par, bnd_layer_par, analysis_period, sim
         uwg.zone = DFCity._climate_zone
         
         # Vegetation parameters
-        uwg.vegCover = DFCity.grass_coverage_ratio
-        uwg.treeCoverage = DFCity.tree_coverage_ratio
-        uwg.albVeg = DFCity.vegetation_parameters.vegetation_albedo
-        uwg.latTree = DFCity.vegetation_parameters.tree_latent_fraction
-        uwg.latGrss = DFCity.vegetation_parameters.grass_latent_fraction
-        uwg.rurVegCover = epw_site_par.vegetation_coverage
+        uwg.vegCover = float(DFCity.grass_coverage_ratio)
+        uwg.treeCoverage = float(DFCity.tree_coverage_ratio)
+        uwg.albVeg = float(DFCity.vegetation_parameters.vegetation_albedo)
+        uwg.latTree = float(DFCity.vegetation_parameters.tree_latent_fraction)
+        uwg.latGrss = float(DFCity.vegetation_parameters.grass_latent_fraction)
+        uwg.rurVegCover = float(epw_site_par.vegetation_coverage)
         
         if DFCity.vegetation_parameters.vegetation_start_month == 0 or DFCity.vegetation_parameters.vegetation_end_month == 0:
             vegStart, vegEnd = autocalcStartEndVegetation(_epw_file)
@@ -174,10 +174,10 @@ def set_uwg_input(uwg, DFCity, epw_site_par, bnd_layer_par, analysis_period, sim
             uwg.vegEnd = DFCity.vegetation_parameters.vegetation_end_month
         
         # Define road
-        uwg.alb_road = DFCity.pavement_parameters.albedo
-        uwg.d_road = DFCity.pavement_parameters.thickness
-        uwg.kRoad = DFCity.pavement_parameters.conductivity
-        uwg.cRoad = DFCity.pavement_parameters.volumetric_heat_capacity
+        uwg.alb_road = float(DFCity.pavement_parameters.albedo)
+        uwg.d_road = float(DFCity.pavement_parameters.thickness)
+        uwg.kRoad = float(DFCity.pavement_parameters.conductivity)
+        uwg.cRoad = float(DFCity.pavement_parameters.volumetric_heat_capacity)
         
         return uwg
 
@@ -258,6 +258,7 @@ if init_check == True and _write == True:
     # create a uwg_object from the dragonfly objects.
     uwg_object, new_epw_path = create_uwg(_epw_file, _folder_, _name_)
     uwg_object = set_uwg_input(uwg_object, _city, epw_site_par, bnd_layer_par, _analysis_period_, _sim_timestep_)
+    uwg_object.check_required_inputs()
     uwg_object.init_BEM_obj()
     uwg_object = set_individual_typologies(uwg_object, _city)
     uwg_object = set_global_facade_props(uwg_object, _city)
