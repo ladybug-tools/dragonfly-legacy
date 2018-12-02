@@ -93,6 +93,16 @@ namespace DragonflyEnvimet.Properties {
         /// <summary>
         ///   Cerca una risorsa localizzata di tipo System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap envimetBuildingsVisualizerIcon {
+            get {
+                object obj = ResourceManager.GetObject("envimetBuildingsVisualizerIcon", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Cerca una risorsa localizzata di tipo System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap envimetBuilingIcon {
             get {
                 object obj = ResourceManager.GetObject("envimetBuilingIcon", resourceCulture);
