@@ -66,6 +66,7 @@
   <ItemGroup>
     <Compile Include="Buildings.cs" />
     <Compile Include="Grid.cs" />
+    <Compile Include="VisualizeBuildings.cs" />
     <Compile Include="Plant2d.cs" />
     <Compile Include="Plant3d.cs" />
     <Compile Include="Soil.cs" />
@@ -147,6 +148,9 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\envimetConfigSimpleForcing.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\envimetBuildingsVisualizerIcon.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
