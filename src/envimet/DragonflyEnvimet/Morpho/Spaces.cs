@@ -73,6 +73,10 @@ namespace Morpho
         protected override void SolveInstance(IGH_DataAccess DA)
         {
             // INPUT
+
+            // surface
+            List<Mesh> baseSurfMesh = new List<Mesh>();
+
             // building
             List<Mesh> bgeo = new List<Mesh>();
             List<string> wallmat = new List<string>();
@@ -139,7 +143,16 @@ namespace Morpho
             DA.GetData(13, ref viewGridYZ_);
 
             // actions
-            _envimentGrid.gZmethod(_envimetBuidings.Buildings); // INIT!!!
+            if (_envimentGrid.Surface == null)
+            {
+                _envimentGrid.gZmethod(_envimetBuidings.Buildings); // INIT
+            }
+            else
+            {
+                baseSurfMesh.Add(_envimentGrid.Surface);
+                _envimentGrid.gZmethod(baseSurfMesh); // INIT
+            }
+
 
             if (viewGridXY_ == true)
             {

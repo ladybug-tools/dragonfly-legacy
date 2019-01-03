@@ -37,7 +37,9 @@ namespace Morpho
             pManager.AddIntegerParameter("addCellsUp_", "addCellsUp_", "Default: 2", GH_ParamAccess.item, 2);
             pManager.AddIntegerParameter("addCellsDown_", "addCellsDown_", "Default: 2", GH_ParamAccess.item, 2);
             pManager.AddIntegerParameter("numCellsZ_", "numCellsZ_", "// Number grid for Height domain. Default 15", GH_ParamAccess.item, 15);
+            pManager.AddMeshParameter("baseSurface_", "baseSurface_", "If you do not want to generate grid using buildings connect a rectangular surface.", GH_ParamAccess.item);
             pManager[0].Optional = true;
+            pManager[10].Optional = true;
         }
 
         /// <summary>
@@ -66,6 +68,7 @@ namespace Morpho
             int addCellsDown_ = 2;
             int addCellsUp_ = 2;
             int numCellsZ_ = 15;
+            Mesh baseSurface_ = null;
 
             DA.GetData(0, ref _telescope_);
             DA.GetData(1, ref startTelescopeHeight_);
@@ -77,6 +80,7 @@ namespace Morpho
             DA.GetData(7, ref addCellsDown_);
             DA.GetData(8, ref addCellsUp_);
             DA.GetData(9, ref numCellsZ_);
+            DA.GetData(10, ref baseSurface_);
 
 
             // actions
@@ -115,6 +119,7 @@ namespace Morpho
             if (numCellsZ_ >= myGrid.MaxZGrid)
                 myGrid.ZGrids = myGrid.MaxZGrid - 1;
 
+            myGrid.Surface = baseSurface_;
 
             // OUTPUT
             //DA.SetData(0, (object)envimetBuildings);

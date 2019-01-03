@@ -27,6 +27,8 @@ namespace envimetGrid
         public int ExtUpYgrid { get; set; }
         public int ExtDownYgrid { get; set; }
 
+        public Mesh Surface { get; set; }
+
         public static int NumX;
         public static int NumY;
         public static double[] ZNumbers;
@@ -48,7 +50,7 @@ namespace envimetGrid
             this.ExtRightXgrid = 2;
             this.ExtUpYgrid = 2;
             this.ExtDownYgrid = 2;
-            this.MaxZGrid = 40;
+            this.MaxZGrid = 999;
             this.MinX = 0;
             this.MaxX = 0;
             this.MinY = 0;
