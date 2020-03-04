@@ -166,8 +166,11 @@ def updateDragonfly():
     print 'Copying Dragonfly envimet assemblies to {}.'.format(asfolder)
 
     for f in os.listdir(assemblyFolder):
-        shutil.copyfile(os.path.join(assemblyFolder, f),
-                        os.path.join(df_asfolder, f))
+        try:
+            shutil.copyfile(os.path.join(assemblyFolder, f),
+                            os.path.join(df_asfolder, f))
+        except IOError as e:
+            print("Failed to install {}. You should download and install it manually.".format(f))
 
     # try to clean up
     for r in repos:
