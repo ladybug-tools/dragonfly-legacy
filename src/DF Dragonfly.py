@@ -45,9 +45,9 @@ Provided by Dragonfly 0.0.03
 """
 
 ghenv.Component.Name = "DF Dragonfly"
-ghenv.Component.NickName = 'Dragonfly'
-ghenv.Component.Message = 'VER 0.0.03\nNOV_05_2018'
-ghenv.Component.Category = "Dragonfly"
+ghenv.Component.NickName = 'DF-Legacy'
+ghenv.Component.Message = 'VER 0.0.03\nMAR_25_2020'
+ghenv.Component.Category = "DF-Legacy"
 ghenv.Component.SubCategory = "0 | Dragonfly"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
 except: pass

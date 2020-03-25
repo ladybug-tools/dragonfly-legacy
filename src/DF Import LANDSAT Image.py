@@ -66,8 +66,8 @@ Provided by Dragonfly 0.0.03
 
 ghenv.Component.Name = "DF Import LANDSAT Image"
 ghenv.Component.NickName = 'ImportLANDSATImg'
-ghenv.Component.Message = 'VER 0.0.03\nJUL_08_2018'
-ghenv.Component.Category = "Dragonfly"
+ghenv.Component.Message = 'VER 0.0.03\nMAR_25_2020'
+ghenv.Component.Category = "DF-Legacy"
 ghenv.Component.SubCategory = "2 | Alternative Climate Data"
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 #compatibleDFVersion = VER 0.0.02\nMAY_12_2018

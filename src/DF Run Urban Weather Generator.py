@@ -38,8 +38,8 @@ Provided by Dragonfly 0.0.03
 
 ghenv.Component.Name = "DF Run Urban Weather Generator"
 ghenv.Component.NickName = 'RunUWG'
-ghenv.Component.Message = 'VER 0.0.03\nNOV_30_2018'
-ghenv.Component.Category = "Dragonfly"
+ghenv.Component.Message = 'VER 0.0.03\nMAR_25_2020'
+ghenv.Component.Category = "DF-Legacy"
 ghenv.Component.SubCategory = "1 | Urban Weather"
 #compatibleDFVersion = VER 0.0.02\nMAY_25_2018
 ghenv.Component.AdditionalHelpFromDocStrings = "1"

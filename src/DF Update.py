@@ -21,8 +21,8 @@ You can download the package from the Dragonfly github.
 
 ghenv.Component.Name = "DF Update"
 ghenv.Component.NickName = "DFUpdate"
-ghenv.Component.Message = 'VER 0.0.03\nNOV_25_2018'
-ghenv.Component.Category = "Dragonfly"
+ghenv.Component.Message = 'VER 0.0.03\nMAR_25_2020'
+ghenv.Component.Category = "DF-Legacy"
 ghenv.Component.SubCategory = "4 | Developers"
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
 
@@ -43,7 +43,7 @@ def updateDragonfly():
         C:\Users\%USERNAME%\AppData\Roaming\McNeel\Rhinoceros\6.0\scripts\honeybee
     """
     folders = ['uwg']
-    repos = ['Dragonfly']
+    repos = ['dragonfly-legacy']
 
     targetDirectory = [p for p in sys.path if p.find('scripts')!= -1][0]
     try:
@@ -98,7 +98,7 @@ def updateDragonfly():
     
     # copy files to folder.
     for f in folders:
-        sourceFolder = os.path.join(targetDirectory, "Dragonfly-master", 'uwg')
+        sourceFolder = os.path.join(targetDirectory, "dragonfly-legacy-master", 'uwg')
         libFolder = os.path.join(targetDirectory, 'uwg')
         print 'Copying {} source code to {}'.format(f, libFolder)
         try:
@@ -115,12 +115,12 @@ def updateDragonfly():
     # copy user-objects
     uofolder = UserObjectFolders[0]
 
-    pl = 'Dragonfly'
+    pl = 'dragonfly-legacy'
     userObjectsFolder = os.path.join(
         targetDirectory,
         r"{}-master\userObjects".format(pl))
 
-    plus_uofolder = os.path.join(uofolder, pl)
+    plus_uofolder = os.path.join(uofolder, 'dragonfly')
     if not os.path.isdir(plus_uofolder):
         os.mkdir(plus_uofolder)
 
@@ -149,28 +149,31 @@ def updateDragonfly():
                         os.path.join(plus_uofolder, f))
 
     # copy gha files and dlls
-    asfolder, aslist = os.path.split(str(AssemblyFolders[1]))
-    assemblyFolder = os.path.join(
-        targetDirectory,
-        r"{}-master\envimet".format(pl))
-    df_asfolder = os.path.join(asfolder, pl)
-
-    if not os.path.isdir(df_asfolder):
-        os.mkdir(df_asfolder)
-
-    for f in os.listdir(df_asfolder):
-        try:
-            os.remove(os.path.join(df_asfolder, f))
-        except:
-            print('Failed to remove {}'.format(os.path.join(df_asfolder, f)))
-    print 'Copying Dragonfly envimet assemblies to {}.'.format(asfolder)
-
-    for f in os.listdir(assemblyFolder):
-        try:
-            shutil.copyfile(os.path.join(assemblyFolder, f),
-                            os.path.join(df_asfolder, f))
-        except IOError as e:
-            print("Failed to install {}. You should download and install it manually.".format(f))
+    try:
+        asfolder, aslist = os.path.split(str(AssemblyFolders[1]))
+        assemblyFolder = os.path.join(
+            targetDirectory,
+            r"{}-master\envimet".format(pl))
+        df_asfolder = os.path.join(asfolder, pl)
+    
+        if not os.path.isdir(df_asfolder):
+            os.mkdir(df_asfolder)
+    
+        for f in os.listdir(df_asfolder):
+            try:
+                os.remove(os.path.join(df_asfolder, f))
+            except:
+                print('Failed to remove {}'.format(os.path.join(df_asfolder, f)))
+        print 'Copying Dragonfly envimet assemblies to {}.'.format(asfolder)
+    
+        for f in os.listdir(assemblyFolder):
+            try:
+                shutil.copyfile(os.path.join(assemblyFolder, f),
+                                os.path.join(df_asfolder, f))
+            except IOError as e:
+                print("Failed to install {}. You should download and install it manually.".format(f))
+    except Exception:
+        print 'Failed to install Envi-Met components. You should download and install it manually.'
 
     # try to clean up
     for r in repos:
