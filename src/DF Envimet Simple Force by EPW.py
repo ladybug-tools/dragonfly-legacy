@@ -31,9 +31,9 @@ Provided by Dragonfly 0.0.03
 
 ghenv.Component.Name = "DF Envimet Simple Force by EPW"
 ghenv.Component.NickName = 'DFenvimetSimpleForceByEPW'
-ghenv.Component.Message = 'VER 0.0.03\nNOV_26_2018'
+ghenv.Component.Message = 'VER 0.0.03\nMAR_25_2020'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
-ghenv.Component.Category = "Dragonfly"
+ghenv.Component.Category = "DF-Legacy"
 ghenv.Component.SubCategory = "3 | Envimet"
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "4"
