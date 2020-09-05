@@ -31,7 +31,7 @@ Provided by Dragonfly 0.0.03
 
 ghenv.Component.Name = "DF Envimet Simple Force by EPW"
 ghenv.Component.NickName = 'DFenvimetSimpleForceByEPW'
-ghenv.Component.Message = 'VER 0.0.03\nMAR_25_2020'
+ghenv.Component.Message = 'VER 0.0.03\nSEP_09_2020'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "DF-Legacy"
 ghenv.Component.SubCategory = "3 | Envimet"
@@ -66,7 +66,7 @@ def main():
     temperatureData = weatherData[0][7:]
     RHdata = weatherData[2][7:]
     
-    dryBulbTemperature = map(lambda x : x + 273.15 , extractNumbers(temperatureData, DOY))
+    dryBulbTemperature = extractNumbers(temperatureData, DOY) #map(lambda x : x + 273.15 , extractNumbers(temperatureData, DOY))
     relativeHumidity = extractNumbers(RHdata, DOY)
     
     # start date and start time
