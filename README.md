@@ -5,7 +5,7 @@ Dragonfly for Grasshopper
 Dragonfly allows users to model large-scale climate phenomena such as [urban heat island](https://github.com/chriswmackey/Dragonfly/wiki/Urban-Heat-Island).  Dragonfly intends
 to make many large-scale climate variables accessible to CAD interfaces and the other insects of [Ladybug Tools](https://github.com/ladybug-tools).
 
-Dragonfly uses the [Urban Weather Generator (uwg)](https://github.com/ladybug-tools/urbanWeatherGen), [Ladybug (legacy version)](https://github.com/mostaphaRoudsari/Ladybug) and ENVI_MET 4.4.5.<br/>
+Dragonfly uses the [Urban Weather Generator (uwg)](https://github.com/ladybug-tools/urbanWeatherGen), [Ladybug (legacy version)](https://github.com/mostaphaRoudsari/Ladybug) and ENVI_MET 4.4.6.<br/>
 
 Code of Envimet components: [df_envimet](https://github.com/AntonelloDN/df_envimet).
 
